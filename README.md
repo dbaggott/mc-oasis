@@ -17,6 +17,7 @@ the container when it starts.
 
 ```
 Dockerfile               the image: base image, server settings, baked jars
+server-icon.png          the 64x64 server-list icon
 artifacts.lock           every third-party jar and datapack baked in, with its version, URL and sha256
 plugins/<Name>/          config files the repo owns for a plugin, copied over the plugin's own at every start
 scripts/

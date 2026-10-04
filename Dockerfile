@@ -37,6 +37,11 @@ ENV ONLINE_MODE=true \
     EXISTING_WHITELIST_FILE=SYNCHRONIZE \
     EXISTING_OPS_FILE=SYNCHRONIZE
 
+# The server-list icon. OVERRIDE_ICON makes the image's copy replace the one
+# a previous start left on the world volume.
+ENV ICON=/server-icon.png \
+    OVERRIDE_ICON=true
+
 ENV MOTD="§bThe Oasis SMP" \
     DIFFICULTY=normal \
     MAX_PLAYERS=20 \
@@ -86,3 +91,4 @@ COPY build/artifacts/plugins/ /plugins/
 # Simple Voice Chat's turns recording off: some players are minors.
 COPY plugins/ /plugins/
 COPY build/artifacts/datapacks/ /datapacks/
+COPY server-icon.png /server-icon.png
