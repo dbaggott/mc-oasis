@@ -15,6 +15,8 @@
 #           earlier one wherever both define the same file, so the numeric
 #           prefix sets precedence: the Dungeons and Taverns overhauls sit
 #           above the main pack, and the enchant disabler above all of them.
+#           Only for a new world: a pack added to an existing one is enabled
+#           above all the rest, whatever its prefix.
 #
 # Removing a worldgen datapack (Tectonic, Dungeons and Taverns and its
 # overhauls) from an existing world breaks the terrain and structures it
