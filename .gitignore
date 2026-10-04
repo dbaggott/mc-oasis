@@ -1,0 +1,5 @@
+# Git worktrees
+.worktrees/
+
+# Downloaded by scripts/fetch-artifacts.sh; never committed.
+build/
