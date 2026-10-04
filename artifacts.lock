@@ -6,10 +6,19 @@
 # One artifact per line, whitespace-separated:
 #   <kind> <name> <version> <sha256> <url>
 #
-# kind      server (the one Paper jar) | plugin
+# kind      server (the one Paper jar) | plugin | datapack
 # name      for a plugin, the name it declares and the server reports. The
 #           smoke test requires a plugin by this name to enable, and its config
-#           folder under plugins/ is this name too
+#           folder under plugins/ is this name too.
+#           For a datapack, the file name in the world's datapacks folder. A new
+#           world enables them in name order, and a later pack overrides an
+#           earlier one wherever both define the same file, so the numeric
+#           prefix sets precedence: the Dungeons and Taverns overhauls sit
+#           above the main pack, and the enchant disabler above all of them.
+#
+# Removing a worldgen datapack (Tectonic, Dungeons and Taverns and its
+# overhauls) from an existing world breaks the terrain and structures it
+# generated. Add them only before the world is first generated.
 #
 # Changing a line is a version bump: update version, sha256 and url together.
 
@@ -18,3 +27,19 @@ server  paper          26.2-129      b1d8f6bfa1b6101fa8e947b53041cb3bdf5540e7b83
 plugin  Geyser-Spigot  2.11.3-1247   6fed2d9711e2db3c365508ec10db36d06a0199abd226159d23d57f82662fd7a6  https://download.geysermc.org/v2/projects/geyser/versions/2.11.3/builds/1247/downloads/spigot
 plugin  floodgate      2.2.5-141     21570aff9ce17d6983928e8552777760e1ede5050026b04c686b0ae112e6fd7e  https://download.geysermc.org/v2/projects/floodgate/versions/2.2.5/builds/141/downloads/spigot
 plugin  Chunky         1.5.3         530d2c7430a96a39957391b7088be144daa3108f7665896d1c23aa8dd4af32f3  https://cdn.modrinth.com/data/fALzjamp/versions/MdY6JATr/Chunky-Bukkit-1.5.3.jar
+
+datapack  10-tectonic                       3.0.25-datapack   cc925878fd40f2e01533f526d1684efa064eb4caaabb33d63fe0b3dbb5fb8640  https://cdn.modrinth.com/data/lWDHr9jE/versions/CmzMQNDL/tectonic-datapack-3.0.25.zip
+datapack  20-dungeons-and-taverns           5.3.2             4096cd6372e0f244efa0e85c4d884bd85afe665a84a050280acd483b3222b4f9  https://cdn.modrinth.com/data/tpehi7ww/versions/CS77UwHE/Dungeons%20and%20Taverns%20v5.3.2.zip
+datapack  30-dnt-ancient-city-overhaul      3.4               58d08fd6a8c5a746704954c7b30e9e111573443b7e402cebaeda6807239f521a  https://cdn.modrinth.com/data/DNuNq5bb/versions/CaqYtto5/DnT%20Ancient%20City%20Overhaul%20v3.4.zip
+datapack  30-dnt-desert-temple-overhaul     v2.1              e801c13e466fc73d3f3f0907754a7843cbfc59c38a79622db4724d3b6c409759  https://cdn.modrinth.com/data/7JTDDmRT/versions/tOWwOzy4/DnT%20Desert%20Temple%20Overhaul%20v2.1.zip
+datapack  30-dnt-mineshaft-overhaul         1.1               2ba666cafc4158373341fcb18a5da2b81ced4f8cee5ec2e33552d7fcd2bfa04a  https://cdn.modrinth.com/data/ozLFhOy3/versions/86yJFqzT/DnT%20Mineshaft%20Overhaul%20v1.1.zip
+datapack  30-dnt-nether-fortress-overhaul   v3.1              cc0eb3e575a1fb36b6a4bdf85386f3068e4d14f4637994baa0cec296c4cf935d  https://cdn.modrinth.com/data/8Dbnvm77/versions/3u94EXVg/DnT%20Nether%20Fortress%20Overhaul%20v3.1.zip
+datapack  30-dnt-ocean-monument-overhaul    2.2.1             dc8aaa6c12221fd25f255a8da2dd48afee5ff4b3667a453ec48f547b669a5b44  https://cdn.modrinth.com/data/z6GJ3ycD/versions/IX2JzD1k/DnT%20Ocean%20Monument%20Overhaul%20v2.2.1.zip
+datapack  30-dnt-pillager-outpost-overhaul  v3.3              98f2e572c851d69ac2eda61d6beefb10396fba28471c2f6a66212b8832186309  https://cdn.modrinth.com/data/QIt10I7z/versions/uAHOlrKb/DnT%20Pillager%20Outpost%20Overhaul%20v3.3.zip
+datapack  30-dnt-stronghold-overhaul        v2.4.0            535206b37b00151a44d495dcd1d769fc5301e85595261803f7a40bb7487cb35c  https://cdn.modrinth.com/data/rYocd2LE/versions/L1ylllq1/DnT%20Stronghold%20Overhaul%20v2.4.0.zip
+datapack  30-dnt-swamp-hut-overhaul         v2.3              0085e729f0f9bd65d001e63407bc5ca8a50529af6bc1681861c2a6b128fa9734  https://cdn.modrinth.com/data/nWSeFpQt/versions/t2gIpNuq/DnT%20Swamp%20Hut%20Overhaul%20v2.3.zip
+datapack  30-dnt-woodland-mansion-overhaul  2.1               638b37b86948be1dd348aedc91ec5650c6b73dd6165491b9a9908a2fb27349a3  https://cdn.modrinth.com/data/3GfxWFCy/versions/sIwi7RFy/DnT%20Woodland%20Mansion%20Overhual%20v2.1.zip
+datapack  40-dnt-enchant-disabler           4.4               7f439ce61e688bc76857ba633c2dd2de6fa6d1a0167c533a8bbe09ee76f14f36  https://cdn.modrinth.com/data/jr7t09l6/versions/cLq5AoVs/Enchant%20Disabler%20for%20DnT%205.3.0.zip
+datapack  50-bacap                          1.21              c71d1aa1a84dbe00a3f85a42144b46214c4669a3cccf07ff66631d28f16a99b2  https://cdn.modrinth.com/data/VoVJ47kN/versions/Y2zZ5eSs/BlazeandCave%27s%20Advancements%20Pack%201.21.zip
+datapack  51-bacaped                        2.9.2             6868ba9331356435c041a7bcb3b61f6883bd420535b69b1c6ac737f83ca5bc05  https://cdn.modrinth.com/data/Qx9yFN48/versions/Drxj6pcN/BACAP_Enhanced_Discoveries_2.9.2.zip
+datapack  60-players-drop-heads             107.1             300c62a6890beecdae1778d31c3ff82909256fdc2e855af92297554e92858c7b  https://cdn.modrinth.com/data/NU7qMnLN/versions/Nf8uzHHy/players-drop-heads-26.2-107.1.zip
