@@ -18,6 +18,7 @@ the container when it starts.
 ```
 Dockerfile               the image: base image, server settings, baked jars
 artifacts.lock           every third-party jar and datapack baked in, with its version, URL and sha256
+plugins/<Name>/          config files the repo owns for a plugin, copied over the plugin's own at every start
 scripts/
   fetch-artifacts.sh     downloads everything in artifacts.lock and verifies each sha256
   smoke-test.sh          starts a built image on a throwaway world; checks every plugin and datapack loads
