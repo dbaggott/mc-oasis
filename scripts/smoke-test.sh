@@ -21,7 +21,7 @@ docker run --detach --name "$name" --env MEMORY=2G "$image" >/dev/null
 
 echo "waiting for the server to finish starting"
 deadline=$((SECONDS + startup_deadline_seconds))
-until docker logs "$name" 2>&1 | grep --quiet 'Done ('; do
+until grep --quiet --fixed-strings 'Done (' <<<"$(docker logs "$name" 2>&1)"; do
   if [[ "$(docker inspect --format '{{.State.Running}}' "$name")" != true ]]; then
     docker logs "$name" 2>&1 | tail -n 100
     echo "error: the container exited before the server finished starting" >&2
@@ -39,7 +39,7 @@ done
 # "Done", so a broken plugin only shows in the log.
 logs="$(docker logs "$name" 2>&1)"
 failed=()
-while read -r kind plugin _; do
+while read -r kind plugin _ || [[ -n "${kind:-}" ]]; do
   [[ "${kind:-}" == plugin ]] || continue
   if ! grep --quiet --fixed-strings "Enabling ${plugin} v" <<<"$logs" \
     || grep --quiet --fixed-strings "Error occurred while enabling ${plugin} " <<<"$logs"; then
@@ -47,7 +47,7 @@ while read -r kind plugin _; do
   fi
 done <"${repo_root}/artifacts.lock"
 if ((${#failed[@]} > 0)); then
-  grep --extended-regexp --after-context=5 'ERROR\]|Error occurred while enabling' <<<"$logs" | head -n 60
+  grep --extended-regexp --after-context=5 'ERROR\]|Error occurred while enabling' <<<"$logs" | head -n 60 || true
   echo "error: did not enable: ${failed[*]}" >&2
   exit 1
 fi
