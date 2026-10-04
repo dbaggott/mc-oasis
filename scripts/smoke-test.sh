@@ -73,6 +73,44 @@ rcon() { docker exec --user 1000 "$name" rcon-cli "$@"; }
 rcon list >/dev/null
 echo "rcon answered"
 
+# The permission denials the Dockerfile sets at every start. The image runs
+# them through RCON once the server listens and only logs a failure, so check
+# what LuckPerms actually stored: an export, read back, since LuckPerms answers
+# RCON asynchronously and its replies never reach rcon-cli.
+denied=()
+while read -r node; do
+  denied+=("$node")
+done < <(grep -o 'lp group default permission set [^ ]* false' "${repo_root}/Dockerfile" | awk '{print $6}')
+if ((${#denied[@]} > 0)); then
+  deadline=$((SECONDS + 120))
+  until grep --quiet 'stopping rcon cmd service' <<<"$(docker logs "$name" 2>&1)"; do
+    if ((SECONDS >= deadline)); then
+      echo "error: the startup RCON commands didn't finish within 120s" >&2
+      exit 1
+    fi
+    sleep 2
+  done
+  rcon "lp export smoke-permissions --without-users" >/dev/null
+  deadline=$((SECONDS + 60))
+  until docker exec --user 1000 "$name" test -s /data/plugins/LuckPerms/smoke-permissions.json.gz; do
+    if ((SECONDS >= deadline)); then
+      echo "error: LuckPerms export didn't appear within 60s" >&2
+      exit 1
+    fi
+    sleep 2
+  done
+  exported="$(docker exec --user 1000 "$name" gzip -dc /data/plugins/LuckPerms/smoke-permissions.json.gz)"
+  not_denied=()
+  for node in "${denied[@]}"; do
+    grep --quiet --fixed-strings "\"${node}\",\"value\":false" <<<"$exported" || not_denied+=("$node")
+  done
+  if ((${#not_denied[@]} > 0)); then
+    echo "error: not denied to the default group: ${not_denied[*]}" >&2
+    exit 1
+  fi
+  echo "denied to every player: ${denied[*]}"
+fi
+
 # A new world logs each datapack it enables, in load order, lowest precedence
 # first; a pack that fails to load stops the world loading, so the server never
 # gets to "Done". `datapack list` can't stand in for this: its reply is cut
