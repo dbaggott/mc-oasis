@@ -29,6 +29,14 @@ server  paper          26.2-129      b1d8f6bfa1b6101fa8e947b53041cb3bdf5540e7b83
 plugin  Geyser-Spigot  2.11.3-1247   6fed2d9711e2db3c365508ec10db36d06a0199abd226159d23d57f82662fd7a6  https://download.geysermc.org/v2/projects/geyser/versions/2.11.3/builds/1247/downloads/spigot
 plugin  floodgate      2.2.5-141     21570aff9ce17d6983928e8552777760e1ede5050026b04c686b0ae112e6fd7e  https://download.geysermc.org/v2/projects/floodgate/versions/2.2.5/builds/141/downloads/spigot
 plugin  Chunky         1.5.3         530d2c7430a96a39957391b7088be144daa3108f7665896d1c23aa8dd4af32f3  https://cdn.modrinth.com/data/fALzjamp/versions/MdY6JATr/Chunky-Bukkit-1.5.3.jar
+plugin  ViaVersion     5.12.0           c4d512fa9760fa41d17abaedde12aa1f4c9bde920d0a992fe0fc016962f126be  https://cdn.modrinth.com/data/P1OZGk5p/versions/FaishMnD/ViaVersion-5.12.0.jar
+plugin  ViaBackwards   5.12.0           f902f7da7eb99e8bfaf461f80283c4e2750b7d9727e6b508ea4bb9163f55b1db  https://cdn.modrinth.com/data/NpvuJQoq/versions/SxGhdsPK/ViaBackwards-5.12.0.jar
+plugin  LuckPerms      v5.5.71-bukkit   49cecb66fa1fd22a133039a490e9c1e5095a238e7cd66eb9d2a16fe6c897550d  https://cdn.modrinth.com/data/Vebnzrzj/versions/b0mk8uS6/LuckPerms-Bukkit-5.5.71.jar
+plugin  ClickVillagers  paper-1.6.3      6cacfaa07f113e6ad5230d7efba5963dfb6a45d018196a186fa81d251bbab686  https://cdn.modrinth.com/data/BITzwT7B/versions/iMS3EoIW/ClickVillagers-paper-1.6.3.jar
+plugin  GrimAC         2.3.74-abb95b6   d33eed30bfd5c6eb54176b197c9c51018ba0916d7b056e0530ab183ac1a3d590  https://cdn.modrinth.com/data/LJNGWSvH/versions/YJEwvStg/grimac-bukkit-2.3.74-abb95b6.jar
+plugin  voicechat      bukkit-2.6.24    af3d4e2ad318d3065959248c1370ae32a619752cb4d2a4fec2f7a79b10067769  https://cdn.modrinth.com/data/9eGKb6K1/versions/EJth3OAr/voicechat-bukkit-2.6.24.jar
+plugin  WorldEdit      7.4.5            e5696a6d064b9969437a8888be91b0941148a28e0c3736de1554a00254a5d142  https://cdn.modrinth.com/data/1u6JkXh5/versions/F5ea2ov3/worldedit-bukkit-7.4.5.jar
+plugin  WorldGuard     7.0.19           396df065f1cf38bab9878a0f53a776d5a085ebbf3c41813938b73f95d4eaca03  https://cdn.modrinth.com/data/DKY9btbd/versions/TtfwTyi6/worldguard-bukkit-7.0.19.jar
 
 datapack  10-tectonic                       3.0.25-datapack   cc925878fd40f2e01533f526d1684efa064eb4caaabb33d63fe0b3dbb5fb8640  https://cdn.modrinth.com/data/lWDHr9jE/versions/CmzMQNDL/tectonic-datapack-3.0.25.zip
 datapack  20-dungeons-and-taverns           5.3.2             4096cd6372e0f244efa0e85c4d884bd85afe665a84a050280acd483b3222b4f9  https://cdn.modrinth.com/data/tpehi7ww/versions/CS77UwHE/Dungeons%20and%20Taverns%20v5.3.2.zip

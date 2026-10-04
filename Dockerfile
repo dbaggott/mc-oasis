@@ -68,6 +68,21 @@ ENV SYNC_SKIP_NEWER_IN_DESTINATION=false \
 ENV DATAPACKS=/datapacks \
     REMOVE_OLD_DATAPACKS=true
 
+# ClickVillagers is pickup-and-place only, and every other feature is a
+# permission it grants everyone by default. These deny them at every start, so
+# the repo stays authoritative while LuckPerms keeps the rest of its data, which
+# names players, on the world volume. The baked config turns off its villager
+# hoppers and update check.
+ENV RCON_CMDS_STARTUP="\
+lp group default permission set clickvillagers.claim false\n\
+lp group default permission set clickvillagers.anchor false\n\
+lp group default permission set clickvillagers.partner false\n\
+lp group default permission set clickvillagers.change-biome false\n\
+lp group default permission set clickvillagers.hopper false"
+
 COPY build/artifacts/server.jar /opt/server.jar
 COPY build/artifacts/plugins/ /plugins/
+# Plugin configs the repo owns, one folder per plugin by its declared name.
+# Simple Voice Chat's turns recording off: some players are minors.
+COPY plugins/ /plugins/
 COPY build/artifacts/datapacks/ /datapacks/
