@@ -62,5 +62,12 @@ ENV SYNC_SKIP_NEWER_IN_DESTINATION=false \
     REMOVE_OLD_MODS_INCLUDE=*.jar \
     REMOVE_OLD_MODS_DEPTH=1
 
+# The datapacks in artifacts.lock, copied into the world's datapacks folder at
+# every start. Packs already there are removed first, so the lock is
+# authoritative.
+ENV DATAPACKS=/datapacks \
+    REMOVE_OLD_DATAPACKS=true
+
 COPY build/artifacts/server.jar /opt/server.jar
 COPY build/artifacts/plugins/ /plugins/
+COPY build/artifacts/datapacks/ /datapacks/

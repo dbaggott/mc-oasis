@@ -7,6 +7,7 @@ set -euo pipefail
 #
 #   build/artifacts/server.jar          the one server jar, whatever its name
 #   build/artifacts/plugins/<name>.jar
+#   build/artifacts/datapacks/<name>.zip
 #
 # Runs anywhere bash, curl and sha256sum (or macOS shasum) exist, so a build
 # can be reproduced locally exactly as CI does it.
@@ -29,6 +30,7 @@ destination() {
   case "$kind" in
     server) echo "server.jar" ;;
     plugin) echo "plugins/${name}.jar" ;;
+    datapack) echo "datapacks/${name}.zip" ;;
     *) return 1 ;;
   esac
 }
@@ -41,7 +43,7 @@ rm -rf "$out"
 mkdir -p "${repo_root}/build"
 staging="$(mktemp -d "${repo_root}/build/.artifacts.XXXXXX")"
 trap 'rm -rf "$staging"' EXIT
-mkdir -p "${staging}/plugins"
+mkdir -p "${staging}/plugins" "${staging}/datapacks"
 
 servers=0
 line_no=0
