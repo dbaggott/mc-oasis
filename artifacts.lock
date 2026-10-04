@@ -1,0 +1,20 @@
+# Every third-party file baked into the image: what it is, where it comes from,
+# and the sha256 it must have. scripts/fetch-artifacts.sh downloads each one
+# and fails the build on any mismatch, so a changed upstream file can't reach
+# the server unreviewed.
+#
+# One artifact per line, whitespace-separated:
+#   <kind> <name> <version> <sha256> <url>
+#
+# kind      server (the one Paper jar) | plugin
+# name      for a plugin, the name it declares and the server reports. The
+#           smoke test requires a plugin by this name to enable, and its config
+#           folder under plugins/ is this name too
+#
+# Changing a line is a version bump: update version, sha256 and url together.
+
+server  paper          26.2-129      b1d8f6bfa1b6101fa8e947b53041cb3bdf5540e7b83b6547ca19ba7edefeb083  https://fill-data.papermc.io/v1/objects/b1d8f6bfa1b6101fa8e947b53041cb3bdf5540e7b83b6547ca19ba7edefeb083/paper-26.2-129.jar
+
+plugin  Geyser-Spigot  2.11.3-1247   6fed2d9711e2db3c365508ec10db36d06a0199abd226159d23d57f82662fd7a6  https://download.geysermc.org/v2/projects/geyser/versions/2.11.3/builds/1247/downloads/spigot
+plugin  floodgate      2.2.5-141     21570aff9ce17d6983928e8552777760e1ede5050026b04c686b0ae112e6fd7e  https://download.geysermc.org/v2/projects/floodgate/versions/2.2.5/builds/141/downloads/spigot
+plugin  Chunky         1.5.3         530d2c7430a96a39957391b7088be144daa3108f7665896d1c23aa8dd4af32f3  https://cdn.modrinth.com/data/fALzjamp/versions/MdY6JATr/Chunky-Bukkit-1.5.3.jar
