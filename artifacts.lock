@@ -7,8 +7,9 @@
 #   <kind> <name> <version> <sha256> <url>
 #
 # kind      server (the one Paper jar) | plugin
-# name      the file it's saved as, without extension; plugins keep the
-#           name their own docs use, so config folders line up
+# name      for a plugin, the name it declares and the server reports. The
+#           smoke test requires a plugin by this name to enable, and its config
+#           folder under plugins/ is this name too
 #
 # Changing a line is a version bump: update version, sha256 and url together.
 

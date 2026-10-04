@@ -33,10 +33,15 @@ destination() {
   esac
 }
 
-# Start clean: a file left over from a previous lock would otherwise be baked
-# into the image without a line in the lock vouching for it.
-rm -rf "${repo_root}/build/artifacts"
-mkdir -p "${out}/plugins"
+# Fetched into a staging directory and moved into place only once every file
+# verifies, so build/artifacts/ is always either a complete verified set or
+# absent: never a partial one a `docker build` would bake in, and never a
+# leftover from an older lock with no line vouching for it.
+rm -rf "$out"
+mkdir -p "${repo_root}/build"
+staging="$(mktemp -d "${repo_root}/build/.artifacts.XXXXXX")"
+trap 'rm -rf "$staging"' EXIT
+mkdir -p "${staging}/plugins"
 
 servers=0
 line_no=0
@@ -62,7 +67,7 @@ while read -r kind name version sha256 url extra || [[ -n "${kind:-}" ]]; do
   fi
   [[ "$kind" == server ]] && servers=$((servers + 1))
 
-  dest="${out}/${rel}"
+  dest="${staging}/${rel}"
   if [[ -e "$dest" ]]; then
     echo "error: artifacts.lock:${line_no}: ${rel} is listed twice" >&2
     exit 1
@@ -87,4 +92,5 @@ if ((servers != 1)); then
   exit 1
 fi
 
+mv "$staging" "$out"
 echo "all artifacts verified"

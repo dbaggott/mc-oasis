@@ -2,12 +2,13 @@
 set -euo pipefail
 
 # Start the built image against a throwaway world and check that it comes up,
-# answers RCON and stops cleanly. Uses no real player data: the whitelist is
-# left empty.
+# enables every plugin in artifacts.lock, answers RCON and stops cleanly. Uses
+# no real player data: the whitelist is left empty.
 #
 # Usage: scripts/smoke-test.sh <image>
 
 image="${1:?usage: scripts/smoke-test.sh <image>}"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 name="mc-oasis-smoke-$$"
 startup_deadline_seconds=600
 stop_timeout_seconds=120
@@ -34,10 +35,28 @@ until docker logs "$name" 2>&1 | grep --quiet 'Done ('; do
   sleep 5
 done
 
+# A plugin that throws while enabling is disabled and the server carries on to
+# "Done", so a broken plugin only shows in the log.
+logs="$(docker logs "$name" 2>&1)"
+failed=()
+while read -r kind plugin _; do
+  [[ "${kind:-}" == plugin ]] || continue
+  if ! grep --quiet --fixed-strings "Enabling ${plugin} v" <<<"$logs" \
+    || grep --quiet --fixed-strings "Error occurred while enabling ${plugin} " <<<"$logs"; then
+    failed+=("$plugin")
+  fi
+done <"${repo_root}/artifacts.lock"
+if ((${#failed[@]} > 0)); then
+  grep --extended-regexp --after-context=5 'ERROR\]|Error occurred while enabling' <<<"$logs" | head -n 60
+  echo "error: did not enable: ${failed[*]}" >&2
+  exit 1
+fi
+echo "every plugin in artifacts.lock enabled"
+
 # rcon-cli authenticates with the password the image generated at start, so
 # this also proves nothing has to supply one.
-echo "plugins as the server reports them:"
-docker exec "$name" rcon-cli plugins
+docker exec "$name" rcon-cli list >/dev/null
+echo "rcon answered"
 
 echo "stopping"
 docker stop --time "$stop_timeout_seconds" "$name" >/dev/null
