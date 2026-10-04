@@ -73,6 +73,14 @@ rcon() { docker exec --user 1000 "$name" rcon-cli "$@"; }
 rcon list >/dev/null
 echo "rcon answered"
 
+# The image copies ICON in only if it is already a 64x64 PNG, and otherwise
+# converts it, so check that what the server serves is the repo's file as is.
+if ! docker exec --user 1000 "$name" cmp --quiet /server-icon.png /data/server-icon.png; then
+  echo "error: /data/server-icon.png is not the image's /server-icon.png" >&2
+  exit 1
+fi
+echo "server icon in place"
+
 # The permission denials the Dockerfile sets at every start. The image runs
 # them through RCON once the server listens and only logs a failure, so check
 # what LuckPerms actually stored: an export, read back, since LuckPerms answers
