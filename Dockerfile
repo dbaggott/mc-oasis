@@ -40,8 +40,8 @@ ENV ONLINE_MODE=true \
 ENV MOTD="Oasis" \
     DIFFICULTY=normal \
     MAX_PLAYERS=20 \
-    VIEW_DISTANCE=10 \
-    SIMULATION_DISTANCE=8
+    VIEW_DISTANCE=20 \
+    SIMULATION_DISTANCE=15
 
 # For `rcon-cli` inside the container only; the port is never published. With
 # no RCON_PASSWORD the image generates a fresh one at every start.
