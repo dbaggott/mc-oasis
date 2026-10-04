@@ -40,9 +40,16 @@ until grep --quiet --fixed-strings 'Done (' <<<"$(docker logs "$name" 2>&1)"; do
   sleep 5
 done
 
-# A plugin that throws while enabling is disabled and the server carries on to
-# "Done", so a broken plugin only shows in the log.
+# A plugin that throws while enabling is disabled, and a datapack file that
+# won't parse (an advancement, a function, a loot table) is skipped, and either
+# way the server carries on to "Done". Both show only in the log, at ERROR, and
+# a healthy start logs nothing at that level.
 logs="$(docker logs "$name" 2>&1)"
+if grep --quiet --fixed-strings ' ERROR]: ' <<<"$logs"; then
+  grep --after-context=3 --fixed-strings ' ERROR]: ' <<<"$logs" | head -n 60 || true
+  echo "error: the server logged errors while starting" >&2
+  exit 1
+fi
 failed=()
 while read -r kind plugin _ || [[ -n "${kind:-}" ]]; do
   [[ "${kind:-}" == plugin ]] || continue
