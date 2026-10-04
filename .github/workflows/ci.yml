@@ -17,8 +17,10 @@ on:
   push:
     branches: [main]
   pull_request:
-  # Pushes a branch's build, for `apps/app deploy mc-oasis <branch>`. Only the
-  # default branch's copy of this file can be dispatched.
+  # Pushes a branch's build, for `apps/app deploy mc-oasis <branch>`.
+  # Dispatchable once this file is on the default branch; a dispatched run uses
+  # the chosen branch's copy, push job included, so anyone who can push a branch
+  # decides what runs with the push role.
   workflow_dispatch:
 
 permissions:
