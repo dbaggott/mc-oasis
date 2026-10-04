@@ -11,7 +11,7 @@
 # No player lists here: this repo is public, so WHITELIST and OPS are supplied
 # by the host when the container starts.
 
-# A release tag for the image's scripts, java25 because Minecraft 26.3 requires
+# A release tag for the image's scripts, java25 because Minecraft 26.2 requires
 # Java 25, and the multi-arch digest so a re-pushed tag can't change it.
 FROM itzg/minecraft-server:2026.9.2-java25@sha256:de5d1b1a83eba576f6c8a688fac2a3523ce457724cdebc8ea48d7818b74cdf6e
 
@@ -20,7 +20,7 @@ FROM itzg/minecraft-server:2026.9.2-java25@sha256:de5d1b1a83eba576f6c8a688fac2a3
 # image's scripts branch on it.
 ENV EULA=TRUE \
     TYPE=PAPER \
-    VERSION=26.3 \
+    VERSION=26.2 \
     PAPER_CUSTOM_JAR=/opt/server.jar \
     SKIP_DOWNLOAD_DEFAULTS=true
 

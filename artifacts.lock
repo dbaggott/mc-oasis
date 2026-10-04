@@ -13,7 +13,7 @@
 #
 # Changing a line is a version bump: update version, sha256 and url together.
 
-server  paper          26.3-147      e88207b474f1954f4de175a0b63a3d574e995f609d7fd9c4960d4f76e1784ae3  https://fill-data.papermc.io/v1/objects/e88207b474f1954f4de175a0b63a3d574e995f609d7fd9c4960d4f76e1784ae3/paper-26.3-147.jar
+server  paper          26.2-129      b1d8f6bfa1b6101fa8e947b53041cb3bdf5540e7b83b6547ca19ba7edefeb083  https://fill-data.papermc.io/v1/objects/b1d8f6bfa1b6101fa8e947b53041cb3bdf5540e7b83b6547ca19ba7edefeb083/paper-26.2-129.jar
 
 plugin  Geyser-Spigot  2.11.3-1247   6fed2d9711e2db3c365508ec10db36d06a0199abd226159d23d57f82662fd7a6  https://download.geysermc.org/v2/projects/geyser/versions/2.11.3/builds/1247/downloads/spigot
 plugin  floodgate      2.2.5-141     21570aff9ce17d6983928e8552777760e1ede5050026b04c686b0ae112e6fd7e  https://download.geysermc.org/v2/projects/floodgate/versions/2.2.5/builds/141/downloads/spigot
