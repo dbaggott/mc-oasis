@@ -83,17 +83,29 @@ ENV SYNC_SKIP_NEWER_IN_DESTINATION=false \
 ENV DATAPACKS=/datapacks \
     REMOVE_OLD_DATAPACKS=true
 
+# Commands run through RCON at every start, so the repo stays authoritative
+# over what they set, and a change made in game lasts only until the next start.
+#
 # ClickVillagers is pickup-and-place and trade resetting only. Its other
-# features are each a permission it grants everyone by default. These deny them
-# at every start, so the repo stays authoritative while LuckPerms keeps the rest
-# of its data, which names players, on the world volume. The baked config turns
-# on trade resetting and turns off its villager hoppers and update check.
+# features are each a permission it grants everyone by default, denied here,
+# while LuckPerms keeps the rest of its data, which names players, on the world
+# volume. The baked config turns on trade resetting and turns off its villager
+# hoppers and update check.
+#
+# The world borders: blocks -10,000 to 10,000 in the overworld and -5,000 to
+# 5,000 in the Nether; the End is unbounded. An odd width centered on a whole
+# block, which is what `center 0 0` gives (0.5, 0.5), runs the same number of
+# blocks either way from block 0.
 ENV RCON_CMDS_STARTUP="\
 lp group default permission set clickvillagers.claim false\n\
 lp group default permission set clickvillagers.anchor false\n\
 lp group default permission set clickvillagers.partner false\n\
 lp group default permission set clickvillagers.change-biome false\n\
-lp group default permission set clickvillagers.hopper false"
+lp group default permission set clickvillagers.hopper false\n\
+execute in minecraft:overworld run worldborder center 0 0\n\
+execute in minecraft:overworld run worldborder set 20001\n\
+execute in minecraft:the_nether run worldborder center 0 0\n\
+execute in minecraft:the_nether run worldborder set 10001"
 
 COPY build/artifacts/server.jar /opt/server.jar
 COPY build/artifacts/plugins/ /plugins/

@@ -104,23 +104,25 @@ if ! docker exec --user 1000 "$name" cmp --quiet /server-icon.png /data/server-i
 fi
 echo "server icon in place"
 
-# The permission denials the Dockerfile sets at every start. The image runs
-# them through RCON once the server listens and only logs a failure, so check
-# what LuckPerms actually stored: an export, read back, since LuckPerms answers
-# RCON asynchronously and its replies never reach rcon-cli.
+# The Dockerfile's RCON_CMDS_STARTUP. The image runs them through RCON once the
+# server listens and only logs a failure, so what they set is checked below.
+deadline=$((SECONDS + 120))
+until grep --quiet 'stopping rcon cmd service' <<<"$(docker logs "$name" 2>&1)"; do
+  if ((SECONDS >= deadline)); then
+    echo "error: the startup RCON commands didn't finish within 120s" >&2
+    exit 1
+  fi
+  sleep 2
+done
+
+# The permission denials: what LuckPerms actually stored, as an export read
+# back, since LuckPerms answers RCON asynchronously and its replies never reach
+# rcon-cli.
 denied=()
 while read -r node; do
   denied+=("$node")
 done < <(grep -o 'lp group default permission set [^ ]* false' "${repo_root}/Dockerfile" | awk '{print $6}')
 if ((${#denied[@]} > 0)); then
-  deadline=$((SECONDS + 120))
-  until grep --quiet 'stopping rcon cmd service' <<<"$(docker logs "$name" 2>&1)"; do
-    if ((SECONDS >= deadline)); then
-      echo "error: the startup RCON commands didn't finish within 120s" >&2
-      exit 1
-    fi
-    sleep 2
-  done
   rcon "lp export smoke-permissions --without-users" >/dev/null
   deadline=$((SECONDS + 60))
   until docker exec --user 1000 "$name" test -s /data/plugins/LuckPerms/smoke-permissions.json.gz; do
@@ -141,6 +143,16 @@ if ((${#denied[@]} > 0)); then
   fi
   echo "denied to every player: ${denied[*]}"
 fi
+
+# The world borders, by width; `worldborder get` doesn't report the center.
+while read -r dimension width; do
+  reply="$(rcon "execute in minecraft:${dimension} run worldborder get")"
+  if ! grep --quiet --fixed-strings "currently ${width} block(s) wide" <<<"$reply"; then
+    echo "error: the ${dimension} border isn't ${width} wide: ${reply}" >&2
+    exit 1
+  fi
+  echo "${dimension} border ${width} wide"
+done < <(sed -n 's/.*execute in minecraft:\([a-z_]*\) run worldborder set \([0-9]*\).*/\1 \2/p' "${repo_root}/Dockerfile")
 
 # A new world logs each datapack it enables, in load order, lowest precedence
 # first; a pack that fails to load stops the world loading, so the server never
