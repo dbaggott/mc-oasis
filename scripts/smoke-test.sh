@@ -122,11 +122,19 @@ fi
 # A new world logs each datapack it enables, in load order, lowest precedence
 # first; a pack that fails to load stops the world loading, so the server never
 # gets to "Done". `datapack list` can't stand in for this: its reply is cut
-# short after a few packs.
+# short after a few packs. A new world enables them in name order, the lock's
+# and the repo's own interleaved.
 expected=()
-while read -r kind pack _ || [[ -n "${kind:-}" ]]; do
-  [[ "${kind:-}" == datapack ]] && expected+=("$pack")
-done <"${repo_root}/artifacts.lock"
+while read -r pack; do
+  expected+=("$pack")
+done < <(
+  {
+    while read -r kind pack _ || [[ -n "${kind:-}" ]]; do
+      if [[ "${kind:-}" == datapack ]]; then echo "$pack"; fi
+    done <"${repo_root}/artifacts.lock"
+    for dir in "${repo_root}"/datapacks/*/; do basename "$dir"; done
+  } | LC_ALL=C sort
+)
 loaded=()
 while read -r pack; do
   loaded+=("$pack")
@@ -136,7 +144,16 @@ if [[ "${loaded[*]}" != "${expected[*]}" ]]; then
   echo "error: expected these datapacks, in this order: ${expected[*]}" >&2
   exit 1
 fi
-echo "every datapack in artifacts.lock enabled, in lock order"
+echo "every datapack enabled, in name order"
+
+# The Xaero fair-play pack's load function made its join-tracking objective.
+# Asked for by name, since `scoreboard objectives list` is cut short too: an
+# empty score is the answer an existing objective gives.
+if ! grep --quiet --fixed-strings 'none is set' <<<"$(rcon scoreboard players get '#smoke' xaero_fair_play)"; then
+  echo "error: the xaero_fair_play objective doesn't exist; its pack's load function didn't run" >&2
+  exit 1
+fi
+echo "xaero fair-play pack loaded"
 
 echo "stopping"
 docker stop --time "$stop_timeout_seconds" "$name" >/dev/null

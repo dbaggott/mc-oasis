@@ -37,6 +37,7 @@ plugin  GrimAC         2.3.74-abb95b6   d33eed30bfd5c6eb54176b197c9c51018ba0916d
 plugin  voicechat      bukkit-2.6.24    af3d4e2ad318d3065959248c1370ae32a619752cb4d2a4fec2f7a79b10067769  https://cdn.modrinth.com/data/9eGKb6K1/versions/EJth3OAr/voicechat-bukkit-2.6.24.jar
 plugin  WorldEdit      7.4.5            e5696a6d064b9969437a8888be91b0941148a28e0c3736de1554a00254a5d142  https://cdn.modrinth.com/data/1u6JkXh5/versions/F5ea2ov3/worldedit-bukkit-7.4.5.jar
 plugin  WorldGuard     7.0.19           396df065f1cf38bab9878a0f53a776d5a085ebbf3c41813938b73f95d4eaca03  https://cdn.modrinth.com/data/DKY9btbd/versions/TtfwTyi6/worldguard-bukkit-7.0.19.jar
+plugin  TradeCycle     2.1.0            4ee533db5ef8241f58ebe8eff8befc02043142ea5879e26989fbf279fe0822d0  https://cdn.modrinth.com/data/GpyBM69F/versions/oYCeMLy6/TradeCycle-2.1.0.jar
 
 datapack  10-tectonic                       3.0.25-datapack   cc925878fd40f2e01533f526d1684efa064eb4caaabb33d63fe0b3dbb5fb8640  https://cdn.modrinth.com/data/lWDHr9jE/versions/CmzMQNDL/tectonic-datapack-3.0.25.zip
 datapack  20-dungeons-and-taverns           5.3.2             4096cd6372e0f244efa0e85c4d884bd85afe665a84a050280acd483b3222b4f9  https://cdn.modrinth.com/data/tpehi7ww/versions/CS77UwHE/Dungeons%20and%20Taverns%20v5.3.2.zip

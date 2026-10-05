@@ -27,7 +27,7 @@ claimed_immune_kill_command: true
 
 # Whether players can reset trades of villagers inside
 # the trading menu.
-allow_resetting_trades: false
+allow_resetting_trades: true
 
 # ---------------------------------------------------------
 # Hopper Settings
