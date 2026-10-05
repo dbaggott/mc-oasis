@@ -35,7 +35,8 @@ ENV ONLINE_MODE=true \
     ENABLE_WHITELIST=true \
     ENFORCE_WHITELIST=true \
     EXISTING_WHITELIST_FILE=SYNCHRONIZE \
-    EXISTING_OPS_FILE=SYNCHRONIZE
+    EXISTING_OPS_FILE=SYNCHRONIZE \
+    HIDE_ONLINE_PLAYERS=true
 
 # The server-list icon. OVERRIDE_ICON makes the image's copy replace the one
 # a previous start left on the world volume.
@@ -54,7 +55,8 @@ ENV ENABLE_RCON=true
 
 # Stop the server after 20 minutes with nobody on, or 30 after a start nobody
 # joins. Touching /data/.skip-stop holds it up, e.g. while Chunky pre-generates.
-ENV ENABLE_AUTOSTOP=TRUE \
+ENV PLAYER_IDLE_TIMEOUT=120 \
+    ENABLE_AUTOSTOP=TRUE \
     AUTOSTOP_TIMEOUT_EST=1200 \
     AUTOSTOP_TIMEOUT_INIT=1800
 
