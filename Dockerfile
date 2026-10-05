@@ -55,7 +55,7 @@ ENV ENABLE_RCON=true
 
 # Stop the server after 20 minutes with nobody on, or 30 after a start nobody
 # joins. Touching /data/.skip-stop holds it up, e.g. while Chunky pre-generates.
-ENV PLAYER_IDLE_TIMEOUT=10 \
+ENV PLAYER_IDLE_TIMEOUT=120 \
     ENABLE_AUTOSTOP=TRUE \
     AUTOSTOP_TIMEOUT_EST=1200 \
     AUTOSTOP_TIMEOUT_INIT=1800
