@@ -73,7 +73,13 @@ echo "every plugin in artifacts.lock enabled"
 rcon() { docker exec --user 1000 "$name" rcon-cli "$@"; }
 deadline=$((SECONDS + 60))
 until rcon list >/dev/null 2>&1; do
+  if [[ "$(docker inspect --format '{{.State.Running}}' "$name")" != true ]]; then
+    docker logs "$name" 2>&1 | tail -n 100
+    echo "error: the container exited before rcon answered" >&2
+    exit 1
+  fi
   if ((SECONDS >= deadline)); then
+    docker logs "$name" 2>&1 | tail -n 100
     rcon list >/dev/null || true
     echo "error: rcon didn't answer within 60s of 'Done ('" >&2
     exit 1
