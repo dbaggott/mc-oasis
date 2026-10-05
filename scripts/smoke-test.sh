@@ -69,9 +69,32 @@ echo "every plugin in artifacts.lock enabled"
 # this also proves nothing has to supply one. It has to run as the server's own
 # user (uid 1000), as it does on the host, which runs the container with the
 # same dropped capabilities.
+# Retried because one call right after "Done (" was refused in CI, cause
+# unknown; the answer reports any wait so a recurrence shows in a passing run.
 rcon() { docker exec --user 1000 "$name" rcon-cli "$@"; }
-rcon list >/dev/null
-echo "rcon answered"
+rcon_start=$SECONDS
+rcon_tries=1
+deadline=$((SECONDS + 60))
+until rcon list >/dev/null 2>&1; do
+  if [[ "$(docker inspect --format '{{.State.Running}}' "$name")" != true ]]; then
+    docker logs "$name" 2>&1 | tail -n 100
+    echo "error: the container exited before rcon answered" >&2
+    exit 1
+  fi
+  if ((SECONDS >= deadline)); then
+    docker logs "$name" 2>&1 | tail -n 100
+    rcon list >/dev/null || true
+    echo "error: rcon didn't answer within 60s of 'Done ('" >&2
+    exit 1
+  fi
+  sleep 2
+  rcon_tries=$((rcon_tries + 1))
+done
+if ((rcon_tries > 1)); then
+  echo "rcon answered on try ${rcon_tries}, after $((SECONDS - rcon_start))s"
+else
+  echo "rcon answered"
+fi
 
 # The image copies ICON in only if it is already a 64x64 PNG, and otherwise
 # converts it, so check that what the server serves is the repo's file as is.
