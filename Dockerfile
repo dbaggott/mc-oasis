@@ -1,6 +1,6 @@
-# The Oasis server: Paper with the plugins in artifacts.lock, run by
-# itzg/minecraft-server. Build after scripts/fetch-artifacts.sh, which puts the
-# verified jars in build/artifacts/.
+# The Oasis server: Paper with the plugins and datapacks in artifacts.lock and
+# the repo's own datapacks, run by itzg/minecraft-server. Build after
+# scripts/fetch-artifacts.sh, which puts the verified jars in build/artifacts/.
 #
 # Everything the server runs is baked in. The base image's own downloads are
 # switched off below, so a container start fetches no code. The one exception
@@ -10,6 +10,14 @@
 #
 # No player lists here: this repo is public, so WHITELIST and OPS are supplied
 # by the host when the container starts.
+
+# The repo's own datapacks, one folder each under datapacks/, zipped under the
+# folder's name: the base image copies only zips into the world.
+FROM python:3.14-alpine@sha256:f6a589d43c42b9e7f7dc67a12d37132491f362859a5d750607710cc56da3bc72 AS repo-datapacks
+COPY datapacks/ /src/
+RUN mkdir /out && cd /src && for pack in */; do \
+      pack="${pack%/}" && (cd "$pack" && python -m zipfile -c "/out/${pack}.zip" ./*); \
+    done
 
 # A release tag for the image's scripts, java25 because Minecraft 26.2 requires
 # Java 25, and the multi-arch digest so a re-pushed tag can't change it.
@@ -69,17 +77,17 @@ ENV SYNC_SKIP_NEWER_IN_DESTINATION=false \
     REMOVE_OLD_MODS_INCLUDE=*.jar \
     REMOVE_OLD_MODS_DEPTH=1
 
-# The datapacks in artifacts.lock, copied into the world's datapacks folder at
-# every start. Packs already there are removed first, so the lock is
-# authoritative.
+# The datapacks in artifacts.lock and the repo's own, copied into the world's
+# datapacks folder at every start. Packs already there are removed first, so
+# the image is authoritative.
 ENV DATAPACKS=/datapacks \
     REMOVE_OLD_DATAPACKS=true
 
-# ClickVillagers is pickup-and-place only, and every other feature is a
-# permission it grants everyone by default. These deny them at every start, so
-# the repo stays authoritative while LuckPerms keeps the rest of its data, which
-# names players, on the world volume. The baked config turns off its villager
-# hoppers and update check.
+# ClickVillagers is pickup-and-place and trade resetting only. Its other
+# features are each a permission it grants everyone by default. These deny them
+# at every start, so the repo stays authoritative while LuckPerms keeps the rest
+# of its data, which names players, on the world volume. The baked config turns
+# on trade resetting and turns off its villager hoppers and update check.
 ENV RCON_CMDS_STARTUP="\
 lp group default permission set clickvillagers.claim false\n\
 lp group default permission set clickvillagers.anchor false\n\
@@ -91,6 +99,9 @@ COPY build/artifacts/server.jar /opt/server.jar
 COPY build/artifacts/plugins/ /plugins/
 # Plugin configs the repo owns, one folder per plugin by its declared name.
 # Simple Voice Chat's turns recording off: some players are minors.
+# TradeCycle's keeps only its swap-hands-key trigger: its sneak-click one is
+# ClickVillagers' pickup.
 COPY plugins/ /plugins/
 COPY build/artifacts/datapacks/ /datapacks/
+COPY --from=repo-datapacks /out/ /datapacks/
 COPY server-icon.png /server-icon.png

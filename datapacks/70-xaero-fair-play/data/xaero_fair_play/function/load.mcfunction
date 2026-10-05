@@ -1,0 +1,1 @@
+scoreboard objectives add xaero_fair_play minecraft.custom:minecraft.leave_game
