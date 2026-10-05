@@ -145,14 +145,25 @@ if ((${#denied[@]} > 0)); then
 fi
 
 # The world borders, by width; `worldborder get` doesn't report the center.
-while read -r dimension width; do
+# Every `worldborder set` line has to parse, so a reworded one fails here
+# instead of going unchecked.
+borders=()
+while read -r border; do
+  borders+=("$border")
+done < <(sed -n 's/.*execute in minecraft:\([a-z_]*\) run worldborder set \([0-9]*\).*/\1 \2/p' "${repo_root}/Dockerfile")
+if ((${#borders[@]} != $(grep -c 'worldborder set' "${repo_root}/Dockerfile"))); then
+  echo "error: a worldborder set line in the Dockerfile isn't 'execute in minecraft:<dimension> run worldborder set <width>'" >&2
+  exit 1
+fi
+for border in ${borders[@]+"${borders[@]}"}; do
+  read -r dimension width <<<"$border"
   reply="$(rcon "execute in minecraft:${dimension} run worldborder get")"
   if ! grep --quiet --fixed-strings "currently ${width} block(s) wide" <<<"$reply"; then
     echo "error: the ${dimension} border isn't ${width} wide: ${reply}" >&2
     exit 1
   fi
   echo "${dimension} border ${width} wide"
-done < <(sed -n 's/.*execute in minecraft:\([a-z_]*\) run worldborder set \([0-9]*\).*/\1 \2/p' "${repo_root}/Dockerfile")
+done
 
 # A new world logs each datapack it enables, in load order, lowest precedence
 # first; a pack that fails to load stops the world loading, so the server never
