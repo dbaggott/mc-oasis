@@ -39,6 +39,7 @@ plugin  WorldEdit      7.4.5            e5696a6d064b9969437a8888be91b0941148a28e
 plugin  WorldGuard     7.0.19           396df065f1cf38bab9878a0f53a776d5a085ebbf3c41813938b73f95d4eaca03  https://cdn.modrinth.com/data/DKY9btbd/versions/TtfwTyi6/worldguard-bukkit-7.0.19.jar
 plugin  TradeCycle     2.1.0            4ee533db5ef8241f58ebe8eff8befc02043142ea5879e26989fbf279fe0822d0  https://cdn.modrinth.com/data/GpyBM69F/versions/oYCeMLy6/TradeCycle-2.1.0.jar
 plugin  TAB            6.2.0            f94331947134242efa478b9b9bf04b29e37861721dee58c32b7ea57779aa735e  https://cdn.modrinth.com/data/gG7VFbG0/versions/UDraViyI/TAB%20v6.2.0.jar
+plugin  LibertyBans    1.1.4            57303df011ff49747856af4ed818546f19b5dd84b8c627a6666431d0df962634  https://cdn.modrinth.com/data/PgXAUxLZ/versions/7WLjonzv/LibertyBans_Release-1.1.4.jar
 
 datapack  10-tectonic                       3.0.25-datapack   cc925878fd40f2e01533f526d1684efa064eb4caaabb33d63fe0b3dbb5fb8640  https://cdn.modrinth.com/data/lWDHr9jE/versions/CmzMQNDL/tectonic-datapack-3.0.25.zip
 datapack  20-dungeons-and-taverns           5.3.2             4096cd6372e0f244efa0e85c4d884bd85afe665a84a050280acd483b3222b4f9  https://cdn.modrinth.com/data/tpehi7ww/versions/CS77UwHE/Dungeons%20and%20Taverns%20v5.3.2.zip

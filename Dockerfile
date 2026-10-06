@@ -3,10 +3,11 @@
 # scripts/fetch-artifacts.sh, which puts the verified jars in build/artifacts/.
 #
 # Everything the server runs is baked in. The base image's own downloads are
-# switched off below, so a container start fetches no code. The one exception
-# is Paperclip, inside the Paper jar, which fetches the vanilla server and its
-# libraries from Mojang on first start and checks them against hashes the Paper
-# build carries.
+# switched off below, so a container start fetches no code. There are two
+# exceptions, each checked against hashes inside a jar artifacts.lock pins.
+# Paperclip, inside the Paper jar, fetches the vanilla server and its libraries
+# from Mojang on first start. LibertyBans' jar is only a loader: it fetches the
+# plugin itself and its libraries from Maven repositories.
 #
 # No player lists here: this repo is public, so WHITELIST and OPS are supplied
 # by the host when the container starts.
@@ -111,6 +112,12 @@ ENV DATAPACKS=/datapacks \
 # Paper keeps game rules per dimension and RCON runs in the overworld, so a rule
 # that matters outside it is set in each dimension with `execute in`.
 #
+# BlazeandCave's Advancements Pack greets each player in chat on their first
+# join: the first player ever with a thank-you for downloading it, everyone
+# after with a welcome. `introduced` 1 marks the thank-you as already given and
+# `intro_msg` 0 turns off the welcome. The pack's load function sets up its
+# settings, intro_msg 1 in a new world, before these run.
+#
 # Spawn is on an island, and the WorldGuard region `spawn` covers all of it:
 # the island runs x -504 to -437 and z 854 to 928, the region 8 blocks of water
 # past that, from the bottom of the world to the top. The console has no
@@ -136,6 +143,8 @@ gamerule players_sleeping_percentage 0\n\
 execute in minecraft:overworld run gamerule locator_bar false\n\
 execute in minecraft:the_nether run gamerule locator_bar false\n\
 execute in minecraft:the_end run gamerule locator_bar false\n\
+scoreboard players set introduced bac_settings 1\n\
+scoreboard players set intro_msg bac_settings 0\n\
 //world world\n\
 //pos1 -512,-64,846\n\
 //pos2 -429,319,936\n\
