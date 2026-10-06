@@ -266,7 +266,7 @@ done
 scores=()
 while read -r score; do
   scores+=("$score")
-done < <(sed -n 's/^scoreboard players set \([a-z_]*\) \([a-z_]*\) \(-*[0-9]*\)\\n\\$/\1 \2 \3/p' "${repo_root}/Dockerfile")
+done < <(sed -n 's/^scoreboard players set \([^ ]*\) \([^ ]*\) \(-*[0-9]*\)\\n\\$/\1 \2 \3/p' "${repo_root}/Dockerfile")
 if ((${#scores[@]} != $(grep -c '^scoreboard players set ' "${repo_root}/Dockerfile"))); then
   echo "error: a scoreboard line in the Dockerfile isn't 'scoreboard players set <holder> <objective> <value>'" >&2
   exit 1
