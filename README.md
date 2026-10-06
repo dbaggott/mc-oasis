@@ -23,7 +23,7 @@ plugins/<Name>/          config files the repo owns for a plugin, copied over th
 plugins/LuckPerms/yaml-storage/  the permission groups and tracks; which group each player is in is set in game
 data/                    server config files the repo owns, copied over the same paths under the server's /data at every start
 datapacks/<name>/        the repo's own datapacks, each zipped as <name>.zip in the image
-plugin-src/<Name>/       the repo's own plugins, each a plugin.yml and Java sources under src/, compiled into <Name>.jar in the image
+plugin-src/<Name>/       the repo's own plugins, each a plugin.yml and Java sources under src/, compiled into <Name>.jar in the image; tests under test/ run at build
 scripts/
   fetch-artifacts.sh     downloads everything in artifacts.lock and verifies each sha256
   smoke-test.sh          starts a built image on a throwaway world; checks every plugin and datapack loads and every config setting applies
@@ -48,9 +48,10 @@ Changing the Minecraft version also means changing `VERSION` in the `Dockerfile`
 jar, and the formats in each `datapacks/*/pack.mcmeta` to the new version's data pack format.
 
 The `library` lines are what `plugin-src/` compiles against, so they follow what the server runs: `paper-api`
-the Paper build, `adventure-api` and `adventure-key` the Adventure version that `paper-api`'s POM names, and
-`voicechat-api` the Simple Voice Chat plugin. Changing the Java version means changing the JDK image and
-`--release` in the `Dockerfile`'s `repo-plugins` stage too.
+the Paper build, the `adventure-*` libraries the Adventure version and `guava` the version that `paper-api`'s
+POM names, `jetbrains-annotations` the version `adventure-api`'s POM names, and `voicechat-api` the Simple
+Voice Chat plugin. Changing the Java version means changing the JDK image and `--release` in the
+`Dockerfile`'s `repo-plugins` stage too.
 
 Worldgen datapacks (terrain and structures) shape the world only as it is first generated, and removing one
 from an existing world breaks what it generated. The comment at the top of `artifacts.lock` covers their
