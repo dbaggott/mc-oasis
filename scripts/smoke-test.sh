@@ -261,6 +261,26 @@ for rule in ${rules[@]+"${rules[@]}"}; do
   echo "${rule_name} ${rule_value} in ${dimension}"
 done
 
+# The scores, each read back. Every `scoreboard players set` line has to parse,
+# so a reworded one fails here instead of going unchecked.
+scores=()
+while read -r score; do
+  scores+=("$score")
+done < <(sed -n 's/^scoreboard players set \([^ ]*\) \([^ ]*\) \(-*[0-9]*\)\\n\\$/\1 \2 \3/p' "${repo_root}/Dockerfile")
+if ((${#scores[@]} != $(grep -c '^scoreboard players set ' "${repo_root}/Dockerfile"))); then
+  echo "error: a scoreboard line in the Dockerfile isn't 'scoreboard players set <holder> <objective> <value>'" >&2
+  exit 1
+fi
+for score in ${scores[@]+"${scores[@]}"}; do
+  read -r holder objective score_value <<<"$score"
+  reply="$(rcon scoreboard players get "$holder" "$objective")"
+  if ! grep --quiet --fixed-strings "${holder} has ${score_value} [" <<<"$reply"; then
+    echo "error: ${holder} ${objective} isn't ${score_value}: ${reply}" >&2
+    exit 1
+  fi
+  echo "${holder} ${objective} ${score_value}"
+done
+
 # A new world logs each datapack it enables, in load order, lowest precedence
 # first; a pack that fails to load stops the world loading, so the server never
 # gets to "Done". `datapack list` can't stand in for this: its reply is cut
