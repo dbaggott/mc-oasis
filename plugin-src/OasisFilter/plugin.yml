@@ -1,7 +1,7 @@
 name: OasisFilter
 version: 1.0.0
 main: com.oasissmp.filter.OasisFilter
-api-version: '26.2'
+api-version: '26.3'
 description: Blocks slurs in chat, commands, signs, books, item names and player names
 permissions:
   oasisfilter.notify:

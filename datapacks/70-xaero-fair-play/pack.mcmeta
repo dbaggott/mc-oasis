@@ -1,7 +1,7 @@
 {
   "pack": {
     "description": "Puts Xaero's Minimap and World Map in fair-play mode for every player",
-    "min_format": [107, 1],
-    "max_format": [107, 1]
+    "min_format": [121, 0],
+    "max_format": [121, 0]
   }
 }
