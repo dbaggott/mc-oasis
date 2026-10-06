@@ -57,6 +57,10 @@ ENV MOTD="§bThe Oasis SMP" \
     VIEW_DISTANCE=20 \
     SIMULATION_DISTANCE=15
 
+# Spawn is protected by the WorldGuard region set up in RCON_CMDS_STARTUP, so
+# vanilla's square of op-only blocks around it is off.
+ENV SPAWN_PROTECTION=0
+
 # For `rcon-cli` inside the container only; the port is never published. With
 # no RCON_PASSWORD the image generates a fresh one at every start.
 ENV ENABLE_RCON=true
@@ -96,6 +100,19 @@ ENV DATAPACKS=/datapacks \
 # 5,000 in the Nether; the End is unbounded. An odd width centered on a whole
 # block, which is what `center 0 0` gives (0.5, 0.5), runs the same number of
 # blocks either way from block 0.
+#
+# Everyone spawns on the spawn point itself: respawn_radius, the rule older
+# versions call spawnRadius, is 0.
+#
+# Spawn is on an island, and the WorldGuard region `spawn` covers all of it:
+# the island runs x -504 to -437 and z 854 to 928, the region 8 blocks of water
+# past that, from the bottom of the world to the top. The console has no
+# selection of its own, so the region is drawn from WorldEdit positions.
+# `define` fails once the region exists, and `redefine` then resets its area to
+# these bounds. `redefine` comes after the flags: it copies the region at once
+# but swaps the copy in later, in the background, so a flag set after it could
+# land on the region being replaced. With no owners or members, only ops can
+# build or break blocks in it; the flags cover what membership doesn't.
 ENV RCON_CMDS_STARTUP="\
 lp group default permission set clickvillagers.claim false\n\
 lp group default permission set clickvillagers.anchor false\n\
@@ -105,7 +122,26 @@ lp group default permission set clickvillagers.hopper false\n\
 execute in minecraft:overworld run worldborder center 0 0\n\
 execute in minecraft:overworld run worldborder set 20001\n\
 execute in minecraft:the_nether run worldborder center 0 0\n\
-execute in minecraft:the_nether run worldborder set 10001"
+execute in minecraft:the_nether run worldborder set 10001\n\
+setworldspawn -468 63 898\n\
+gamerule respawn_radius 0\n\
+//world world\n\
+//pos1 -512,-64,846\n\
+//pos2 -429,319,936\n\
+rg define -w world spawn\n\
+rg flag -w world spawn pvp allow\n\
+rg flag -w world spawn mob-spawning deny\n\
+rg flag -w world spawn creeper-explosion deny\n\
+rg flag -w world spawn tnt deny\n\
+rg flag -w world spawn other-explosion deny\n\
+rg flag -w world spawn ghast-fireball deny\n\
+rg flag -w world spawn fire-spread deny\n\
+rg flag -w world spawn lava-fire deny\n\
+rg flag -w world spawn lighter deny\n\
+rg flag -w world spawn enderman-grief deny\n\
+rg flag -w world spawn use allow\n\
+rg flag -w world spawn chest-access allow\n\
+rg redefine -w world spawn"
 
 COPY build/artifacts/server.jar /opt/server.jar
 COPY build/artifacts/plugins/ /plugins/

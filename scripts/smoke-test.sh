@@ -165,6 +165,30 @@ for border in ${borders[@]+"${borders[@]}"}; do
   echo "${dimension} border ${width} wide"
 done
 
+# The spawn point, by the reply the image logged for `setworldspawn`: no
+# command reports it.
+if ! read -r spawn_x spawn_y spawn_z < <(sed -n 's/^setworldspawn \(-*[0-9]*\) \(-*[0-9]*\) \(-*[0-9]*\)\\n\\$/\1 \2 \3/p' "${repo_root}/Dockerfile"); then
+  echo "error: no 'setworldspawn <x> <y> <z>' line in the Dockerfile" >&2
+  exit 1
+fi
+startup_replies="$(docker logs "$name" 2>&1 | sed 's/\x1b\[[0-9;]*m//g')"
+if ! grep --quiet --fixed-strings "[Rcon loop] Set the world spawn point to ${spawn_x}, ${spawn_y}, ${spawn_z} " <<<"$startup_replies"; then
+  echo "error: the world spawn wasn't set to ${spawn_x} ${spawn_y} ${spawn_z}" >&2
+  exit 1
+fi
+echo "world spawn at ${spawn_x} ${spawn_y} ${spawn_z}"
+
+if ! read -r respawn_radius < <(sed -n 's/^gamerule respawn_radius \([0-9]*\)\\n\\$/\1/p' "${repo_root}/Dockerfile"); then
+  echo "error: no 'gamerule respawn_radius <n>' line in the Dockerfile" >&2
+  exit 1
+fi
+reply="$(rcon "gamerule respawn_radius")"
+if ! grep --quiet --fixed-strings "currently set to: ${respawn_radius}" <<<"$reply"; then
+  echo "error: respawn_radius isn't ${respawn_radius}: ${reply}" >&2
+  exit 1
+fi
+echo "respawn radius ${respawn_radius}"
+
 # A new world logs each datapack it enables, in load order, lowest precedence
 # first; a pack that fails to load stops the world loading, so the server never
 # gets to "Done". `datapack list` can't stand in for this: its reply is cut
@@ -209,5 +233,44 @@ if [[ "$exit_code" != 0 ]]; then
   echo "error: the server exited ${exit_code} on stop, not 0" >&2
   exit 1
 fi
+
+# The spawn region, from the regions file WorldGuard saved on the way down.
+# WorldGuard adds and redefines regions in the background, so whether its reply
+# to the startup command reaches the log is a race; the saved file is not. Each
+# region's flags are saved on one line, which YAML may wrap, so the file is
+# read with its whitespace collapsed.
+regions="$(docker cp "${name}:/data/plugins/WorldGuard/worlds/world/regions.yml" - | tar -xO | tr -s ' \n' ' ')"
+corners=()
+while read -r corner; do
+  corners+=("$corner")
+done < <(sed -n 's/^\/\/pos[12] \(-*[0-9]*\),\(-*[0-9]*\),\(-*[0-9]*\)\\n\\$/\1 \2 \3/p' "${repo_root}/Dockerfile")
+if ((${#corners[@]} != 2)); then
+  echo "error: expected a '//pos1 x,y,z' and a '//pos2 x,y,z' line in the Dockerfile" >&2
+  exit 1
+fi
+read -r x1 y1 z1 <<<"${corners[0]}"
+read -r x2 y2 z2 <<<"${corners[1]}"
+bounds="min: {x: $((x1 < x2 ? x1 : x2)), y: $((y1 < y2 ? y1 : y2)), z: $((z1 < z2 ? z1 : z2))} max: {x: $((x1 > x2 ? x1 : x2)), y: $((y1 > y2 ? y1 : y2)), z: $((z1 > z2 ? z1 : z2))}"
+if ! grep --quiet --fixed-strings "spawn: ${bounds}" <<<"$regions"; then
+  echo "error: the spawn region isn't ${bounds}: ${regions}" >&2
+  exit 1
+fi
+flags=()
+while read -r flag; do
+  flags+=("$flag")
+done < <(sed -n 's/^rg flag -w world spawn \([a-z-]*\) \([a-z]*\)\\n\\$/\1 \2/p;s/^rg flag -w world spawn \([a-z-]*\) \([a-z]*\)"$/\1 \2/p' "${repo_root}/Dockerfile")
+if ((${#flags[@]} != $(grep -c '^rg flag ' "${repo_root}/Dockerfile"))); then
+  echo "error: an rg flag line in the Dockerfile isn't 'rg flag -w world spawn <flag> <value>'" >&2
+  exit 1
+fi
+region_flags="$(sed -n 's/.* spawn: .* flags: {\([^}]*\)}.*/\1/p' <<<"$regions")"
+for flag in ${flags[@]+"${flags[@]}"}; do
+  read -r flag_name flag_value <<<"$flag"
+  if ! grep --quiet --extended-regexp "(^|, )${flag_name}: ${flag_value}(,|$)" <<<"$region_flags"; then
+    echo "error: the spawn region doesn't have ${flag_name} ${flag_value}: ${region_flags}" >&2
+    exit 1
+  fi
+done
+echo "spawn region ${bounds}, with ${#flags[@]} flags"
 
 echo "smoke test passed"
