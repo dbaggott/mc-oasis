@@ -10,6 +10,9 @@ entities:
   behavior:
     only-merge-items-horizontally: true
   spawning:
+    # Entities with duplicate UUIDs are left alone, as in vanilla, and logged.
+    duplicate-uuid:
+      mode: WARN
     max-arrow-despawn-invulnerability: disabled
 hopper:
   cooldown-when-full: false
