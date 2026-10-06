@@ -118,7 +118,7 @@ execute in minecraft:overworld run worldborder center 0 0\n\
 execute in minecraft:overworld run worldborder set 20001\n\
 execute in minecraft:the_nether run worldborder center 0 0\n\
 execute in minecraft:the_nether run worldborder set 10001\n\
-setworldspawn -468 64 895\n\
+setworldspawn -468 63 898\n\
 //world world\n\
 //pos1 -512,-64,846\n\
 //pos2 -429,319,936\n\
