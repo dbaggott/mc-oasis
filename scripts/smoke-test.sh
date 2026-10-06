@@ -189,6 +189,19 @@ if ! grep --quiet --fixed-strings "currently set to: ${respawn_radius}" <<<"$rep
 fi
 echo "respawn radius ${respawn_radius}"
 
+# Frozen exactly when the Dockerfile's startup commands freeze the game.
+frozen_reply="$(rcon "tick query")"
+if grep --quiet '^tick freeze' "${repo_root}/Dockerfile"; then
+  if ! grep --quiet --fixed-strings "The game is frozen" <<<"$frozen_reply"; then
+    echo "error: the game isn't frozen: ${frozen_reply}" >&2
+    exit 1
+  fi
+  echo "game frozen"
+elif grep --quiet --fixed-strings "The game is frozen" <<<"$frozen_reply"; then
+  echo "error: the game is frozen, and the Dockerfile doesn't freeze it" >&2
+  exit 1
+fi
+
 # A new world logs each datapack it enables, in load order, lowest precedence
 # first; a pack that fails to load stops the world loading, so the server never
 # gets to "Done". `datapack list` can't stand in for this: its reply is cut
