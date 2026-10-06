@@ -101,6 +101,9 @@ ENV DATAPACKS=/datapacks \
 # block, which is what `center 0 0` gives (0.5, 0.5), runs the same number of
 # blocks either way from block 0.
 #
+# Everyone spawns on the spawn point itself: respawn_radius, the rule older
+# versions call spawnRadius, is 0.
+#
 # Spawn is on an island, and the WorldGuard region `spawn` covers all of it:
 # the island runs x -504 to -437 and z 854 to 928, the region 8 blocks of water
 # past that, from the bottom of the world to the top. The console has no
@@ -119,6 +122,7 @@ execute in minecraft:overworld run worldborder set 20001\n\
 execute in minecraft:the_nether run worldborder center 0 0\n\
 execute in minecraft:the_nether run worldborder set 10001\n\
 setworldspawn -468 63 898\n\
+gamerule respawn_radius 0\n\
 //world world\n\
 //pos1 -512,-64,846\n\
 //pos2 -429,319,936\n\
