@@ -101,6 +101,9 @@ ENV DATAPACKS=/datapacks \
 # block, which is what `center 0 0` gives (0.5, 0.5), runs the same number of
 # blocks either way from block 0.
 #
+# The game is frozen until the server opens to players. Nothing saves
+# `tick freeze`, so it is set at every start.
+#
 # Everyone spawns on the spawn point itself: respawn_radius, the rule older
 # versions call spawnRadius, is 0.
 #
@@ -141,7 +144,8 @@ rg flag -w world spawn lighter deny\n\
 rg flag -w world spawn enderman-grief deny\n\
 rg flag -w world spawn use allow\n\
 rg flag -w world spawn chest-access allow\n\
-rg redefine -w world spawn"
+rg redefine -w world spawn\n\
+tick freeze"
 
 COPY build/artifacts/server.jar /opt/server.jar
 COPY build/artifacts/plugins/ /plugins/
