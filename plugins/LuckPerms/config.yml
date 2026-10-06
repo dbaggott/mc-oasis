@@ -1,0 +1,14 @@
+# Groups and tracks are the repo's, in yaml-storage/. Players' group
+# memberships stay in the database on the world volume and are set in game.
+split-storage:
+  enabled: true
+  methods:
+    user: h2
+    group: yaml
+    track: yaml
+    uuid: h2
+    log: h2
+
+# Ops get only the LuckPerms commands their groups grant. The console, RCON
+# included, keeps all of them.
+commands-allow-op: false

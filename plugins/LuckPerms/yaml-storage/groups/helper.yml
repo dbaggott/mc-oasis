@@ -1,0 +1,21 @@
+# Chat moderation: mute and warn players, and read their records.
+name: helper
+permissions:
+- libertybans.commands
+- libertybans.list.history
+- libertybans.list.mutelist
+- libertybans.list.warns
+- libertybans.mute.do.notify
+- libertybans.mute.do.target.uuid
+- libertybans.mute.undo.notify
+- libertybans.mute.undo.target.uuid
+- libertybans.warn.do.notify
+- libertybans.warn.do.target.uuid
+- libertybans.warn.undo.notify
+- libertybans.warn.undo.target.uuid
+- weight.2
+parents:
+- default
+prefixes:
+- HELPER:
+    priority: 2
