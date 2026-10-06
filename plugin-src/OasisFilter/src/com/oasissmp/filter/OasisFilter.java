@@ -39,6 +39,11 @@ public final class OasisFilter extends JavaPlugin implements Listener {
     private static final int NOTICE_TEXT_LIMIT = 256;
     private static final Component REFUSAL =
             Component.text("That has a word that isn't allowed here.", NamedTextColor.RED);
+    private static final Component MESSAGE_REFUSAL = Component.text(
+            "Your message wasn't sent. Some words put people down for who they are, and this"
+                    + " looks like it might be one of them. We want everyone to feel welcome here."
+                    + " Want to try saying it differently?",
+            NamedTextColor.RED);
 
     private WordFilter filter;
 
@@ -57,7 +62,7 @@ public final class OasisFilter extends JavaPlugin implements Listener {
         String text = plainText(Stream.of(event.message()));
         if (filter.blocks(text)) {
             event.setCancelled(true);
-            refuse(event.getPlayer(), "chat", text);
+            refuse(event.getPlayer(), MESSAGE_REFUSAL, "chat", text);
         }
     }
 
@@ -66,7 +71,7 @@ public final class OasisFilter extends JavaPlugin implements Listener {
         String text = event.getMessage();
         if (filter.blocks(text)) {
             event.setCancelled(true);
-            refuse(event.getPlayer(), "a command", text);
+            refuse(event.getPlayer(), MESSAGE_REFUSAL, "a command", text);
         }
     }
 
@@ -75,7 +80,7 @@ public final class OasisFilter extends JavaPlugin implements Listener {
         String text = plainText(event.lines().stream());
         if (blocksAcrossLines(text)) {
             event.setCancelled(true);
-            refuse(event.getPlayer(), "a sign", text);
+            refuse(event.getPlayer(), REFUSAL, "a sign", text);
         }
     }
 
@@ -85,7 +90,7 @@ public final class OasisFilter extends JavaPlugin implements Listener {
         String text = plainText(Stream.concat(Stream.ofNullable(book.title()), book.pages().stream()));
         if (blocksAcrossLines(text)) {
             event.setCancelled(true);
-            refuse(event.getPlayer(), "a book", text);
+            refuse(event.getPlayer(), REFUSAL, "a book", text);
         }
     }
 
@@ -98,7 +103,7 @@ public final class OasisFilter extends JavaPlugin implements Listener {
         String text = plainText(Stream.of(name));
         if (filter.blocks(text)) {
             event.setCancelled(true);
-            refuse(event.getPlayer(), "a name tag", text);
+            refuse(event.getPlayer(), REFUSAL, "a name tag", text);
         }
     }
 
@@ -124,8 +129,8 @@ public final class OasisFilter extends JavaPlugin implements Listener {
         }
     }
 
-    private void refuse(Player player, String where, String text) {
-        ((Audience) player).sendMessage(REFUSAL);
+    private void refuse(Player player, Component refusal, String where, String text) {
+        ((Audience) player).sendMessage(refusal);
         report(player.getName(), where, text);
     }
 
