@@ -434,4 +434,28 @@ for flag in ${flags[@]+"${flags[@]}"}; do
 done
 echo "spawn region ${bounds}, with ${#flags[@]} flags"
 
+# A group file the repo doesn't have, left on the world volume as a group
+# deleted from the repo would be, is gone once the server starts again.
+stale_group=/data/plugins/LuckPerms/yaml-storage/groups/smoke-stale.yml
+stale_dir="$(mktemp -d)"
+cp "${repo_root}/plugins/LuckPerms/yaml-storage/groups/default.yml" "${stale_dir}/$(basename "$stale_group")"
+COPYFILE_DISABLE=1 tar -c --no-xattrs -C "$stale_dir" "$(basename "$stale_group")" | docker cp - "${name}:$(dirname "$stale_group")"
+rm -r "$stale_dir"
+restarted_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+docker start "$name" >/dev/null
+deadline=$((SECONDS + 120))
+until grep --quiet --fixed-strings 'Copying any plugins from' <<<"$(docker logs --since "$restarted_at" "$name" 2>&1)"; do
+  if ((SECONDS >= deadline)); then
+    echo "error: the restarted server didn't copy its plugins within 120s" >&2
+    exit 1
+  fi
+  sleep 2
+done
+if docker exec --user 1000 "$name" test -e "$stale_group"; then
+  echo "error: ${stale_group} survived a restart" >&2
+  exit 1
+fi
+docker stop --time "$stop_timeout_seconds" "$name" >/dev/null
+echo "a LuckPerms group the repo doesn't have is removed at start"
+
 echo "smoke test passed"

@@ -9,7 +9,9 @@ permissions:
 - libertybans.mute.do.target.uuid
 - libertybans.mute.undo.notify
 - libertybans.mute.undo.target.uuid
+- libertybans.warn.do.notify
 - libertybans.warn.do.target.uuid
+- libertybans.warn.undo.notify
 - libertybans.warn.undo.target.uuid
 - weight.2
 parents:
