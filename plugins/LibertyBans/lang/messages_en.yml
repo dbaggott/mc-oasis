@@ -1,0 +1,5 @@
+# IP addresses in LibertyBans' messages, /alts included, are hidden from staff
+# without libertybans.admin.viewips: the owners have it.
+formatting:
+  victim-display:
+    censor-ip-addresses: true
