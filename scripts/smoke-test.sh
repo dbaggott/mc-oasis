@@ -144,24 +144,25 @@ if ((${#denied[@]} > 0)); then
   echo "denied to every player: ${denied[*]}"
 fi
 
-# The game rules, by what `gamerule <rule>` reports. Every `gamerule` line has
-# to parse, so a reworded one fails here instead of going unchecked.
+# The game rules, by what `gamerule <rule>` reports in each dimension. Every
+# `gamerule` line has to parse, so a reworded one fails here instead of going
+# unchecked.
 rules=()
 while read -r rule; do
   rules+=("$rule")
-done < <(sed -n 's/^gamerule \([a-z_]*\) \([a-z0-9]*\)\\n\\$/\1 \2/p' "${repo_root}/Dockerfile")
-if ((${#rules[@]} != $(grep -c '^gamerule ' "${repo_root}/Dockerfile"))); then
-  echo "error: a gamerule line in the Dockerfile isn't 'gamerule <rule> <value>'" >&2
+done < <(sed -n 's/^execute in minecraft:\([a-z_]*\) run gamerule \([a-z_]*\) \([a-z0-9]*\)\\n\\$/\1 \2 \3/p' "${repo_root}/Dockerfile")
+if ((${#rules[@]} != $(grep -c 'gamerule ' "${repo_root}/Dockerfile"))); then
+  echo "error: a gamerule line in the Dockerfile isn't 'execute in minecraft:<dimension> run gamerule <rule> <value>'" >&2
   exit 1
 fi
 for rule in ${rules[@]+"${rules[@]}"}; do
-  read -r rule_name value <<<"$rule"
-  reply="$(rcon "gamerule ${rule_name}")"
+  read -r dimension rule_name value <<<"$rule"
+  reply="$(rcon "execute in minecraft:${dimension} run gamerule ${rule_name}")"
   if ! grep --quiet --fixed-strings "is currently set to: ${value}" <<<"$reply"; then
-    echo "error: ${rule_name} isn't ${value}: ${reply}" >&2
+    echo "error: ${rule_name} isn't ${value} in the ${dimension}: ${reply}" >&2
     exit 1
   fi
-  echo "${rule_name} ${value}"
+  echo "${dimension} ${rule_name} ${value}"
 done
 
 # The world borders, by width; `worldborder get` doesn't report the center.

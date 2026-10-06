@@ -98,9 +98,12 @@ ENV DATAPACKS=/datapacks \
 # blocks either way from block 0.
 #
 # log_admin_commands off keeps commands' results, such as a command block's,
-# out of the server log.
+# out of the server log. Paper keeps game rules per dimension, so each is set
+# in all three.
 ENV RCON_CMDS_STARTUP="\
-gamerule log_admin_commands false\n\
+execute in minecraft:overworld run gamerule log_admin_commands false\n\
+execute in minecraft:the_nether run gamerule log_admin_commands false\n\
+execute in minecraft:the_end run gamerule log_admin_commands false\n\
 lp group default permission set clickvillagers.claim false\n\
 lp group default permission set clickvillagers.anchor false\n\
 lp group default permission set clickvillagers.partner false\n\
