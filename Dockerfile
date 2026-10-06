@@ -98,8 +98,7 @@ ENV DATAPACKS=/datapacks \
 # blocks either way from block 0.
 #
 # log_admin_commands off keeps commands' results, such as a command block's,
-# out of the server log. What ops see in chat is command_block_output and
-# send_command_feedback, left as they are.
+# out of the server log.
 ENV RCON_CMDS_STARTUP="\
 gamerule log_admin_commands false\n\
 lp group default permission set clickvillagers.claim false\n\
