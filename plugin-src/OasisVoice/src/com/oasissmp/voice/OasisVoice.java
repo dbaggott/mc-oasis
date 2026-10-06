@@ -22,7 +22,7 @@ import org.bukkit.plugin.java.JavaPlugin;
  */
 public final class OasisVoice extends JavaPlugin implements VoicechatPlugin {
 
-    static final String GROUP_NAME = "Oasis";
+    static final String GROUP_NAME = "Oasis Group VC";
 
     private final UUID groupId = UUID.randomUUID();
 
