@@ -36,6 +36,16 @@ RUN set -e; mkdir /out; cd /src; for plugin in */; do \
       jar --create --file "/out/${plugin}.jar" -C "/classes/${plugin}" .; \
     done
 
+# LibertyBans' LuckPerms exemption add-on, taken from inside the pinned
+# LibertyBans jar so it is always the version of the plugin it runs in, under
+# the name LibertyBans' own `addon install` gives it.
+FROM python:3.14-alpine@sha256:f6a589d43c42b9e7f7dc67a12d37132491f362859a5d750607710cc56da3bc72 AS libertybans-addons
+COPY build/artifacts/plugins/LibertyBans.jar /LibertyBans.jar
+RUN mkdir -p /out/LibertyBans/addons \
+    && unzip -p /LibertyBans.jar dependencies/addon-jars/addon-exemption-luckperms.jar \
+      > /out/LibertyBans/addons/addon-exemption-luckperms.jar \
+    && test -s /out/LibertyBans/addons/addon-exemption-luckperms.jar
+
 # A release tag for the image's scripts, java25 because Minecraft 26.2 requires
 # Java 25, and the multi-arch digest so a re-pushed tag can't change it.
 FROM itzg/minecraft-server:2026.9.2-java25@sha256:de5d1b1a83eba576f6c8a688fac2a3523ce457724cdebc8ea48d7818b74cdf6e
@@ -172,6 +182,7 @@ COPY build/artifacts/server.jar /opt/server.jar
 COPY build/artifacts/plugins/ /plugins/
 # The repo's own plugins, built in the repo-plugins stage.
 COPY --from=repo-plugins /out/ /plugins/
+COPY --from=libertybans-addons /out/ /plugins/
 # Plugin configs the repo owns, one folder per plugin by its declared name.
 # LuckPerms' groups and tracks are files here; which group each player is in
 # stays in its database on the world volume.

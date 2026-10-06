@@ -150,13 +150,10 @@ until grep --quiet --fixed-strings 'INFO]: Done (' <<<"$(docker logs "$reference
   fi
   sleep 5
 done
-config_value() {
-  docker exec --user 1000 "$1" mc-image-helper yaml-path --file "/data/$2" "$3" 2>/dev/null
-}
-config_settings=0
-while read -r file; do
-  config="${repo_root}/data/${file}"
-  if ! settings="$(awk '
+# Every setting in a YAML file of nested maps of `key: value` at two-space
+# indents, as a yaml-path and its value, a tab between; fails on anything else.
+yaml_settings() {
+  awk '
     /^[[:space:]]*(#|$)/ { next }
     !/^( {2})*[A-Za-z0-9_-]+:( .*)?$/ { exit 1 }
     {
@@ -168,7 +165,15 @@ while read -r file; do
       path = "$"
       for (i = 0; i <= depth; i++) path = path "[\x27" keys[i] "\x27]"
       print path "\t" value
-    }' "$config")"; then
+    }' "$1"
+}
+config_value() {
+  docker exec --user 1000 "$1" mc-image-helper yaml-path --file "/data/$2" "$3" 2>/dev/null
+}
+config_settings=0
+while read -r file; do
+  config="${repo_root}/data/${file}"
+  if ! settings="$(yaml_settings "$config")"; then
     echo "error: ${file} isn't nested 'key: value' maps at two-space indents" >&2
     exit 1
   fi
@@ -202,6 +207,31 @@ while read -r file; do
   done < <(grep --invert-match --extended-regexp '^[[:space:]]*(#|$)' "${repo_root}/plugins/${file}")
 done < <(cd "${repo_root}/plugins" && find . -type f -name '*.properties' | sed 's|^\./||' | LC_ALL=C sort)
 echo "${properties_settings} plugin properties in place"
+
+# The repo's LibertyBans settings, each read back from the file LibertyBans
+# rewrote on loading it. The repo's files leave keys out, so LibertyBans
+# rewrites each one in full, keeping the keys it knows and dropping any other.
+libertybans_settings=0
+while read -r file; do
+  if ! settings="$(yaml_settings "${repo_root}/plugins/LibertyBans/${file}")"; then
+    echo "error: plugins/LibertyBans/${file} isn't nested 'key: value' maps at two-space indents" >&2
+    exit 1
+  fi
+  while IFS=$'\t' read -r path value; do
+    live="$(config_value "$name" "plugins/LibertyBans/${file}" "$path")" || live="(missing)"
+    if [[ "$live" != "$value" ]]; then
+      echo "error: plugins/LibertyBans/${file} ${path} is ${live}, not ${value}" >&2
+      exit 1
+    fi
+    libertybans_settings=$((libertybans_settings + 1))
+  done <<<"$settings"
+done < <(cd "${repo_root}/plugins/LibertyBans" && find . -type f -name '*.yml' | sed 's|^\./||' | LC_ALL=C sort)
+echo "${libertybans_settings} LibertyBans settings in place"
+if ! grep --quiet --fixed-strings 'ExemptionLuckPermsAddon] LuckPerms detected and hooked' <<<"$logs"; then
+  echo "error: LibertyBans' LuckPerms exemption add-on didn't hook into LuckPerms" >&2
+  exit 1
+fi
+echo "LibertyBans exempts staff by LuckPerms group weight"
 
 # The Dockerfile's RCON_CMDS_STARTUP. The image runs them through RCON once the
 # server listens and only logs a failure, so what they set is checked below.
