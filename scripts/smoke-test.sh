@@ -165,6 +165,35 @@ for border in ${borders[@]+"${borders[@]}"}; do
   echo "${dimension} border ${width} wide"
 done
 
+# The spawn point and the spawn region, by the replies the image logged for
+# them: WorldGuard saves regions only later, and the vanilla spawn point has no
+# command that reports it. Every `rg flag` line is checked, so a misspelled flag,
+# which WorldGuard refuses, fails here.
+startup_replies="$(docker logs "$name" 2>&1 | sed 's/\x1b\[[0-9;]*m//g')"
+expect_reply() {
+  if ! grep --quiet --fixed-strings "[Rcon loop] $1" <<<"$startup_replies"; then
+    echo "error: no startup reply '$1'" >&2
+    exit 1
+  fi
+}
+read -r spawn_x spawn_y spawn_z < <(sed -n 's/^setworldspawn \(-*[0-9]*\) \(-*[0-9]*\) \(-*[0-9]*\).*/\1 \2 \3/p' "${repo_root}/Dockerfile")
+expect_reply "Set the world spawn point to ${spawn_x}, ${spawn_y}, ${spawn_z} "
+echo "world spawn at ${spawn_x} ${spawn_y} ${spawn_z}"
+expect_reply "Region 'spawn' has been updated with a new area."
+flags=()
+while read -r flag; do
+  flags+=("$flag")
+done < <(sed -n 's/^rg flag -w world spawn \([a-z-]*\) \([a-z]*\).*/\1 \2/p' "${repo_root}/Dockerfile")
+if ((${#flags[@]} != $(grep -c '^rg flag ' "${repo_root}/Dockerfile"))); then
+  echo "error: an rg flag line in the Dockerfile isn't 'rg flag -w world spawn <flag> <value>'" >&2
+  exit 1
+fi
+for flag in ${flags[@]+"${flags[@]}"}; do
+  read -r flag_name flag_value <<<"$flag"
+  expect_reply "Region flag ${flag_name} set on 'spawn' to '${flag_value^^}'."
+done
+echo "spawn region defined, with ${#flags[@]} flags"
+
 # A new world logs each datapack it enables, in load order, lowest precedence
 # first; a pack that fails to load stops the world loading, so the server never
 # gets to "Done". `datapack list` can't stand in for this: its reply is cut
