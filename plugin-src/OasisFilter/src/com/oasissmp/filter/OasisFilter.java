@@ -54,7 +54,7 @@ public final class OasisFilter extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onChat(AsyncChatEvent event) {
-        String text = event.signedMessage().message();
+        String text = plainText(Stream.of(event.message()));
         if (filter.blocks(text)) {
             event.setCancelled(true);
             refuse(event.getPlayer(), "chat", text);

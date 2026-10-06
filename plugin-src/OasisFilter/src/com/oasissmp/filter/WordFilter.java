@@ -13,9 +13,10 @@ import java.util.Set;
 /**
  * Finds blocked words in text, however a player disguises them.
  *
- * <p>Text is first reduced to lowercase words of a-z: accents are dropped,
- * digits, symbols and Cyrillic or Greek letters that imitate a letter become
- * that letter, and every other character separates words. Letters spelled out
+ * <p>Text is first reduced to lowercase words of a-z: accents and invisible
+ * characters are dropped, digits, symbols and Cyrillic or Greek letters that
+ * imitate a letter become that letter, and every other character separates
+ * words. Letters spelled out
  * one at a time, "n i g g e r" or "n.i.g.g.e.r", are joined back into one word.
  * A blocked term matches with any of its letters repeated, so "niiigger"
  * matches "nigger", though "niger" doesn't.
@@ -149,7 +150,7 @@ final class WordFilter {
     }
 
     /** Lowercase a-z for every letter, and a space for every separator. */
-    static String normalize(String text) {
+    private static String normalize(String text) {
         int[] codePoints = Normalizer.normalize(text, Normalizer.Form.NFKD).codePoints()
                 .filter(codePoint -> !isIgnored(codePoint))
                 .map(Character::toLowerCase)
