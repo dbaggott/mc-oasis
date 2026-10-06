@@ -27,6 +27,7 @@ FROM eclipse-temurin:25-jdk-alpine@sha256:3fd2d245c4e0eba615fe366a71b8bd25f5db71
 COPY build/artifacts/libraries/ /libraries/
 COPY plugin-src/ /src/
 RUN set -e; mkdir /out; cd /src; for plugin in */; do \
+      [ -d "$plugin" ] || continue; \
       plugin="${plugin%/}"; \
       mkdir -p "/classes/${plugin}"; \
       javac --release 25 -Xlint:all,-classfile -Werror -cp '/libraries/*' \
@@ -180,8 +181,7 @@ rg redefine -w world spawn"
 
 COPY build/artifacts/server.jar /opt/server.jar
 COPY build/artifacts/plugins/ /plugins/
-# OasisVoice makes the one voice chat group, which is open, and refuses any
-# other, so voice is by proximity except among the group's members.
+# The repo's own plugins, built in the repo-plugins stage.
 COPY --from=repo-plugins /out/ /plugins/
 # Plugin configs the repo owns, one folder per plugin by its declared name.
 # Simple Voice Chat's turns recording off: some players are minors.

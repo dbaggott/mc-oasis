@@ -60,7 +60,8 @@ if grep --quiet --fixed-strings ' ERROR]: ' <<<"$logs"; then
   echo "error: the server logged errors while starting" >&2
   exit 1
 fi
-# The plugins in artifacts.lock, and the repo's own: plugin-src/<name>/.
+# The plugins in artifacts.lock, and the repo's own by the name in each
+# plugin-src/*/plugin.yml.
 failed=()
 while read -r plugin; do
   if ! grep --quiet --fixed-strings "Enabling ${plugin} v" <<<"$logs" \
@@ -71,7 +72,9 @@ done < <(
   while read -r kind plugin _ || [[ -n "${kind:-}" ]]; do
     if [[ "${kind:-}" == plugin ]]; then echo "$plugin"; fi
   done <"${repo_root}/artifacts.lock"
-  for dir in "${repo_root}"/plugin-src/*/; do basename "$dir"; done
+  for descriptor in "${repo_root}"/plugin-src/*/plugin.yml; do
+    if [[ -f "$descriptor" ]]; then sed -n 's/^name: *//p' "$descriptor"; fi
+  done
 )
 if ((${#failed[@]} > 0)); then
   grep --extended-regexp --after-context=5 'ERROR\]|Error occurred while enabling' <<<"$logs" | head -n 60 || true
@@ -84,7 +87,8 @@ echo "every plugin in artifacts.lock and plugin-src enabled"
 # server after the plugins enable, and the group is made then.
 deadline=$((SECONDS + 60))
 until grep --quiet --fixed-strings '[OasisVoice] Created the open voice group ' <<<"$(docker logs "$name" 2>&1)"; do
-  if ((SECONDS >= deadline)); then
+  if [[ "$(docker inspect --format '{{.State.Running}}' "$name")" != true ]] || ((SECONDS >= deadline)); then
+    docker logs "$name" 2>&1 | grep --after-context=10 --fixed-strings 'OasisVoice' | tail -n 60 || true
     echo "error: OasisVoice didn't create the voice chat group within 60s of 'Done ('" >&2
     exit 1
   fi
@@ -189,7 +193,7 @@ properties_settings=0
 while read -r file; do
   live="$(docker exec --user 1000 "$name" cat "/data/plugins/${file}")"
   while read -r line; do
-    if ! grep --quiet --line-regexp --fixed-strings "$line" <<<"$live"; then
+    if ! grep --quiet --line-regexp --fixed-strings --regexp="$line" <<<"$live"; then
       echo "error: plugins/${file} doesn't have ${line}" >&2
       exit 1
     fi

@@ -7,6 +7,7 @@ import de.maxhenkel.voicechat.api.VoicechatPlugin;
 import de.maxhenkel.voicechat.api.events.CreateGroupEvent;
 import de.maxhenkel.voicechat.api.events.EventRegistration;
 import de.maxhenkel.voicechat.api.events.VoicechatServerStartedEvent;
+import java.util.UUID;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -22,6 +23,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class OasisVoice extends JavaPlugin implements VoicechatPlugin {
 
     static final String GROUP_NAME = "Oasis";
+
+    private final UUID groupId = UUID.randomUUID();
 
     @Override
     public void onEnable() {
@@ -41,27 +44,36 @@ public final class OasisVoice extends JavaPlugin implements VoicechatPlugin {
     @Override
     public void registerEvents(EventRegistration registration) {
         registration.registerEvent(VoicechatServerStartedEvent.class, this::createGroup);
-        registration.registerEvent(CreateGroupEvent.class, this::refusePlayerGroup);
+        registration.registerEvent(CreateGroupEvent.class, this::refuseOtherGroups);
     }
 
     private void createGroup(VoicechatServerStartedEvent event) {
         event.getVoicechat().groupBuilder()
+                .setId(groupId)
                 .setName(GROUP_NAME)
                 .setType(Group.Type.OPEN)
                 .setPersistent(true)
                 .build();
+        // build() adds the group only if the voice server is running and no
+        // listener cancels it, and says nothing either way.
+        if (event.getVoicechat().getGroup(groupId) == null) {
+            getLogger().severe("The open voice group " + GROUP_NAME + " wasn't created");
+            return;
+        }
         getLogger().info("Created the open voice group " + GROUP_NAME);
     }
 
-    // A group a player creates comes with their connection; this plugin's own
-    // comes with none. Simple Voice Chat tells the player nothing when the
-    // creation is cancelled, so this does.
-    private void refusePlayerGroup(CreateGroupEvent event) {
+    // Simple Voice Chat tells a player nothing when their group is refused, so
+    // this does. A group made by another plugin comes with no connection.
+    private void refuseOtherGroups(CreateGroupEvent event) {
+        if (groupId.equals(event.getGroup().getId())) {
+            return;
+        }
+        event.cancel();
         VoicechatConnection connection = event.getConnection();
         if (connection == null) {
             return;
         }
-        event.cancel();
         Audience player = getServer().getPlayer(connection.getPlayer().getUuid());
         if (player != null) {
             player.sendMessage(Component.text(
