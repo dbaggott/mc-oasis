@@ -26,9 +26,9 @@
 #
 # Changing a line is a version bump: update version, sha256 and url together.
 
-server  paper          26.2-129      b1d8f6bfa1b6101fa8e947b53041cb3bdf5540e7b83b6547ca19ba7edefeb083  https://fill-data.papermc.io/v1/objects/b1d8f6bfa1b6101fa8e947b53041cb3bdf5540e7b83b6547ca19ba7edefeb083/paper-26.2-129.jar
+server  paper          26.3-159      2224a0b2b6b096ff4c429ad926e97977213e4f633e90cb3a49b5eeb82f94bab0  https://fill-data.papermc.io/v1/objects/2224a0b2b6b096ff4c429ad926e97977213e4f633e90cb3a49b5eeb82f94bab0/paper-26.3-159.jar
 
-plugin  Geyser-Spigot  2.11.3-1247   6fed2d9711e2db3c365508ec10db36d06a0199abd226159d23d57f82662fd7a6  https://download.geysermc.org/v2/projects/geyser/versions/2.11.3/builds/1247/downloads/spigot
+plugin  Geyser-Spigot  pr.6712-3070  41c3539e9338ac1f938dba8c0bb5a50dce53eaeffacd991d2aeb74e1aa12aece  https://download.geysermc.org/v2/projects/geyserpreview/versions/pr.6712/builds/3070/downloads/spigot
 plugin  floodgate      2.2.5-141     21570aff9ce17d6983928e8552777760e1ede5050026b04c686b0ae112e6fd7e  https://download.geysermc.org/v2/projects/floodgate/versions/2.2.5/builds/141/downloads/spigot
 plugin  Chunky         1.5.3         530d2c7430a96a39957391b7088be144daa3108f7665896d1c23aa8dd4af32f3  https://cdn.modrinth.com/data/fALzjamp/versions/MdY6JATr/Chunky-Bukkit-1.5.3.jar
 plugin  ViaVersion     5.12.0           c4d512fa9760fa41d17abaedde12aa1f4c9bde920d0a992fe0fc016962f126be  https://cdn.modrinth.com/data/P1OZGk5p/versions/FaishMnD/ViaVersion-5.12.0.jar
@@ -37,29 +37,29 @@ plugin  LuckPerms      v5.5.71-bukkit   49cecb66fa1fd22a133039a490e9c1e5095a238e
 plugin  ClickVillagers  paper-1.6.3      6cacfaa07f113e6ad5230d7efba5963dfb6a45d018196a186fa81d251bbab686  https://cdn.modrinth.com/data/BITzwT7B/versions/iMS3EoIW/ClickVillagers-paper-1.6.3.jar
 plugin  GrimAC         2.3.74-abb95b6   d33eed30bfd5c6eb54176b197c9c51018ba0916d7b056e0530ab183ac1a3d590  https://cdn.modrinth.com/data/LJNGWSvH/versions/YJEwvStg/grimac-bukkit-2.3.74-abb95b6.jar
 plugin  voicechat      bukkit-2.6.24    af3d4e2ad318d3065959248c1370ae32a619752cb4d2a4fec2f7a79b10067769  https://cdn.modrinth.com/data/9eGKb6K1/versions/EJth3OAr/voicechat-bukkit-2.6.24.jar
-plugin  WorldEdit      7.4.5            e5696a6d064b9969437a8888be91b0941148a28e0c3736de1554a00254a5d142  https://cdn.modrinth.com/data/1u6JkXh5/versions/F5ea2ov3/worldedit-bukkit-7.4.5.jar
+plugin  WorldEdit      7.4.6-beta-02    166365c44bad4cd916200b288cf391d3770e3197d1eca84ff74f3914d933e289  https://cdn.modrinth.com/data/1u6JkXh5/versions/J1eeOh6C/worldedit-bukkit-7.4.6-beta-02.jar
 plugin  WorldGuard     7.0.19           396df065f1cf38bab9878a0f53a776d5a085ebbf3c41813938b73f95d4eaca03  https://cdn.modrinth.com/data/DKY9btbd/versions/TtfwTyi6/worldguard-bukkit-7.0.19.jar
 plugin  TradeCycle     2.1.0            4ee533db5ef8241f58ebe8eff8befc02043142ea5879e26989fbf279fe0822d0  https://cdn.modrinth.com/data/GpyBM69F/versions/oYCeMLy6/TradeCycle-2.1.0.jar
 plugin  TAB            6.2.0            f94331947134242efa478b9b9bf04b29e37861721dee58c32b7ea57779aa735e  https://cdn.modrinth.com/data/gG7VFbG0/versions/UDraViyI/TAB%20v6.2.0.jar
 plugin  LibertyBans    1.1.4            57303df011ff49747856af4ed818546f19b5dd84b8c627a6666431d0df962634  https://cdn.modrinth.com/data/PgXAUxLZ/versions/7WLjonzv/LibertyBans_Release-1.1.4.jar
 
-datapack  10-tectonic                       3.0.25-datapack   cc925878fd40f2e01533f526d1684efa064eb4caaabb33d63fe0b3dbb5fb8640  https://cdn.modrinth.com/data/lWDHr9jE/versions/CmzMQNDL/tectonic-datapack-3.0.25.zip
-datapack  20-dungeons-and-taverns           5.3.2             4096cd6372e0f244efa0e85c4d884bd85afe665a84a050280acd483b3222b4f9  https://cdn.modrinth.com/data/tpehi7ww/versions/CS77UwHE/Dungeons%20and%20Taverns%20v5.3.2.zip
-datapack  30-dnt-ancient-city-overhaul      3.4               58d08fd6a8c5a746704954c7b30e9e111573443b7e402cebaeda6807239f521a  https://cdn.modrinth.com/data/DNuNq5bb/versions/CaqYtto5/DnT%20Ancient%20City%20Overhaul%20v3.4.zip
-datapack  30-dnt-desert-temple-overhaul     v2.1              e801c13e466fc73d3f3f0907754a7843cbfc59c38a79622db4724d3b6c409759  https://cdn.modrinth.com/data/7JTDDmRT/versions/tOWwOzy4/DnT%20Desert%20Temple%20Overhaul%20v2.1.zip
-datapack  30-dnt-mineshaft-overhaul         1.1               2ba666cafc4158373341fcb18a5da2b81ced4f8cee5ec2e33552d7fcd2bfa04a  https://cdn.modrinth.com/data/ozLFhOy3/versions/86yJFqzT/DnT%20Mineshaft%20Overhaul%20v1.1.zip
-datapack  30-dnt-nether-fortress-overhaul   v3.1              cc0eb3e575a1fb36b6a4bdf85386f3068e4d14f4637994baa0cec296c4cf935d  https://cdn.modrinth.com/data/8Dbnvm77/versions/3u94EXVg/DnT%20Nether%20Fortress%20Overhaul%20v3.1.zip
-datapack  30-dnt-ocean-monument-overhaul    2.2.1             dc8aaa6c12221fd25f255a8da2dd48afee5ff4b3667a453ec48f547b669a5b44  https://cdn.modrinth.com/data/z6GJ3ycD/versions/IX2JzD1k/DnT%20Ocean%20Monument%20Overhaul%20v2.2.1.zip
-datapack  30-dnt-pillager-outpost-overhaul  v3.3              98f2e572c851d69ac2eda61d6beefb10396fba28471c2f6a66212b8832186309  https://cdn.modrinth.com/data/QIt10I7z/versions/uAHOlrKb/DnT%20Pillager%20Outpost%20Overhaul%20v3.3.zip
-datapack  30-dnt-stronghold-overhaul        v2.4.0            535206b37b00151a44d495dcd1d769fc5301e85595261803f7a40bb7487cb35c  https://cdn.modrinth.com/data/rYocd2LE/versions/L1ylllq1/DnT%20Stronghold%20Overhaul%20v2.4.0.zip
-datapack  30-dnt-swamp-hut-overhaul         v2.3              0085e729f0f9bd65d001e63407bc5ca8a50529af6bc1681861c2a6b128fa9734  https://cdn.modrinth.com/data/nWSeFpQt/versions/t2gIpNuq/DnT%20Swamp%20Hut%20Overhaul%20v2.3.zip
-datapack  30-dnt-woodland-mansion-overhaul  2.1               638b37b86948be1dd348aedc91ec5650c6b73dd6165491b9a9908a2fb27349a3  https://cdn.modrinth.com/data/3GfxWFCy/versions/sIwi7RFy/DnT%20Woodland%20Mansion%20Overhual%20v2.1.zip
-datapack  40-dnt-enchant-disabler           4.4               7f439ce61e688bc76857ba633c2dd2de6fa6d1a0167c533a8bbe09ee76f14f36  https://cdn.modrinth.com/data/jr7t09l6/versions/cLq5AoVs/Enchant%20Disabler%20for%20DnT%205.3.0.zip
-datapack  50-bacap                          1.21              c71d1aa1a84dbe00a3f85a42144b46214c4669a3cccf07ff66631d28f16a99b2  https://cdn.modrinth.com/data/VoVJ47kN/versions/Y2zZ5eSs/BlazeandCave%27s%20Advancements%20Pack%201.21.zip
-datapack  51-bacaped                        2.9.2             6868ba9331356435c041a7bcb3b61f6883bd420535b69b1c6ac737f83ca5bc05  https://cdn.modrinth.com/data/Qx9yFN48/versions/Drxj6pcN/BACAP_Enhanced_Discoveries_2.9.2.zip
-datapack  60-players-drop-heads             107.1             300c62a6890beecdae1778d31c3ff82909256fdc2e855af92297554e92858c7b  https://cdn.modrinth.com/data/NU7qMnLN/versions/Nf8uzHHy/players-drop-heads-26.2-107.1.zip
+datapack  10-tectonic                       3.0.29-datapack   de17001f3aa97568b5868ce009c46a916f3c6b88de5b188ec9731b0f0994df92  https://cdn.modrinth.com/data/lWDHr9jE/versions/pxgiJaJp/tectonic-datapack-3.0.29.zip
+datapack  20-dungeons-and-taverns           6.0.2             fc0f1c85a105a491f9095e69cbb9f2edcaa9887b3a838152c2f40976320f3d9a  https://cdn.modrinth.com/data/tpehi7ww/versions/iqFWpMVO/Dungeons%20and%20Taverns%20v6.0.2.zip
+datapack  30-dnt-ancient-city-overhaul      3.5.1             60fd8fe0e27ee7147d7d140916e7f1e9d51f4f527c23d2f9480ab411b5d15324  https://cdn.modrinth.com/data/DNuNq5bb/versions/syRnsesB/DnT%20Ancient%20City%20Overhaul%203.5.1.zip
+datapack  30-dnt-desert-temple-overhaul     2.2               c143ae3d45911cf1e6303d624a895f9376bb6cbf774099bde927e83367b31be2  https://cdn.modrinth.com/data/7JTDDmRT/versions/7IBsU37o/DnT%20Desert%20Temple%20Overhaul%20v2.2.zip
+datapack  30-dnt-mineshaft-overhaul         2.0.1             f01ad0d4719a769f5db47d6b45fe2d8bef23ffa0a521b6d101dbc7a3388e255a  https://cdn.modrinth.com/data/ozLFhOy3/versions/rVEyRdCT/DnT%20Mineshaft%20Overhaul%202.0.1.zip
+datapack  30-dnt-nether-fortress-overhaul   3.2.1             0dd97409999e5be66bff1d9f57bc345728474d03756b965e9c724c691cf56328  https://cdn.modrinth.com/data/8Dbnvm77/versions/bzBC5QML/DnT%20Nether%20Fortress%20Overhaul%203.2.1.zip
+datapack  30-dnt-ocean-monument-overhaul    2.3               b3fbe5f09054463c78d2673ca40bb1d455d9bb98e243b5fe4ee1a68fab108c6e  https://cdn.modrinth.com/data/z6GJ3ycD/versions/JA7vBMbj/DnT%20Ocean%20Monument%20Overhaul%20v2.3.zip
+datapack  30-dnt-pillager-outpost-overhaul  3.4.2             2a12e7631b5487fa3d9e009e372943119f53f854faf3810f7b573ff239bff3e5  https://cdn.modrinth.com/data/QIt10I7z/versions/VVgeqtuj/DnT%20Pillager%20Outpost%20Overhaul%203.4.2.zip
+datapack  30-dnt-stronghold-overhaul        3.0.1             509469766ea3893c1dfdc121138c8a0b1033912b5a7d0364d00f6704b2e362aa  https://cdn.modrinth.com/data/rYocd2LE/versions/EMq9fV3X/DnT%20Stronghold%20Overhaul%203.0.1.zip
+datapack  30-dnt-swamp-hut-overhaul         2.4               cb84356bb33651dff8265af1a7f92aa3404148cd5f6557a228fd44cc2c627837  https://cdn.modrinth.com/data/nWSeFpQt/versions/xWY7cobI/DnT%20Swamp%20Hut%20Overhau%20v2.4.zip
+datapack  30-dnt-woodland-mansion-overhaul  2.2.1             57d2b69e30ecb45ac25d6cdcebb1100ec0387707ab6c76efa433fba27eb91308  https://cdn.modrinth.com/data/3GfxWFCy/versions/RlEVYM4i/DnT%20Woodland%20Mansion%20Overhaul%202.2.1.zip
+datapack  40-dnt-enchant-disabler           5.0               a7395ee0325a0286f985403af61f7e9a1da62fae0f72894441899231316ccca1  https://cdn.modrinth.com/data/jr7t09l6/versions/I1LiTjeh/Enchant%20Disabler%20for%20DnT%206.0.zip
+datapack  50-bacap                          1.21.1            ce391fe46846d7fb357b7fbdd42387d260ae1a9516c601d1ba9ab09c584971d7  https://cdn.modrinth.com/data/VoVJ47kN/versions/YPEkY5bZ/BlazeandCave%27s%20Advancements%20Pack%201.21.1.zip
+datapack  51-bacaped                        2.9.4             1e703448f72f83cdc37855efee887dc95fb4f7207e4d4d7fc07ac61aadb75fab  https://cdn.modrinth.com/data/Qx9yFN48/versions/5UgV7jwJ/BACAP_Enhanced_Discoveries_2.9.4.zip
+datapack  60-players-drop-heads             1.1.0             4899f5a04760c5787e5e9d944518d25100794de6ac8ec6c2f3e15e02a6d2770f  https://cdn.modrinth.com/data/NU7qMnLN/versions/twuiZTiF/players-drop-heads-1.1.0-mc26.3.zip
 
-library  paper-api                        26.2.build.129-stable  f469d110d164a4ee7cb2428710cd6e433108eca8d8e0aebd6452547f408469a6  https://repo.papermc.io/repository/maven-public/io/papermc/paper/paper-api/26.2.build.129-stable/paper-api-26.2.build.129-stable.jar
+library  paper-api                        26.3.build.159-beta    7ab1b5133b5702acb78a120440e21eb924a181b99b1fd2785cfa649932ffe54f  https://repo.papermc.io/repository/maven-public/io/papermc/paper/paper-api/26.3.build.159-beta/paper-api-26.3.build.159-beta.jar
 library  adventure-api                    5.2.0                  7e52fe7190be3e87b3b3f71712cfa12315fcd27109f302a7b440c12f01fae827  https://repo1.maven.org/maven2/net/kyori/adventure-api/5.2.0/adventure-api-5.2.0.jar
 library  adventure-key                    5.2.0                  0184d173200e2eef8fbc791f622d1d58fd459f8930c616b5a4fe79e83eda6c55  https://repo1.maven.org/maven2/net/kyori/adventure-key/5.2.0/adventure-key-5.2.0.jar
 library  adventure-text-serializer-plain  5.2.0                  f6424cc038a631b79cc4b74b6b353d5d007c99b38f9be482e0c2448a00eecd21  https://repo1.maven.org/maven2/net/kyori/adventure-text-serializer-plain/5.2.0/adventure-text-serializer-plain-5.2.0.jar
