@@ -1,0 +1,92 @@
+# Blocked as whole words: "spic" doesn't block "spicy". Plurals and other
+# forms are entries of their own. An entry of several words matches them
+# written apart or together. Disguised, repeated and spelled-out letters still
+# match; WordFilter in plugin-src/OasisFilter says how text is read.
+
+# Race and ethnicity
+beaner
+beaners
+chinaman
+chinamen
+ching chong
+chink
+chinks
+coon
+coons
+dago
+dagos
+darkie
+darkies
+darky
+golliwog
+golliwogs
+gook
+gooks
+half breed
+half breeds
+jap
+japs
+jigaboo
+jigaboos
+jungle bunnies
+jungle bunny
+kike
+kikes
+kneegrow
+kneegrows
+niga
+nigas
+nibba
+nibbas
+paki
+pakis
+pickaninnies
+pickaninny
+porch monkey
+porch monkeys
+raghead
+ragheads
+redskin
+redskins
+slant eye
+slant eyes
+spic
+spics
+squaw
+squaws
+towelhead
+towelheads
+wetback
+wetbacks
+wog
+wogs
+wop
+wops
+zipperhead
+zipperheads
+
+# Gender
+cunt
+cunts
+cunty
+skank
+skanks
+twat
+twats
+
+# Sexual orientation and gender identity
+batty boy
+batty man
+dyke
+dykes
+fag
+fagot
+fagots
+fags
+lesbo
+poofter
+poofters
+shemale
+shemales
+trannies
+tranny

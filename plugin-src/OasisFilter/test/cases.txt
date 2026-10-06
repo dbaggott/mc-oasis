@@ -1,0 +1,105 @@
+# Text the filter must block or must let through, checked against the word
+# lists in plugins/OasisFilter at every image build. One case per line:
+# "block <text>" or "pass <text>".
+
+# Plain
+block nigger
+block you nigger
+block NIGGER
+block spic
+block fag
+block you're a bitch
+block kike
+block tranny
+
+# Plurals and longer words a fragment is part of
+block niggers
+block nigga
+block sandnigger
+block faggot
+block bitches
+block slutty
+
+# Disguised letters
+block n1gg3r
+block n!gger lol
+block n|gger
+block niqqa
+block ni66a
+block $pic
+block f@g
+block b1tch
+block nïggér
+# Cyrillic і, о and а
+block nіgger
+block cооn
+block fаg
+# Fullwidth
+block ｎｉｇｇｅｒ
+# A zero-width space inside the word
+block nig​ger
+
+# '!' only stands for an 'i' between letters
+block spic!
+block fag!!
+
+# Repeated letters
+block niiiiigger
+block faaaaag
+block spiccc
+
+# Spelled out
+block n i g g e r
+block n.i.g.g.e.r
+block n-i-g-g-e-r
+block f a g
+block u r a f a g
+block s p i c
+
+# Several words written apart and together
+block porch monkey
+block porchmonkey
+block porch   monkey
+block p o r c h m o n k e y
+
+# Innocent words containing a term, or near one
+pass Niger
+pass Nigeria is in Africa
+pass niggle
+pass don't snigger at me
+pass that's a niggling problem
+pass spicy food
+pass a spice rack
+pass Scunthorpe
+pass raccoon
+pass cocoon
+pass Japan
+pass japanese
+pass Pakistan
+pass Santiago
+pass squawk
+pass swop
+pass Wogan
+pass assassin
+pass classic
+pass therapist
+
+# Innocent phrases whose words run together into a term
+pass who reads this
+pass is luther here
+pass I like your red skin
+pass if a group goes
+pass did you get it
+pass bit chunky
+
+# Minecraft words
+pass hoe
+pass diamond hoe
+pass slime
+pass nether
+pass witch
+pass ghast
+
+# An allowed word only counts as written, not disguised
+block sniiigger
+block s nigger

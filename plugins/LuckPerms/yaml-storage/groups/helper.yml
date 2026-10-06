@@ -1,4 +1,5 @@
-# Chat moderation: mute and warn players, and read their records.
+# Chat moderation: mute and warn players, read their records, and see what
+# the chat filter blocks.
 name: helper
 permissions:
 - libertybans.commands
@@ -13,6 +14,7 @@ permissions:
 - libertybans.warn.do.target.uuid
 - libertybans.warn.undo.notify
 - libertybans.warn.undo.target.uuid
+- oasisfilter.notify
 - weight.2
 parents:
 - default

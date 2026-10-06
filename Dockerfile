@@ -23,15 +23,29 @@ RUN mkdir /out && cd /src && for pack in */; do \
 # The repo's own plugins, one folder each under plugin-src/ holding its
 # plugin.yml and its Java sources under src/, compiled against the libraries in
 # artifacts.lock into <folder>.jar. The JDK's major version is the server's.
+# A plugin's tests, any test/**/*Test.java, are each run from the repo root,
+# where they can read the plugin's config under plugins/, and a failing one
+# fails the build.
 FROM eclipse-temurin:25-jdk-alpine@sha256:3fd2d245c4e0eba615fe366a71b8bd25f5db7104f53e4026b24bf508b880bd2a AS repo-plugins
 COPY build/artifacts/libraries/ /libraries/
-COPY plugin-src/ /src/
-RUN set -e; mkdir /out; cd /src; for plugin in */; do \
+COPY plugin-src/ /repo/plugin-src/
+COPY plugins/ /repo/plugins/
+RUN set -e; mkdir /out; cd /repo/plugin-src; for plugin in */; do \
       [ -d "$plugin" ] || continue; \
       plugin="${plugin%/}"; \
       mkdir -p "/classes/${plugin}"; \
       javac --release 25 -Xlint:all,-classfile -Werror -cp '/libraries/*' \
         -d "/classes/${plugin}" $(find "${plugin}/src" -name '*.java'); \
+      if [ -d "${plugin}/test" ]; then \
+        mkdir -p "/test-classes/${plugin}"; \
+        javac --release 25 -Xlint:all,-classfile -Werror -cp "/classes/${plugin}:/libraries/*" \
+          -d "/test-classes/${plugin}" $(find "${plugin}/test" -name '*.java'); \
+        for test in $(cd "${plugin}/test" && find . -name '*Test.java'); do \
+          test="${test#./}"; \
+          (cd /repo && java -cp "/test-classes/${plugin}:/classes/${plugin}:/libraries/*" \
+            "$(echo "${test%.java}" | tr / .)"); \
+        done; \
+      fi; \
       cp "${plugin}/plugin.yml" "/classes/${plugin}/"; \
       jar --create --file "/out/${plugin}.jar" -C "/classes/${plugin}" .; \
     done
@@ -193,6 +207,7 @@ COPY --from=libertybans-addons /out/ /plugins/
 # ClickVillagers' pickup.
 # TAB's turns on only its spectator fix, so a player in spectator doesn't show
 # as one in non-ops' tab lists.
+# OasisFilter's are its word lists.
 COPY plugins/ /plugins/
 COPY data/ /config/
 COPY build/artifacts/datapacks/ /datapacks/

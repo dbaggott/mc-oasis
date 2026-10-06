@@ -1,0 +1,13 @@
+# Blocked inside longer words as well as on their own, for terms no innocent
+# word contains, or only the few in allowed.txt.
+
+# Race and ethnicity
+nigg
+
+# Gender
+bitch
+slut
+whore
+
+# Sexual orientation
+fagg
