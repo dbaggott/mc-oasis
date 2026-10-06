@@ -2,8 +2,9 @@
 set -euo pipefail
 
 # Start the built image against a throwaway world and check that it comes up,
-# enables every plugin and datapack in artifacts.lock, answers RCON and stops
-# cleanly. Uses no real player data: the whitelist is left empty.
+# enables every plugin and datapack the image carries, applies the settings the
+# repo owns, answers RCON and stops cleanly. Uses no real player data: the
+# whitelist is left empty.
 #
 # Usage: scripts/smoke-test.sh <image>
 

@@ -92,7 +92,7 @@ ENV PLAYER_IDLE_TIMEOUT=120 \
 # The image is authoritative over /data/plugins and over the server configs
 # the repo owns, which data/ holds at their paths under /data. Its files
 # overwrite live ones even where the server or a plugin rewrote them since,
-# and a jar no longer in artifacts.lock is removed. Only top-level jars go, so
+# and a jar no longer in the image is removed. Only top-level jars go, so
 # a removed plugin's data folder survives.
 ENV SYNC_SKIP_NEWER_IN_DESTINATION=false \
     COPY_CONFIG_DEST=/data \
