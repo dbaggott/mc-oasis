@@ -173,8 +173,8 @@ COPY build/artifacts/plugins/ /plugins/
 # The repo's own plugins, built in the repo-plugins stage.
 COPY --from=repo-plugins /out/ /plugins/
 # Plugin configs the repo owns, one folder per plugin by its declared name.
-# LuckPerms' groups and tracks, and so every permission, are files here; which
-# group each player is in stays in its database on the world volume.
+# LuckPerms' groups and tracks are files here; which group each player is in
+# stays in its database on the world volume.
 # ClickVillagers' turns on trade resetting and turns off its villager hoppers
 # and update check.
 # Simple Voice Chat's turns recording off: some players are minors.
