@@ -72,11 +72,13 @@ ENV PLAYER_IDLE_TIMEOUT=120 \
     AUTOSTOP_TIMEOUT_EST=1200 \
     AUTOSTOP_TIMEOUT_INIT=1800
 
-# The image is authoritative over /data/plugins. Its files overwrite live ones
-# even where a plugin rewrote its own config since, and a jar no longer in
-# artifacts.lock is removed. Only top-level jars go, so a removed plugin's
-# data folder survives.
+# The image is authoritative over /data/plugins and over the server configs
+# the repo owns, which data/ holds at their paths under /data. Its files
+# overwrite live ones even where the server or a plugin rewrote them since,
+# and a jar no longer in artifacts.lock is removed. Only top-level jars go, so
+# a removed plugin's data folder survives.
 ENV SYNC_SKIP_NEWER_IN_DESTINATION=false \
+    COPY_CONFIG_DEST=/data \
     REMOVE_OLD_MODS=TRUE \
     REMOVE_OLD_MODS_INCLUDE=*.jar \
     REMOVE_OLD_MODS_DEPTH=1
@@ -154,6 +156,7 @@ COPY build/artifacts/plugins/ /plugins/
 # TradeCycle's keeps only its swap-hands-key trigger: its sneak-click one is
 # ClickVillagers' pickup.
 COPY plugins/ /plugins/
+COPY data/ /config/
 COPY build/artifacts/datapacks/ /datapacks/
 COPY --from=repo-datapacks /out/ /datapacks/
 COPY server-icon.png /server-icon.png

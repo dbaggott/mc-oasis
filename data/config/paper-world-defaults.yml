@@ -1,0 +1,20 @@
+# Paper settings for every world: each puts back vanilla behavior Paper
+# changes.
+#
+# No _version: Paper takes a file without one to be at the current version.
+
+collisions:
+  allow-player-cramming-damage: true
+  max-entity-collisions: 2147483647
+entities:
+  behavior:
+    only-merge-items-horizontally: true
+  spawning:
+    # Entities with duplicate UUIDs are left alone, as in vanilla, and logged.
+    duplicate-uuid:
+      mode: WARN
+    max-arrow-despawn-invulnerability: disabled
+hopper:
+  cooldown-when-full: false
+misc:
+  allow-remote-ender-dragon-respawning: true

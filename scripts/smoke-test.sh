@@ -10,16 +10,26 @@ set -euo pipefail
 image="${1:?usage: scripts/smoke-test.sh <image>}"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 name="mc-oasis-smoke-$$"
+# The same image with none of the repo's server configs, for the config files
+# the server writes on its own: every key it knows, at its defaults.
+reference_name="${name}-reference"
 startup_deadline_seconds=600
 stop_timeout_seconds=120
 
-cleanup() { docker rm --force --volumes "$name" >/dev/null 2>&1 || true; }
+cleanup() { docker rm --force --volumes "$name" "$reference_name" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
 
 # Smaller heap than production so the test fits any CI runner. The capability
 # and privilege flags are the ones the server runs with (mc-oasis-run in
 # dbaggott/infrastructure's apps/mc-oasis/bootstrap).
 docker run --detach --name "$name" --env MEMORY=2G \
+  --cap-drop ALL --cap-add CHOWN --cap-add SETUID --cap-add SETGID \
+  --security-opt no-new-privileges \
+  "$image" >/dev/null
+# Started alongside, so its start overlaps the main one's. The image copies
+# nothing from a COPY_CONFIG_SRC that doesn't exist.
+docker run --detach --name "$reference_name" --env MEMORY=2G \
+  --env COPY_CONFIG_SRC=/nonexistent \
   --cap-drop ALL --cap-add CHOWN --cap-add SETUID --cap-add SETGID \
   --security-opt no-new-privileges \
   "$image" >/dev/null
@@ -103,6 +113,58 @@ if ! docker exec --user 1000 "$name" cmp --quiet /server-icon.png /data/server-i
   exit 1
 fi
 echo "server icon in place"
+
+# The repo's server configs, data/ at its paths under /data, by every setting
+# in them read back from the file the server saved after loading it. The
+# server keeps a key it doesn't know, so each key also has to be one the
+# reference server wrote. Each file has to be nested maps of `key: value` at
+# two-space indents, which is all this reads.
+deadline=$((SECONDS + startup_deadline_seconds))
+until grep --quiet --fixed-strings 'INFO]: Done (' <<<"$(docker logs "$reference_name" 2>&1)"; do
+  if [[ "$(docker inspect --format '{{.State.Running}}' "$reference_name")" != true ]] || ((SECONDS >= deadline)); then
+    docker logs "$reference_name" 2>&1 | tail -n 100
+    echo "error: the reference server didn't finish starting" >&2
+    exit 1
+  fi
+  sleep 5
+done
+config_value() {
+  docker exec --user 1000 "$1" mc-image-helper yaml-path --file "/data/$2" "$3" 2>/dev/null
+}
+config_settings=0
+while read -r file; do
+  config="${repo_root}/data/${file}"
+  if ! settings="$(awk '
+    /^[[:space:]]*(#|$)/ { next }
+    !/^( {2})*[A-Za-z0-9_-]+:( .*)?$/ { exit 1 }
+    {
+      depth = (match($0, /[^ ]/) - 1) / 2
+      key = $0; sub(/^ */, "", key); sub(/:.*/, "", key)
+      value = $0; sub(/^[^:]*: */, "", value)
+      keys[depth] = key
+      if (value == "") next
+      path = "$"
+      for (i = 0; i <= depth; i++) path = path "[\x27" keys[i] "\x27]"
+      print path "\t" value
+    }' "$config")"; then
+    echo "error: ${file} isn't nested 'key: value' maps at two-space indents" >&2
+    exit 1
+  fi
+  while IFS=$'\t' read -r path value; do
+    if ! config_value "$reference_name" "$file" "$path" >/dev/null; then
+      echo "error: ${file} ${path} isn't a setting the server knows" >&2
+      exit 1
+    fi
+    live="$(config_value "$name" "$file" "$path")" || live="(missing)"
+    if [[ "$live" != "$value" ]]; then
+      echo "error: ${file} ${path} is ${live}, not ${value}" >&2
+      exit 1
+    fi
+    config_settings=$((config_settings + 1))
+  done <<<"$settings"
+done < <(cd "${repo_root}/data" && find . -type f -name '*.yml' | sed 's|^\./||' | LC_ALL=C sort)
+docker rm --force --volumes "$reference_name" >/dev/null
+echo "${config_settings} config settings in place"
 
 # The Dockerfile's RCON_CMDS_STARTUP. The image runs them through RCON once the
 # server listens and only logs a failure, so what they set is checked below.
