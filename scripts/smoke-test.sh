@@ -353,7 +353,7 @@ fi
 for rule in ${rules[@]+"${rules[@]}"}; do
   read -r dimension rule_name rule_value <<<"$rule"
   reply="$(rcon "execute in ${dimension} run gamerule ${rule_name}")"
-  if ! grep --quiet --fixed-strings "currently set to ${rule_value}" <<<"$reply"; then
+  if ! grep --quiet --extended-regexp "currently set to ${rule_value}$" <<<"$reply"; then
     echo "error: ${rule_name} in ${dimension} isn't ${rule_value}: ${reply}" >&2
     exit 1
   fi
