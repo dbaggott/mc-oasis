@@ -101,9 +101,6 @@ ENV DATAPACKS=/datapacks \
 # block, which is what `center 0 0` gives (0.5, 0.5), runs the same number of
 # blocks either way from block 0.
 #
-# The game is frozen until the server opens to players. Nothing saves
-# `tick freeze`, so it is set at every start.
-#
 # Everyone spawns on the spawn point itself: respawn_radius, the rule older
 # versions call spawnRadius, is 0.
 #
@@ -116,6 +113,9 @@ ENV DATAPACKS=/datapacks \
 # but swaps the copy in later, in the background, so a flag set after it could
 # land on the region being replaced. With no owners or members, only ops can
 # build or break blocks in it; the flags cover what membership doesn't.
+#
+# The game is frozen until the server opens to players, when the `tick freeze`
+# line comes out. Nothing saves a freeze, so it is set at every start.
 ENV RCON_CMDS_STARTUP="\
 lp group default permission set clickvillagers.claim false\n\
 lp group default permission set clickvillagers.anchor false\n\
