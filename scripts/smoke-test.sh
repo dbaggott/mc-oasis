@@ -176,7 +176,10 @@ expect_reply() {
     exit 1
   fi
 }
-read -r spawn_x spawn_y spawn_z < <(sed -n 's/^setworldspawn \(-*[0-9]*\) \(-*[0-9]*\) \(-*[0-9]*\).*/\1 \2 \3/p' "${repo_root}/Dockerfile")
+if ! read -r spawn_x spawn_y spawn_z < <(sed -n 's/^setworldspawn \(-*[0-9]*\) \(-*[0-9]*\) \(-*[0-9]*\)\\n\\$/\1 \2 \3/p' "${repo_root}/Dockerfile"); then
+  echo "error: no 'setworldspawn <x> <y> <z>' line in the Dockerfile" >&2
+  exit 1
+fi
 expect_reply "Set the world spawn point to ${spawn_x}, ${spawn_y}, ${spawn_z} "
 echo "world spawn at ${spawn_x} ${spawn_y} ${spawn_z}"
 expect_reply "Region 'spawn' has been updated with a new area."
