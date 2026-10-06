@@ -1,0 +1,12 @@
+# Paper settings for the whole server: each allows again a vanilla exploit
+# Paper blocks.
+#
+# No _version: Paper takes a file without one to be at the current version.
+
+unsupported-settings:
+  allow-headless-pistons: true
+  allow-permanent-block-break-exploits: true
+  allow-piston-duplication: true
+  allow-unsafe-end-portal-teleportation: true
+  skip-tripwire-hook-placement-validation: true
+  update-equipment-on-player-actions: false

@@ -1,0 +1,19 @@
+# Spigot settings for every world. Entities tick at any distance, as in
+# vanilla, and TNT is capped at 1,000 explosions a tick, where vanilla has no
+# cap.
+#
+# No config-version: Spigot takes a file without one to be at the current
+# version.
+
+world-settings:
+  default:
+    entity-activation-range:
+      animals: 0
+      monsters: 0
+      raiders: 0
+      misc: 0
+      water: 0
+      villagers: 0
+      flying-monsters: 0
+      tick-inactive-villagers: true
+    max-tnt-per-tick: 1000

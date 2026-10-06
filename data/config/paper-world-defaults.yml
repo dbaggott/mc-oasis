@@ -1,6 +1,5 @@
-# Paper settings for every world, where they differ from Paper's own defaults:
-# each one puts back the vanilla behavior Paper changes. Copied over the live
-# file at every start; Paper fills in everything else and saves it back.
+# Paper settings for every world: each puts back vanilla behavior Paper
+# changes.
 #
 # No _version: Paper takes a file without one to be at the current version.
 

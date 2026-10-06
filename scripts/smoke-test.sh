@@ -114,10 +114,11 @@ if ! docker exec --user 1000 "$name" cmp --quiet /server-icon.png /data/server-i
 fi
 echo "server icon in place"
 
-# The repo's server configs, by every setting in them read back from the file
-# the server saved after loading it. The server keeps a key it doesn't know, so
-# each key also has to be one the reference server wrote. Each file has to be
-# nested maps of `key: value` at two-space indents, which is all this reads.
+# The repo's server configs, data/ at its paths under /data, by every setting
+# in them read back from the file the server saved after loading it. The
+# server keeps a key it doesn't know, so each key also has to be one the
+# reference server wrote. Each file has to be nested maps of `key: value` at
+# two-space indents, which is all this reads.
 deadline=$((SECONDS + startup_deadline_seconds))
 until grep --quiet --fixed-strings 'INFO]: Done (' <<<"$(docker logs "$reference_name" 2>&1)"; do
   if [[ "$(docker inspect --format '{{.State.Running}}' "$reference_name")" != true ]] || ((SECONDS >= deadline)); then
@@ -128,11 +129,11 @@ until grep --quiet --fixed-strings 'INFO]: Done (' <<<"$(docker logs "$reference
   sleep 5
 done
 config_value() {
-  docker exec --user 1000 "$1" mc-image-helper yaml-path --file "/data/config/$2" "$3" 2>/dev/null
+  docker exec --user 1000 "$1" mc-image-helper yaml-path --file "/data/$2" "$3" 2>/dev/null
 }
 config_settings=0
-for config in "${repo_root}"/config/*.yml; do
-  file="$(basename "$config")"
+while read -r file; do
+  config="${repo_root}/data/${file}"
   if ! settings="$(awk '
     /^[[:space:]]*(#|$)/ { next }
     !/^( {2})*[A-Za-z0-9_-]+:( .*)?$/ { exit 1 }
@@ -161,7 +162,7 @@ for config in "${repo_root}"/config/*.yml; do
     fi
     config_settings=$((config_settings + 1))
   done <<<"$settings"
-done
+done < <(cd "${repo_root}/data" && find . -type f -name '*.yml' | sed 's|^\./||' | LC_ALL=C sort)
 docker rm --force --volumes "$reference_name" >/dev/null
 echo "${config_settings} config settings in place"
 
