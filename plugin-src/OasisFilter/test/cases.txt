@@ -89,6 +89,9 @@ pass Wogan
 pass assassin
 pass classic
 pass therapist
+pass read the faq
+pass FAQ
+pass /faq
 
 # Innocent phrases whose words run together into a term
 pass who reads this

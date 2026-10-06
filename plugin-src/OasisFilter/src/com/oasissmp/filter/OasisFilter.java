@@ -119,7 +119,7 @@ public final class OasisFilter extends JavaPlugin implements Listener {
         if (event.getLoginResult() == AsyncPlayerPreLoginEvent.Result.ALLOWED
                 && filter.blocks(name)) {
             event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, Component.text(
-                    "Your name has a word that isn't allowed here. Ask an owner for help."));
+                    "Your name has a word that isn't allowed here."));
             report(name, "a login", name);
         }
     }

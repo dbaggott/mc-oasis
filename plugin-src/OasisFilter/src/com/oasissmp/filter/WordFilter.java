@@ -55,7 +55,6 @@ final class WordFilter {
             Map.entry((int) '9', 'g'),
             Map.entry((int) '@', 'a'),
             Map.entry((int) '$', 's'),
-            Map.entry((int) 'q', 'g'),
             // Cyrillic
             Map.entry(0x0430, 'a'),
             Map.entry(0x0432, 'b'),
