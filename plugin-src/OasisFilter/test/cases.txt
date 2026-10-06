@@ -24,6 +24,8 @@ block slutty
 block n1gg3r
 block n!gger lol
 block n|gger
+block n!!gger
+block n|!gger
 block niqqa
 block ni66a
 block $pic
@@ -36,6 +38,10 @@ block cооn
 block fаg
 # Fullwidth
 block ｎｉｇｇｅｒ
+# Greek capital Ν and small capitals
+block ΝIGGER
+block ɴɪɢɢᴇʀ
+block ꜱᴘɪᴄ
 # A zero-width space inside the word
 block nig​ger
 
@@ -100,6 +106,9 @@ pass nether
 pass witch
 pass ghast
 
-# An allowed word only counts as written, not disguised
+# An allowed word counts only spelled as written
 block sniiigger
 block s nigger
+
+# An allowed word between the words of a term breaks it up
+pass porch niggle monkey

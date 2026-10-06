@@ -28,8 +28,8 @@ import java.util.Set;
  *       doesn't block "spicy". Plurals and other forms are entries of their
  *       own. An entry of several words matches them written apart or together.
  *   <li>{@code fragments.txt}: terms that match inside longer words too.
- *   <li>{@code allowed.txt}: words skipped before matching, for the innocent
- *       words a fragment is part of.
+ *   <li>{@code allowed.txt}: words never matched, for the innocent words a
+ *       fragment is part of.
  * </ul>
  *
  * <p>No term matches across the gap between two words of more than one
@@ -38,7 +38,9 @@ import java.util.Set;
  */
 final class WordFilter {
 
-    // Each maps to the letter it imitates. A character not here or in a-z is a
+    // Each maps to the letter it imitates, looked up as written and then
+    // lowercased: a capital is here only where it imitates a different letter
+    // from its lowercase form. A character neither here nor in a-z is a
     // separator, so mapping one changes where words break as well as which
     // letters they hold.
     private static final Map<Integer, Character> LOOKALIKES = Map.ofEntries(
@@ -84,13 +86,46 @@ final class WordFilter {
             Map.entry(0x03C4, 't'),
             Map.entry(0x03C5, 'u'),
             Map.entry(0x03C7, 'x'),
+            Map.entry(0x0396, 'z'),
+            Map.entry(0x0397, 'h'),
+            Map.entry(0x039C, 'm'),
+            Map.entry(0x039D, 'n'),
+            Map.entry(0x03A5, 'y'),
+            // Small capitals, a common chat "font"
+            Map.entry(0x1D00, 'a'),
+            Map.entry(0x0299, 'b'),
+            Map.entry(0x1D04, 'c'),
+            Map.entry(0x1D05, 'd'),
+            Map.entry(0x1D07, 'e'),
+            Map.entry(0xA730, 'f'),
+            Map.entry(0x0262, 'g'),
+            Map.entry(0x029C, 'h'),
+            Map.entry(0x026A, 'i'),
+            Map.entry(0x1D0A, 'j'),
+            Map.entry(0x1D0B, 'k'),
+            Map.entry(0x029F, 'l'),
+            Map.entry(0x1D0D, 'm'),
+            Map.entry(0x0274, 'n'),
+            Map.entry(0x1D0F, 'o'),
+            Map.entry(0x1D18, 'p'),
+            Map.entry(0x0280, 'r'),
+            Map.entry(0xA731, 's'),
+            Map.entry(0x1D1B, 't'),
+            Map.entry(0x1D1C, 'u'),
+            Map.entry(0x1D20, 'v'),
+            Map.entry(0x1D21, 'w'),
+            Map.entry(0x028F, 'y'),
+            Map.entry(0x1D22, 'z'),
             // Latin letters outside a-z that NFKD leaves alone
             Map.entry(0x0131, 'i'),
             Map.entry(0x0261, 'g'));
 
-    // Stand for an 'i' only between two letters: "n!gger", but not "fag!", which
-    // as "fagi" would no longer be the whole word "fag".
+    // Stand for an 'i' only between letters, singly or several in a row:
+    // "n!gger", but not "fag!", which as "fagi" would no longer be the whole
+    // word "fag".
     private static final Set<Integer> INNER_I = Set.of((int) '!', (int) '|');
+
+    private static final Word ALLOWED = new Word(List.of(), false);
 
     private final List<List<Word>> wholeWords = new ArrayList<>();
     private final List<List<Run>> fragments = new ArrayList<>();
@@ -153,29 +188,38 @@ final class WordFilter {
     private static String normalize(String text) {
         int[] codePoints = Normalizer.normalize(text, Normalizer.Form.NFKD).codePoints()
                 .filter(codePoint -> !isIgnored(codePoint))
-                .map(Character::toLowerCase)
                 .toArray();
         StringBuilder normalized = new StringBuilder(codePoints.length);
-        for (int i = 0; i < codePoints.length; i++) {
-            int codePoint = codePoints[i];
-            if (INNER_I.contains(codePoint)) {
-                boolean inner = i > 0 && i < codePoints.length - 1
-                        && letter(codePoints[i - 1]) != ' ' && letter(codePoints[i + 1]) != ' ';
-                normalized.append(inner ? 'i' : ' ');
-            } else {
-                normalized.append(letter(codePoint));
+        int i = 0;
+        while (i < codePoints.length) {
+            if (!INNER_I.contains(codePoints[i])) {
+                normalized.append(letter(codePoints[i]));
+                i++;
+                continue;
             }
+            int end = i;
+            while (end < codePoints.length && INNER_I.contains(codePoints[end])) {
+                end++;
+            }
+            boolean inner = i > 0 && end < codePoints.length
+                    && letter(codePoints[i - 1]) != ' ' && letter(codePoints[end]) != ' ';
+            normalized.repeat(inner ? 'i' : ' ', end - i);
+            i = end;
         }
         return normalized.toString();
     }
 
-    // The a-z letter a lowercase code point is or imitates, or a space.
+    // The a-z letter a code point is or imitates, or a space.
     private static char letter(int codePoint) {
         Character lookalike = LOOKALIKES.get(codePoint);
+        int lower = Character.toLowerCase(codePoint);
+        if (lookalike == null) {
+            lookalike = LOOKALIKES.get(lower);
+        }
         if (lookalike != null) {
             return lookalike;
         }
-        return codePoint >= 'a' && codePoint <= 'z' ? (char) codePoint : ' ';
+        return lower >= 'a' && lower <= 'z' ? (char) lower : ' ';
     }
 
     // Accent marks, which NFKD splits from the letters they're on, and
@@ -207,7 +251,8 @@ final class WordFilter {
     }
 
     /**
-     * The words of normalized text, the ones in {@code allowed} left out, and
+     * The words of normalized text, each in {@code allowed} as a word with no
+     * letters, which nothing matches or matches across, and
      * each unbroken series of one-letter words joined into one spelled-out word.
      */
     private static List<Word> words(String normalized, Set<String> allowed) {
@@ -219,7 +264,9 @@ final class WordFilter {
                 continue;
             }
             addLetters(words, letters);
-            if (!token.isEmpty() && !allowed.contains(token)) {
+            if (allowed.contains(token)) {
+                words.add(ALLOWED);
+            } else if (!token.isEmpty()) {
                 words.add(new Word(runs(token), false));
             }
         }

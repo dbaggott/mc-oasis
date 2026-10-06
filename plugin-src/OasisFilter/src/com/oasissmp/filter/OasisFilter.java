@@ -52,7 +52,7 @@ public final class OasisFilter extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
     }
 
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onChat(AsyncChatEvent event) {
         String text = plainText(Stream.of(event.message()));
         if (filter.blocks(text)) {
@@ -61,7 +61,7 @@ public final class OasisFilter extends JavaPlugin implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onCommand(PlayerCommandPreprocessEvent event) {
         String text = event.getMessage();
         if (filter.blocks(text)) {
@@ -70,26 +70,26 @@ public final class OasisFilter extends JavaPlugin implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onSign(SignChangeEvent event) {
         String text = plainText(event.lines().stream());
-        if (filter.blocks(text)) {
+        if (blocksAcrossLines(text)) {
             event.setCancelled(true);
             refuse(event.getPlayer(), "a sign", text);
         }
     }
 
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBook(PlayerEditBookEvent event) {
         BookMeta book = event.getNewBookMeta();
         String text = plainText(Stream.concat(Stream.ofNullable(book.title()), book.pages().stream()));
-        if (filter.blocks(text)) {
+        if (blocksAcrossLines(text)) {
             event.setCancelled(true);
             refuse(event.getPlayer(), "a book", text);
         }
     }
 
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onNameTag(PlayerNameEntityEvent event) {
         Component name = event.getName();
         if (name == null) {
@@ -104,7 +104,7 @@ public final class OasisFilter extends JavaPlugin implements Listener {
 
     // Fires again as each letter of the new name is typed, so the player is
     // told in the action bar, which each telling replaces.
-    @EventHandler(priority = EventPriority.LOWEST)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onAnvil(PrepareAnvilEvent event) {
         String text = event.getView().getRenameText();
         if (text != null && filter.blocks(text)) {
@@ -113,10 +113,11 @@ public final class OasisFilter extends JavaPlugin implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onLogin(AsyncPlayerPreLoginEvent event) {
         String name = event.getName();
-        if (filter.blocks(name)) {
+        if (event.getLoginResult() == AsyncPlayerPreLoginEvent.Result.ALLOWED
+                && filter.blocks(name)) {
             event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, Component.text(
                     "Your name has a word that isn't allowed here. Ask an owner for help."));
             report(name, "a login", name);
@@ -146,8 +147,13 @@ public final class OasisFilter extends JavaPlugin implements Listener {
         });
     }
 
-    // One line per component, so a word split across a sign's lines or a
-    // book's pages is still found.
+    // A sign's lines and a book's pages are read apart and then run together,
+    // for a word split across two of them.
+    private boolean blocksAcrossLines(String text) {
+        return filter.blocks(text) || filter.blocks(text.replace("\n", ""));
+    }
+
+    // One line per component.
     private static String plainText(Stream<Component> components) {
         return components
                 .map(PlainTextComponentSerializer.plainText()::serialize)

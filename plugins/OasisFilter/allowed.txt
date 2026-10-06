@@ -1,5 +1,7 @@
-# Innocent words that contain a fragment, skipped whole before matching. Only
-# the exact word is skipped: a disguised or respaced one is still matched.
+# Innocent words that contain a fragment, never matched. A word counts as
+# one of these only spelled as it is here, though disguised letters and accents
+# still read as the letters they imitate: "sn1gger" is "snigger", but
+# "sniiigger" and "s nigger" are blocked.
 
 niggard
 niggardly
