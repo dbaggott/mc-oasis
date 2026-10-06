@@ -109,8 +109,10 @@ ENV DATAPACKS=/datapacks \
 # past that, from the bottom of the world to the top. The console has no
 # selection of its own, so the region is drawn from WorldEdit positions.
 # `define` fails once the region exists, and `redefine` then resets its area to
-# these bounds. With no owners or members, only ops can build or break blocks
-# in it; the flags cover what membership doesn't.
+# these bounds. `redefine` comes after the flags: it copies the region at once
+# but swaps the copy in later, in the background, so a flag set after it could
+# land on the region being replaced. With no owners or members, only ops can
+# build or break blocks in it; the flags cover what membership doesn't.
 ENV RCON_CMDS_STARTUP="\
 lp group default permission set clickvillagers.claim false\n\
 lp group default permission set clickvillagers.anchor false\n\
@@ -127,7 +129,6 @@ gamerule respawn_radius 0\n\
 //pos1 -512,-64,846\n\
 //pos2 -429,319,936\n\
 rg define -w world spawn\n\
-rg redefine -w world spawn\n\
 rg flag -w world spawn pvp allow\n\
 rg flag -w world spawn mob-spawning deny\n\
 rg flag -w world spawn creeper-explosion deny\n\
@@ -139,7 +140,8 @@ rg flag -w world spawn lava-fire deny\n\
 rg flag -w world spawn lighter deny\n\
 rg flag -w world spawn enderman-grief deny\n\
 rg flag -w world spawn use allow\n\
-rg flag -w world spawn chest-access allow"
+rg flag -w world spawn chest-access allow\n\
+rg redefine -w world spawn"
 
 COPY build/artifacts/server.jar /opt/server.jar
 COPY build/artifacts/plugins/ /plugins/
