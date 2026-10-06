@@ -240,16 +240,26 @@ if ! grep --quiet --fixed-strings "[Rcon loop] Set the world spawn point to ${sp
 fi
 echo "world spawn at ${spawn_x} ${spawn_y} ${spawn_z}"
 
-if ! read -r respawn_radius < <(sed -n 's/^gamerule respawn_radius \([0-9]*\)\\n\\$/\1/p' "${repo_root}/Dockerfile"); then
-  echo "error: no 'gamerule respawn_radius <n>' line in the Dockerfile" >&2
+# The game rules, each read back in the dimension it was set in: the overworld
+# unless the line runs it `execute in` another. Every `gamerule` line has to
+# parse, so a reworded one fails here instead of going unchecked.
+rules=()
+while read -r rule; do
+  rules+=("$rule")
+done < <(sed -n 's/^gamerule \([a-z_]*\) \([a-z0-9]*\)\\n\\$/minecraft:overworld \1 \2/p;s/^execute in \(minecraft:[a-z_]*\) run gamerule \([a-z_]*\) \([a-z0-9]*\)\\n\\$/\1 \2 \3/p' "${repo_root}/Dockerfile")
+if ((${#rules[@]} != $(grep -c 'gamerule ' "${repo_root}/Dockerfile"))); then
+  echo "error: a gamerule line in the Dockerfile isn't '[execute in minecraft:<dimension> run ]gamerule <rule> <value>'" >&2
   exit 1
 fi
-reply="$(rcon "gamerule respawn_radius")"
-if ! grep --quiet --fixed-strings "currently set to: ${respawn_radius}" <<<"$reply"; then
-  echo "error: respawn_radius isn't ${respawn_radius}: ${reply}" >&2
-  exit 1
-fi
-echo "respawn radius ${respawn_radius}"
+for rule in ${rules[@]+"${rules[@]}"}; do
+  read -r dimension rule_name rule_value <<<"$rule"
+  reply="$(rcon "execute in ${dimension} run gamerule ${rule_name}")"
+  if ! grep --quiet --fixed-strings "currently set to: ${rule_value}" <<<"$reply"; then
+    echo "error: ${rule_name} in ${dimension} isn't ${rule_value}: ${reply}" >&2
+    exit 1
+  fi
+  echo "${rule_name} ${rule_value} in ${dimension}"
+done
 
 # Frozen exactly when the Dockerfile's startup commands freeze the game.
 frozen_reply="$(rcon "tick query")"

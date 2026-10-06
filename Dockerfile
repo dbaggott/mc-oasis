@@ -106,6 +106,11 @@ ENV DATAPACKS=/datapacks \
 # Everyone spawns on the spawn point itself: respawn_radius, the rule older
 # versions call spawnRadius, is 0.
 #
+# One player in bed is enough to skip the night: vanilla needs at least one
+# sleeper whatever the percentage, so 0 means one. There is no locator bar.
+# Paper keeps game rules per dimension and RCON runs in the overworld, so a rule
+# that matters outside it is set in each dimension with `execute in`.
+#
 # Spawn is on an island, and the WorldGuard region `spawn` covers all of it:
 # the island runs x -504 to -437 and z 854 to 928, the region 8 blocks of water
 # past that, from the bottom of the world to the top. The console has no
@@ -130,6 +135,10 @@ execute in minecraft:the_nether run worldborder center 0 0\n\
 execute in minecraft:the_nether run worldborder set 10001\n\
 setworldspawn -468 63 898\n\
 gamerule respawn_radius 0\n\
+gamerule players_sleeping_percentage 0\n\
+execute in minecraft:overworld run gamerule locator_bar false\n\
+execute in minecraft:the_nether run gamerule locator_bar false\n\
+execute in minecraft:the_end run gamerule locator_bar false\n\
 //world world\n\
 //pos1 -512,-64,846\n\
 //pos2 -429,319,936\n\
@@ -155,6 +164,8 @@ COPY build/artifacts/plugins/ /plugins/
 # Simple Voice Chat's turns recording off: some players are minors.
 # TradeCycle's keeps only its swap-hands-key trigger: its sneak-click one is
 # ClickVillagers' pickup.
+# TAB's turns on only its spectator fix, so a player in spectator doesn't show
+# as one in non-ops' tab lists.
 COPY plugins/ /plugins/
 COPY data/ /config/
 COPY build/artifacts/datapacks/ /datapacks/

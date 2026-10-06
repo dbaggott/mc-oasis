@@ -1,0 +1,37 @@
+# Only the spectator fix: other players see a player in spectator as in
+# survival in the tab list, rather than grayed out at the bottom. Holders of
+# tab.spectatorbypass, ops by default, still see the real game mode.
+#
+# TAB turns on a feature whose key is missing here when its own default is on,
+# so every feature defaulting on is turned off by name.
+prevent-spectator-effect:
+  enabled: true
+
+header-footer:
+  enabled: false
+tablist-name-formatting:
+  enabled: false
+scoreboard-teams:
+  enabled: false
+playerlist-objective:
+  enabled: false
+proxy-support:
+  enabled: false
+
+# Settings TAB warns about or converts the file for when they're missing, at
+# its defaults.
+placeholders:
+  date-format: "dd.MM.yyyy"
+  time-format: "[HH:mm:ss / h:mm a]"
+  time-offset: 0
+  register-tab-expansion: false
+  locale: en-US
+placeholder-refresh-intervals:
+  default-refresh-interval: 500
+components:
+  minimessage-support: true
+  disable-shadow-for-heads: true
+
+# The format this file is written in. An older or missing one makes TAB convert
+# the file at start.
+config-version: 7
