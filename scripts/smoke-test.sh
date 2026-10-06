@@ -60,20 +60,37 @@ if grep --quiet --fixed-strings ' ERROR]: ' <<<"$logs"; then
   echo "error: the server logged errors while starting" >&2
   exit 1
 fi
+# The plugins in artifacts.lock, and the repo's own: plugin-src/<name>/.
 failed=()
-while read -r kind plugin _ || [[ -n "${kind:-}" ]]; do
-  [[ "${kind:-}" == plugin ]] || continue
+while read -r plugin; do
   if ! grep --quiet --fixed-strings "Enabling ${plugin} v" <<<"$logs" \
     || grep --quiet --fixed-strings "Error occurred while enabling ${plugin} " <<<"$logs"; then
     failed+=("$plugin")
   fi
-done <"${repo_root}/artifacts.lock"
+done < <(
+  while read -r kind plugin _ || [[ -n "${kind:-}" ]]; do
+    if [[ "${kind:-}" == plugin ]]; then echo "$plugin"; fi
+  done <"${repo_root}/artifacts.lock"
+  for dir in "${repo_root}"/plugin-src/*/; do basename "$dir"; done
+)
 if ((${#failed[@]} > 0)); then
   grep --extended-regexp --after-context=5 'ERROR\]|Error occurred while enabling' <<<"$logs" | head -n 60 || true
   echo "error: did not enable: ${failed[*]}" >&2
   exit 1
 fi
-echo "every plugin in artifacts.lock enabled"
+echo "every plugin in artifacts.lock and plugin-src enabled"
+
+# OasisVoice made the voice chat group. Simple Voice Chat starts its voice
+# server after the plugins enable, and the group is made then.
+deadline=$((SECONDS + 60))
+until grep --quiet --fixed-strings '[OasisVoice] Created the open voice group ' <<<"$(docker logs "$name" 2>&1)"; do
+  if ((SECONDS >= deadline)); then
+    echo "error: OasisVoice didn't create the voice chat group within 60s of 'Done ('" >&2
+    exit 1
+  fi
+  sleep 2
+done
+echo "voice chat group created"
 
 # rcon-cli authenticates with the password the image generated at start, so
 # this also proves nothing has to supply one. It has to run as the server's own
@@ -165,6 +182,21 @@ while read -r file; do
 done < <(cd "${repo_root}/data" && find . -type f -name '*.yml' | sed 's|^\./||' | LC_ALL=C sort)
 docker rm --force --volumes "$reference_name" >/dev/null
 echo "${config_settings} config settings in place"
+
+# The repo's plugin .properties files, by every `key=value` in them found as
+# the same line in the file the plugin is running with.
+properties_settings=0
+while read -r file; do
+  live="$(docker exec --user 1000 "$name" cat "/data/plugins/${file}")"
+  while read -r line; do
+    if ! grep --quiet --line-regexp --fixed-strings "$line" <<<"$live"; then
+      echo "error: plugins/${file} doesn't have ${line}" >&2
+      exit 1
+    fi
+    properties_settings=$((properties_settings + 1))
+  done < <(grep --invert-match --extended-regexp '^[[:space:]]*(#|$)' "${repo_root}/plugins/${file}")
+done < <(cd "${repo_root}/plugins" && find . -type f -name '*.properties' | sed 's|^\./||' | LC_ALL=C sort)
+echo "${properties_settings} plugin properties in place"
 
 # The Dockerfile's RCON_CMDS_STARTUP. The image runs them through RCON once the
 # server listens and only logs a failure, so what they set is checked below.

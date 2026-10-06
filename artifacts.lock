@@ -6,7 +6,7 @@
 # One artifact per line, whitespace-separated:
 #   <kind> <name> <version> <sha256> <url>
 #
-# kind      server (the one Paper jar) | plugin | datapack
+# kind      server (the one Paper jar) | plugin | datapack | library
 # name      for a plugin, the name it declares and the server reports. The
 #           smoke test requires a plugin by this name to enable, and its config
 #           folder under plugins/ is this name too.
@@ -17,6 +17,8 @@
 #           above the main pack, and the enchant disabler above all of them.
 #           Only for a new world: a pack added to an existing one is enabled
 #           above all the rest, whatever its prefix.
+#           For a library, any name: libraries are what the repo's own plugins
+#           in plugin-src/ compile against, and none of them goes in the image.
 #
 # Removing a worldgen datapack (Tectonic, Dungeons and Taverns and its
 # overhauls) from an existing world breaks the terrain and structures it
@@ -56,3 +58,8 @@ datapack  40-dnt-enchant-disabler           4.4               7f439ce61e688bc768
 datapack  50-bacap                          1.21              c71d1aa1a84dbe00a3f85a42144b46214c4669a3cccf07ff66631d28f16a99b2  https://cdn.modrinth.com/data/VoVJ47kN/versions/Y2zZ5eSs/BlazeandCave%27s%20Advancements%20Pack%201.21.zip
 datapack  51-bacaped                        2.9.2             6868ba9331356435c041a7bcb3b61f6883bd420535b69b1c6ac737f83ca5bc05  https://cdn.modrinth.com/data/Qx9yFN48/versions/Drxj6pcN/BACAP_Enhanced_Discoveries_2.9.2.zip
 datapack  60-players-drop-heads             107.1             300c62a6890beecdae1778d31c3ff82909256fdc2e855af92297554e92858c7b  https://cdn.modrinth.com/data/NU7qMnLN/versions/Nf8uzHHy/players-drop-heads-26.2-107.1.zip
+
+library  paper-api      26.2.build.129-stable  f469d110d164a4ee7cb2428710cd6e433108eca8d8e0aebd6452547f408469a6  https://repo.papermc.io/repository/maven-public/io/papermc/paper/paper-api/26.2.build.129-stable/paper-api-26.2.build.129-stable.jar
+library  adventure-api  5.2.0                  7e52fe7190be3e87b3b3f71712cfa12315fcd27109f302a7b440c12f01fae827  https://repo1.maven.org/maven2/net/kyori/adventure-api/5.2.0/adventure-api-5.2.0.jar
+library  adventure-key  5.2.0                  0184d173200e2eef8fbc791f622d1d58fd459f8930c616b5a4fe79e83eda6c55  https://repo1.maven.org/maven2/net/kyori/adventure-key/5.2.0/adventure-key-5.2.0.jar
+library  voicechat-api  2.6.24                 d827114efa4913c2727e8ec92ef4b1473a93a47452f5b05a72e6a3cbacda22ed  https://maven.maxhenkel.de/repository/public/de/maxhenkel/voicechat/voicechat-api/2.6.24/voicechat-api-2.6.24.jar

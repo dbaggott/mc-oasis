@@ -20,6 +20,21 @@ RUN mkdir /out && cd /src && for pack in */; do \
       pack="${pack%/}" && (cd "$pack" && python -m zipfile -c "/out/${pack}.zip" ./*); \
     done
 
+# The repo's own plugins, one folder each under plugin-src/ holding its
+# plugin.yml and its Java sources under src/, compiled against the libraries in
+# artifacts.lock into <folder>.jar. The JDK's major version is the server's.
+FROM eclipse-temurin:25-jdk-alpine@sha256:3fd2d245c4e0eba615fe366a71b8bd25f5db7104f53e4026b24bf508b880bd2a AS repo-plugins
+COPY build/artifacts/libraries/ /libraries/
+COPY plugin-src/ /src/
+RUN set -e; mkdir /out; cd /src; for plugin in */; do \
+      plugin="${plugin%/}"; \
+      mkdir -p "/classes/${plugin}"; \
+      javac --release 25 -Xlint:all,-classfile -Werror -cp '/libraries/*' \
+        -d "/classes/${plugin}" $(find "${plugin}/src" -name '*.java'); \
+      cp "${plugin}/plugin.yml" "/classes/${plugin}/"; \
+      jar --create --file "/out/${plugin}.jar" -C "/classes/${plugin}" .; \
+    done
+
 # A release tag for the image's scripts, java25 because Minecraft 26.2 requires
 # Java 25, and the multi-arch digest so a re-pushed tag can't change it.
 FROM itzg/minecraft-server:2026.9.2-java25@sha256:de5d1b1a83eba576f6c8a688fac2a3523ce457724cdebc8ea48d7818b74cdf6e
@@ -165,6 +180,9 @@ rg redefine -w world spawn"
 
 COPY build/artifacts/server.jar /opt/server.jar
 COPY build/artifacts/plugins/ /plugins/
+# OasisVoice makes the one voice chat group, which is open, and refuses any
+# other, so voice is by proximity except among the group's members.
+COPY --from=repo-plugins /out/ /plugins/
 # Plugin configs the repo owns, one folder per plugin by its declared name.
 # Simple Voice Chat's turns recording off: some players are minors.
 # TradeCycle's keeps only its swap-hands-key trigger: its sneak-click one is
