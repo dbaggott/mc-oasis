@@ -1,0 +1,43 @@
+# Owners are also ops, which grants every permission no group of theirs
+# denies; /plugins is granted back here over default's denial. Of LuckPerms'
+# commands they get only the ones that read data or put players in groups:
+# groups and tracks are this repo's, and ops get no LuckPerms command unless
+# granted here.
+name: owner
+permissions:
+- bukkit.command.plugins
+- libertybans.*
+- luckperms.group.info
+- luckperms.group.listmembers
+- luckperms.group.meta.info
+- luckperms.group.parent.info
+- luckperms.group.permission.info
+- luckperms.group.showtracks
+- luckperms.info
+- luckperms.listgroups
+- luckperms.listtracks
+- luckperms.log.grouphistory
+- luckperms.log.notify
+- luckperms.log.recent
+- luckperms.log.trackhistory
+- luckperms.log.userhistory
+- luckperms.search
+- luckperms.track.info
+- luckperms.tree
+- luckperms.user.demote
+- luckperms.user.info
+- luckperms.user.meta.info
+- luckperms.user.parent.add
+- luckperms.user.parent.info
+- luckperms.user.parent.remove
+- luckperms.user.parent.set
+- luckperms.user.permission.check
+- luckperms.user.permission.info
+- luckperms.user.promote
+- luckperms.user.showtracks
+- weight.10
+parents:
+- admin
+prefixes:
+- OWNER:
+    priority: 10

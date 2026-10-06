@@ -1,0 +1,48 @@
+# Punishes players by account only: targeting an IP address is the owners'.
+# Sees Grim's cheat alerts from joining.
+name: admin
+permissions:
+- grim.alerts
+- grim.alerts.enable-on-join
+- grim.history
+- grim.profile
+- grim.spectate
+- libertybans.alts.command
+- libertybans.ban.do.notify
+- libertybans.ban.do.notifysilent
+- libertybans.ban.do.silent
+- libertybans.ban.do.target.uuid
+- libertybans.ban.undo.notify
+- libertybans.ban.undo.notifysilent
+- libertybans.ban.undo.silent
+- libertybans.ban.undo.target.uuid
+- libertybans.commands
+- libertybans.kick.do.notify
+- libertybans.kick.do.notifysilent
+- libertybans.kick.do.silent
+- libertybans.kick.do.target.uuid
+- libertybans.list.*
+- libertybans.mute.do.notify
+- libertybans.mute.do.notifysilent
+- libertybans.mute.do.silent
+- libertybans.mute.do.target.uuid
+- libertybans.mute.undo.notify
+- libertybans.mute.undo.notifysilent
+- libertybans.mute.undo.silent
+- libertybans.mute.undo.target.uuid
+- libertybans.warn.do.notify
+- libertybans.warn.do.notifysilent
+- libertybans.warn.do.silent
+- libertybans.warn.do.target.uuid
+- libertybans.warn.undo.notify
+- libertybans.warn.undo.notifysilent
+- libertybans.warn.undo.silent
+- libertybans.warn.undo.target.uuid
+- minecraft.command.gamemode
+- minecraft.command.teleport
+- weight.9
+parents:
+- helper
+prefixes:
+- ADMIN:
+    priority: 9

@@ -1,0 +1,20 @@
+# Every player. The plugin list is hidden. ClickVillagers is pickup-and-place
+# and trade resetting only: each of its other features is a permission it
+# grants everyone by default. Its config is the repo's, so no one, op or not,
+# edits it in game.
+name: default
+permissions:
+- bukkit.command.plugins:
+    value: false
+- clickvillagers.anchor:
+    value: false
+- clickvillagers.change-biome:
+    value: false
+- clickvillagers.claim:
+    value: false
+- clickvillagers.config:
+    value: false
+- clickvillagers.hopper:
+    value: false
+- clickvillagers.partner:
+    value: false

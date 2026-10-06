@@ -109,12 +109,6 @@ ENV DATAPACKS=/datapacks \
 # Commands run through RCON at every start, so the repo stays authoritative
 # over what they set, and a change made in game lasts only until the next start.
 #
-# ClickVillagers is pickup-and-place and trade resetting only. Its other
-# features are each a permission it grants everyone by default, denied here,
-# while LuckPerms keeps the rest of its data, which names players, on the world
-# volume. The baked config turns on trade resetting and turns off its villager
-# hoppers and update check.
-#
 # The world borders: blocks -10,000 to 10,000 in the overworld and -5,000 to
 # 5,000 in the Nether; the End is unbounded. An odd width centered on a whole
 # block, which is what `center 0 0` gives (0.5, 0.5), runs the same number of
@@ -144,11 +138,6 @@ ENV DATAPACKS=/datapacks \
 # land on the region being replaced. With no owners or members, only ops can
 # build or break blocks in it; the flags cover what membership doesn't.
 ENV RCON_CMDS_STARTUP="\
-lp group default permission set clickvillagers.claim false\n\
-lp group default permission set clickvillagers.anchor false\n\
-lp group default permission set clickvillagers.partner false\n\
-lp group default permission set clickvillagers.change-biome false\n\
-lp group default permission set clickvillagers.hopper false\n\
 execute in minecraft:overworld run worldborder center 0 0\n\
 execute in minecraft:overworld run worldborder set 20001\n\
 execute in minecraft:the_nether run worldborder center 0 0\n\
@@ -184,6 +173,10 @@ COPY build/artifacts/plugins/ /plugins/
 # The repo's own plugins, built in the repo-plugins stage.
 COPY --from=repo-plugins /out/ /plugins/
 # Plugin configs the repo owns, one folder per plugin by its declared name.
+# LuckPerms' groups and tracks, and so every permission, are files here; which
+# group each player is in stays in its database on the world volume.
+# ClickVillagers' turns on trade resetting and turns off its villager hoppers
+# and update check.
 # Simple Voice Chat's turns recording off: some players are minors.
 # TradeCycle's keeps only its swap-hands-key trigger: its sneak-click one is
 # ClickVillagers' pickup.

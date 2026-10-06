@@ -1,0 +1,6 @@
+# Lowest first: `lp user <player> promote staff-team` moves one step right.
+name: staff-team
+groups:
+- helper
+- admin
+- owner

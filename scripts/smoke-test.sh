@@ -214,34 +214,66 @@ until grep --quiet 'stopping rcon cmd service' <<<"$(docker logs "$name" 2>&1)";
   sleep 2
 done
 
-# The permission denials: what LuckPerms actually stored, as an export read
-# back, since LuckPerms answers RCON asynchronously and its replies never reach
-# rcon-cli.
-denied=()
-while read -r node; do
-  denied+=("$node")
-done < <(grep -o 'lp group default permission set [^ ]* false' "${repo_root}/Dockerfile" | awk '{print $6}')
-if ((${#denied[@]} > 0)); then
-  rcon "lp export smoke-permissions --without-users" >/dev/null
-  deadline=$((SECONDS + 60))
-  until docker exec --user 1000 "$name" test -s /data/plugins/LuckPerms/smoke-permissions.json.gz; do
-    if ((SECONDS >= deadline)); then
-      echo "error: LuckPerms export didn't appear within 60s" >&2
-      exit 1
-    fi
-    sleep 2
-  done
-  exported="$(docker exec --user 1000 "$name" gzip -dc /data/plugins/LuckPerms/smoke-permissions.json.gz)"
-  not_denied=()
-  for node in "${denied[@]}"; do
-    grep --quiet --fixed-strings "\"${node}\",\"value\":false" <<<"$exported" || not_denied+=("$node")
-  done
-  if ((${#not_denied[@]} > 0)); then
-    echo "error: not denied to the default group: ${not_denied[*]}" >&2
+# LuckPerms' groups and tracks: every node and track in the repo's files found
+# in what LuckPerms exports, so loaded and not just copied, and no group or
+# track it has that the repo doesn't. Read as an export because LuckPerms
+# answers RCON asynchronously and its replies never reach rcon-cli. The files
+# have to be in the form LuckPerms writes them, which is all this reads.
+lp_storage="${repo_root}/plugins/LuckPerms/yaml-storage"
+rcon "lp export smoke-permissions --without-users" >/dev/null
+deadline=$((SECONDS + 60))
+until docker exec --user 1000 "$name" test -s /data/plugins/LuckPerms/smoke-permissions.json.gz; do
+  if ((SECONDS >= deadline)); then
+    echo "error: LuckPerms export didn't appear within 60s" >&2
     exit 1
   fi
-  echo "denied to every player: ${denied[*]}"
+  sleep 2
+done
+exported="$(docker exec --user 1000 "$name" gzip -dc /data/plugins/LuckPerms/smoke-permissions.json.gz)"
+names_in() { find "$1" -name '*.yml' -exec basename {} .yml \; | LC_ALL=C sort | tr '\n' ' '; }
+exported_names() { grep -o "\"$1\":{.*" <<<"$exported" | grep -o "\"[a-z0-9_-]*\":{\"$2\":" | cut -d'"' -f2 | LC_ALL=C sort | tr '\n' ' '; }
+if [[ "$(exported_names groups nodes)" != "$(names_in "${lp_storage}/groups")" ]]; then
+  echo "error: LuckPerms has groups $(exported_names groups nodes)but the repo has $(names_in "${lp_storage}/groups")" >&2
+  exit 1
 fi
+lp_nodes=0
+for file in "${lp_storage}"/groups/*.yml; do
+  group="$(basename "$file" .yml)"
+  group_nodes="$(grep -o "\"${group}\":{\"nodes\":\[[^]]*\]" <<<"$exported")"
+  if ! nodes="$(awk '
+    /^[[:space:]]*(#|$)/ || /^name: / { next }
+    /^[a-z]+:$/ { section = $1; next }
+    section == "permissions:" && /^- [^ :]+$/ { print $2 "\ttrue"; next }
+    section == "permissions:" && /^- [^ :]+:$/ { node = substr($2, 1, length($2) - 1); next }
+    section == "permissions:" && /^    value: (true|false)$/ && node != "" { print node "\t" $2; node = ""; next }
+    section == "parents:" && /^- [^ :]+$/ { print "group." $2 "\ttrue"; next }
+    section == "prefixes:" && /^- [^ :]+:$/ { prefix = substr($2, 1, length($2) - 1); next }
+    section == "prefixes:" && /^    priority: [0-9]+$/ && prefix != "" { print "prefix." $2 "." prefix "\ttrue"; prefix = ""; next }
+    { exit 1 }' "$file")"; then
+    echo "error: ${file#"${repo_root}/"} isn't in the form LuckPerms writes" >&2
+    exit 1
+  fi
+  while IFS=$'\t' read -r node value; do
+    if ! grep --quiet --fixed-strings "\"key\":\"${node}\",\"value\":${value}}" <<<"$group_nodes"; then
+      echo "error: LuckPerms' ${group} group doesn't have ${node} ${value}" >&2
+      exit 1
+    fi
+    lp_nodes=$((lp_nodes + 1))
+  done <<<"$nodes"
+done
+if [[ "$(exported_names tracks groups)" != "$(names_in "${lp_storage}/tracks")" ]]; then
+  echo "error: LuckPerms has tracks $(exported_names tracks groups)but the repo has $(names_in "${lp_storage}/tracks")" >&2
+  exit 1
+fi
+for file in "${lp_storage}"/tracks/*.yml; do
+  track="$(basename "$file" .yml)"
+  groups="$(sed -n 's/^- \([^ ]*\)$/"\1"/p' "$file" | paste -sd, -)"
+  if ! grep --quiet --fixed-strings "\"${track}\":{\"groups\":[${groups}]}" <<<"$exported"; then
+    echo "error: LuckPerms' ${track} track isn't [${groups}]" >&2
+    exit 1
+  fi
+done
+echo "LuckPerms has the repo's groups, ${lp_nodes} nodes, and tracks"
 
 # The world borders, by width; `worldborder get` doesn't report the center.
 # Every `worldborder set` line has to parse, so a reworded one fails here
