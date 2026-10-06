@@ -1,0 +1,6 @@
+name: OasisVoice
+version: 1.0.0
+main: com.oasissmp.voice.OasisVoice
+api-version: '26.2'
+description: The Oasis's one Simple Voice Chat group
+depend: [voicechat]

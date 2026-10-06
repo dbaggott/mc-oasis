@@ -18,10 +18,11 @@ the container when it starts.
 ```
 Dockerfile               the image: base image, server settings, baked jars
 server-icon.png          the 64x64 server-list icon
-artifacts.lock           every third-party jar and datapack baked in, with its version, URL and sha256
+artifacts.lock           every third-party jar and datapack baked in, and the libraries the repo's own plugins compile against, with each one's version, URL and sha256
 plugins/<Name>/          config files the repo owns for a plugin, copied over the plugin's own at every start
 data/                    server config files the repo owns, copied over the same paths under the server's /data at every start
 datapacks/<name>/        the repo's own datapacks, each zipped as <name>.zip in the image
+plugin-src/<Name>/       the repo's own plugins, each a plugin.yml and Java sources under src/, compiled into <Name>.jar in the image
 scripts/
   fetch-artifacts.sh     downloads everything in artifacts.lock and verifies each sha256
   smoke-test.sh          starts a built image on a throwaway world; checks every plugin and datapack loads and every config setting applies
@@ -44,6 +45,11 @@ it yourself. A mismatch fails the build.
 
 Changing the Minecraft version also means changing `VERSION` in the `Dockerfile` to match the new Paper
 jar, and the formats in each `datapacks/*/pack.mcmeta` to the new version's data pack format.
+
+The `library` lines are what `plugin-src/` compiles against, so they follow what the server runs: `paper-api`
+the Paper build, `adventure-api` and `adventure-key` the Adventure version that `paper-api`'s POM names, and
+`voicechat-api` the Simple Voice Chat plugin. Changing the Java version means changing the JDK image and
+`--release` in the `Dockerfile`'s `repo-plugins` stage too.
 
 Worldgen datapacks (terrain and structures) shape the world only as it is first generated, and removing one
 from an existing world breaks what it generated. The comment at the top of `artifacts.lock` covers their
