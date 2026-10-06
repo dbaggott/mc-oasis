@@ -124,7 +124,7 @@ setworldspawn -468 63 898\n\
 //pos2 -429,319,936\n\
 rg define -w world spawn\n\
 rg redefine -w world spawn\n\
-rg flag -w world spawn pvp deny\n\
+rg flag -w world spawn pvp allow\n\
 rg flag -w world spawn mob-spawning deny\n\
 rg flag -w world spawn creeper-explosion deny\n\
 rg flag -w world spawn tnt deny\n\
@@ -134,7 +134,8 @@ rg flag -w world spawn fire-spread deny\n\
 rg flag -w world spawn lava-fire deny\n\
 rg flag -w world spawn lighter deny\n\
 rg flag -w world spawn enderman-grief deny\n\
-rg flag -w world spawn use allow"
+rg flag -w world spawn use allow\n\
+rg flag -w world spawn chest-access allow"
 
 COPY build/artifacts/server.jar /opt/server.jar
 COPY build/artifacts/plugins/ /plugins/
