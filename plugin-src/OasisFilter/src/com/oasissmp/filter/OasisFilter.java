@@ -70,7 +70,8 @@ public final class OasisFilter extends JavaPlugin implements Listener {
         String text = event.getMessage();
         if (filter.blocks(text)) {
             event.setCancelled(true);
-            refuse(event.getPlayer(), MESSAGE_REFUSAL, "a command", text);
+            refuse(event.getPlayer(),
+                    MessageCommands.sends(text) ? MESSAGE_REFUSAL : SHORT_REFUSAL, "a command", text);
         }
     }
 
