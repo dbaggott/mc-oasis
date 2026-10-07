@@ -15,6 +15,7 @@ import net.luckperms.api.context.ContextCalculator;
 import net.luckperms.api.context.ContextConsumer;
 import net.luckperms.api.context.ContextSet;
 import net.luckperms.api.context.ImmutableContextSet;
+import net.luckperms.api.event.user.UserDataRecalculateEvent;
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -43,6 +44,7 @@ public final class OasisStaff extends JavaPlugin implements Listener {
 
     private NamespacedKey offDutyKey;
     private LuckPerms luckPerms;
+    private final DutyContext dutyContext = new DutyContext();
     // Online players who are off duty. LuckPerms reads it off the main thread,
     // where a player's saved data can't be.
     private final Set<UUID> offDuty = ConcurrentHashMap.newKeySet();
@@ -54,18 +56,34 @@ public final class OasisStaff extends JavaPlugin implements Listener {
         if (luckPerms == null) {
             throw new IllegalStateException("LuckPerms' API isn't registered");
         }
-        luckPerms.getContextManager().registerCalculator(new DutyContext());
+        luckPerms.getContextManager().registerCalculator(dutyContext);
+        // Subscribed as this plugin, so LuckPerms drops it when the plugin disables.
+        luckPerms.getEventBus().subscribe(this, UserDataRecalculateEvent.class,
+                event -> onRecalculate(event.getUser().getUniqueId()));
         getServer().getPluginManager().registerEvents(this, this);
         registerCommand("staff", "Go on or off duty: off duty hides your staff prefix",
                 new StaffCommand());
+        getServer().getOnlinePlayers().forEach(this::loadDuty);
+    }
+
+    @Override
+    public void onDisable() {
+        if (luckPerms != null) {
+            luckPerms.getContextManager().unregisterCalculator(dutyContext);
+        }
+        offDuty.clear();
     }
 
     // Before other plugins see the player, so nothing shows them on duty when
-    // they're not. A player who's lost the permission while off duty is put
-    // back on: they'd have no way to do it themselves.
+    // they're not.
     @EventHandler(priority = EventPriority.LOWEST)
     public void onJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
+        loadDuty(event.getPlayer());
+    }
+
+    // A player who's lost the permission while off duty is put back on: they'd
+    // have no way to do it themselves.
+    private void loadDuty(Player player) {
         if (!player.getPersistentDataContainer().has(offDutyKey)) {
             return;
         }
@@ -75,6 +93,21 @@ public final class OasisStaff extends JavaPlugin implements Listener {
         }
         offDuty.add(player.getUniqueId());
         luckPerms.getContextManager().signalContextUpdate(player);
+    }
+
+    // The same for a player who loses the permission while online. LuckPerms
+    // recalculates off the main thread; the player is checked on it.
+    private void onRecalculate(UUID playerId) {
+        if (!offDuty.contains(playerId)) {
+            return;
+        }
+        getServer().getScheduler().runTask(this, () -> {
+            Player player = getServer().getPlayer(playerId);
+            if (player != null && offDuty.contains(playerId)
+                    && !player.hasPermission(DUTY_PERMISSION)) {
+                setOnDuty(player, true);
+            }
+        });
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

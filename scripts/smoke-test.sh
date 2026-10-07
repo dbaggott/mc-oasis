@@ -276,15 +276,16 @@ fi
 lp_nodes=0
 for file in "${lp_storage}"/groups/*.yml; do
   group="$(basename "$file" .yml)"
-  group_nodes="$(jq --raw-output --arg group "$group" '.groups[$group].nodes[]
-    | "\(.key)\t\(.value)\t\(.context // {} | to_entries | map("\(.key)=\(.value)") | join(","))"' <<<"$exported")"
-  # Each node as its key, value and contexts (`key=value`, comma-separated), a
-  # tab between. A prefix is printed once its priority and contexts are read.
+  group_nodes="$(jq --raw-output --arg group "$group" '(.groups[$group].nodes // [])[]
+    | "\(.key)\t\(.value)\t\(.context // {} | to_entries | sort_by(.key) | map("\(.key)=\(.value)") | join(","))"' <<<"$exported")"
+  # Each node as its key, value and contexts (`key=value`, comma-separated, in
+  # key order), a tab between. A prefix is printed once its priority and
+  # contexts are read.
   if ! nodes="$(awk '
     function prefix_done() {
       if (prefix != "" && priority == "") exit 1
       if (prefix != "") print "prefix." priority "." prefix "\ttrue\t" context
-      prefix = priority = context = ""
+      prefix = priority = context = in_context = ""
     }
     /^[[:space:]]*(#|$)/ || /^name: / { next }
     /^[a-z]+:$/ { prefix_done(); section = $1; next }
@@ -295,8 +296,8 @@ for file in "${lp_storage}"/groups/*.yml; do
     section == "prefixes:" && /^- [^ :]+:$/ { prefix_done(); prefix = substr($2, 1, length($2) - 1); next }
     section == "prefixes:" && /^- \x27[^\x27]+\x27:$/ { prefix_done(); prefix = substr($0, 4, length($0) - 5); next }
     section == "prefixes:" && /^    priority: [0-9]+$/ && prefix != "" && priority == "" { priority = $2; next }
-    section == "prefixes:" && /^    context:$/ && priority != "" { next }
-    section == "prefixes:" && /^      [a-z0-9_-]+: \x27?[^ \x27]+\x27?$/ && priority != "" {
+    section == "prefixes:" && /^    context:$/ && priority != "" && in_context == "" { in_context = 1; next }
+    section == "prefixes:" && /^      [a-z0-9_-]+: \x27?[^ \x27]+\x27?$/ && in_context != "" {
       value = $2; gsub(/\x27/, "", value)
       context = context (context == "" ? "" : ",") substr($1, 1, length($1) - 1) "=" value
       next
