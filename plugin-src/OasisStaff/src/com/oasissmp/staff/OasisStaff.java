@@ -175,9 +175,8 @@ public final class OasisStaff extends JavaPlugin implements Listener {
                 return;
             }
             setOnDuty(player, wantOnDuty);
-            sender.sendMessage(Component.text(wantOnDuty
-                    ? "You're on duty: your staff prefix shows."
-                    : "You're off duty: your staff prefix is hidden. Your permissions are unchanged.",
+            sender.sendMessage(Component.text(
+                    wantOnDuty ? "Staff prefix shown." : "Staff prefix hidden.",
                     NamedTextColor.GREEN));
         }
 
