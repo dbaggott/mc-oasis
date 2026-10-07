@@ -1,0 +1,5 @@
+name: OasisRules
+version: 1.0.0
+main: com.oasissmp.rules.OasisRules
+api-version: '26.2'
+description: Shows players the server rules with /rules, and on joining until they've seen the current ones

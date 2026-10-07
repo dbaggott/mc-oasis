@@ -208,7 +208,7 @@ COPY --from=libertybans-addons /out/ /plugins/
 # TAB's turns on its spectator fix, so a player in spectator doesn't show as
 # one in non-ops' tab lists, and puts each player's LuckPerms prefix before
 # their name in the tab list.
-# OasisFilter's are its word lists.
+# OasisFilter's are its word lists, and OasisRules' the server rules.
 COPY plugins/ /plugins/
 COPY data/ /config/
 COPY build/artifacts/datapacks/ /datapacks/
