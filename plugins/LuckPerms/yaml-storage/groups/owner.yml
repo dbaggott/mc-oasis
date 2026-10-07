@@ -40,7 +40,7 @@ permissions:
 parents:
 - admin
 prefixes:
-- '<gold>[Owner]</gold> ':
+- '<red>[Owner]</red> ':
     priority: 10
     context:
       staff-duty: 'on'
