@@ -1,6 +1,8 @@
 # Milder swearing, matched as whole words: the first list to leave out if
 # the server's players are old enough for it.
 
+bugger
+buggered
 crap
 crappy
 dammit
@@ -8,6 +10,7 @@ damn
 damned
 damnit
 god damn
+god damned
 god damnit
 hell
 piss

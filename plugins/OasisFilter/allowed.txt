@@ -3,6 +3,7 @@
 # still read as the letters they imitate: "sn1gger" is "snigger", but
 # "sniiigger" and "s nigger" are blocked.
 
+assess
 mishit
 mishits
 niggard
@@ -11,8 +12,13 @@ niggle
 niggled
 niggles
 niggling
+rapped
+rapping
 shiitake
 shiitakes
+shiite
+shiites
+shiitic
 shitake
 shitakes
 shitzu

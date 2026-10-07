@@ -22,24 +22,36 @@ gook
 gooks
 half breed
 half breeds
+honkey
+honkeys
+honkies
+honky
 jap
 japs
 jigaboo
 jigaboos
+jiggerboo
+jiggerboos
 jungle bunnies
 jungle bunny
 kike
 kikes
 kneegrow
 kneegrows
-niga
-nigas
+negro
+negroes
 nibba
 nibbas
+nig nog
+nig nogs
+niga
+nigas
 paki
 pakis
 pickaninnies
 pickaninny
+pikey
+pikeys
 porch monkey
 porch monkeys
 raghead
@@ -49,6 +61,8 @@ redskins
 slant eye
 slant eyes
 spic
+spick
+spicks
 spics
 squaw
 squaws
@@ -67,6 +81,8 @@ zipperheads
 cunt
 cunts
 cunty
+kunt
+kunts
 skank
 skanks
 twat
@@ -75,6 +91,8 @@ twats
 # Sexual orientation and gender identity
 batty boy
 batty man
+bulldyke
+bulldykes
 dyke
 dykes
 fag
@@ -82,6 +100,8 @@ fagot
 fagots
 fags
 lesbo
+lezzie
+lezzies
 poofter
 poofters
 shemale
