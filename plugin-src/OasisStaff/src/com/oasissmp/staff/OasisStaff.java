@@ -155,7 +155,6 @@ public final class OasisStaff extends JavaPlugin implements Listener {
                         "Only a player can go on or off duty.", NamedTextColor.RED));
                 return;
             }
-            boolean onDuty = !offDuty.contains(player.getUniqueId());
             if (args.length == 0) {
                 sendIncomplete(sender);
                 return;
@@ -168,11 +167,6 @@ public final class OasisStaff extends JavaPlugin implements Listener {
             } else {
                 sender.sendMessage(Component.text(
                         "Usage: /staff onduty or /staff offduty", NamedTextColor.RED));
-                return;
-            }
-            if (wantOnDuty == onDuty) {
-                sender.sendMessage(Component.text(
-                        "You're already " + (onDuty ? "on" : "off") + " duty."));
                 return;
             }
             setOnDuty(player, wantOnDuty);
