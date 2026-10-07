@@ -10,10 +10,12 @@ badass
 bastard
 bastards
 bellend
+bellends
 bollocks
 cock
 cocks
 cocksucker
+cocksuckers
 dick
 dickhead
 dickheads
@@ -23,6 +25,7 @@ dumbass
 fatass
 fck
 fcking
+fcuk
 fking
 fml
 fuk
@@ -38,6 +41,7 @@ pussy
 smartass
 stfu
 tosser
+tossers
 wank
 wanker
 wankers

@@ -77,6 +77,9 @@ block spaz
 # Telling someone to hurt themselves, and hate slogans
 block kys
 block kill yourself
+block go kill yourselves
+block hang urself
+block neck your self
 block killyourself
 block just kill urself
 block k y s
@@ -110,6 +113,9 @@ block blowjob
 block blow job
 block rape
 block masturbating
+block pedophiles
+block a55
+block b00bs
 
 # Mild swearing
 block damn
@@ -144,6 +150,9 @@ pass read the faq
 pass FAQ
 pass /faq
 pass shiitake mushrooms
+pass shiitakes
+pass I mishit the ball
+pass love you xxx
 pass hello
 pass a nether shell
 pass scrap metal
@@ -174,6 +183,12 @@ pass bit chunky
 pass this hit
 pass I was hit
 pass a shift key
+
+# Numbers, such as coordinates, that read as a term
+pass I'm at x 455 z -300
+pass base at 7175 64 200
+pass 8008
+pass 5318008
 
 # Minecraft words
 pass hoe

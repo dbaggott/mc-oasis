@@ -1,5 +1,5 @@
 # Punishes players by account only: targeting an IP address is the owners'.
-# Sees Grim's cheat alerts from joining.
+# Sees Grim's cheat alerts from joining, and what the chat filter blocks.
 name: admin
 permissions:
 - grim.alerts
@@ -40,6 +40,7 @@ permissions:
 - libertybans.warn.undo.target.uuid
 - minecraft.command.gamemode
 - minecraft.command.teleport
+- oasisfilter.notify
 - weight.9
 parents:
 - helper

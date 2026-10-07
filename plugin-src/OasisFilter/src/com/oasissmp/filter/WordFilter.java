@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +17,8 @@ import java.util.Set;
  * <p>Text is first reduced to lowercase words of a-z: accents and invisible
  * characters are dropped, digits, symbols and Cyrillic or Greek letters that
  * imitate a letter become that letter, and every other character separates
- * words. Letters spelled out
+ * words. A word with no letter among its characters, such as "455", is a
+ * number and is dropped, unless it's one character long. Letters spelled out
  * one at a time, "n i g g e r" or "n.i.g.g.e.r", are joined back into one word.
  * A blocked term matches with any of its letters repeated, so "niiigger"
  * matches "nigger", though "niger" doesn't.
@@ -156,15 +158,17 @@ final class WordFilter {
             Path list = folder.resolve("lists").resolve(name);
             Path wordsFile = list.resolve("words.txt");
             Path fragmentsFile = list.resolve("fragments.txt");
-            if (!Files.exists(wordsFile) && !Files.exists(fragmentsFile)) {
+            boolean hasWords = Files.exists(wordsFile);
+            boolean hasFragments = Files.exists(fragmentsFile);
+            if (!hasWords && !hasFragments) {
                 throw new IllegalArgumentException(
                         "lists.txt:" + line.number + ": lists/" + name
                                 + " has no words.txt or fragments.txt");
             }
-            if (Files.exists(wordsFile)) {
+            if (hasWords) {
                 words.addAll(entries(wordsFile));
             }
-            if (Files.exists(fragmentsFile)) {
+            if (hasFragments) {
                 fragments.addAll(oneWordEntries(fragmentsFile));
             }
         }
@@ -197,9 +201,13 @@ final class WordFilter {
                 .filter(codePoint -> !isIgnored(codePoint))
                 .toArray();
         StringBuilder normalized = new StringBuilder(codePoints.length);
+        BitSet fromLetters = new BitSet();
         int i = 0;
         while (i < codePoints.length) {
             if (!INNER_I.contains(codePoints[i])) {
+                if (Character.isLetter(codePoints[i])) {
+                    fromLetters.set(normalized.length());
+                }
                 normalized.append(letter(codePoints[i]));
                 i++;
                 continue;
@@ -213,7 +221,26 @@ final class WordFilter {
             normalized.repeat(inner ? 'i' : ' ', end - i);
             i = end;
         }
+        dropNumbers(normalized, fromLetters);
         return normalized.toString();
+    }
+
+    // A word of more than one character, none of them a letter, is a number
+    // such as a coordinate, and becomes separators: "455" isn't "ass". A lone
+    // digit stays, for one spelled out among letters.
+    private static void dropNumbers(StringBuilder normalized, BitSet fromLetters) {
+        int start = 0;
+        while (start < normalized.length()) {
+            int end = start;
+            while (end < normalized.length() && normalized.charAt(end) != ' ') {
+                end++;
+            }
+            int letter = fromLetters.nextSetBit(start);
+            if (end - start > 1 && (letter == -1 || letter >= end)) {
+                normalized.replace(start, end, " ".repeat(end - start));
+            }
+            start = end + 1;
+        }
     }
 
     // The a-z letter a code point is or imitates, or a space.

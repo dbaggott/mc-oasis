@@ -16,7 +16,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
-import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerEditBookEvent;
 import org.bukkit.inventory.meta.BookMeta;
@@ -24,8 +23,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * Stops blocked words, as {@link WordFilter} finds them, everywhere a player
- * can put text in front of others: chat, commands, signs, books, anvil renames,
- * name tags and their own name.
+ * can put text in front of others: chat, commands, signs, books, anvil renames
+ * and name tags. Player names aren't checked: only allowlisted players join.
  *
  * <p>What it stops is refused, never censored and let through. Each refusal is
  * logged in full and shown to online players with {@value #NOTIFY_PERMISSION};
@@ -119,17 +118,6 @@ public final class OasisFilter extends JavaPlugin implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onLogin(AsyncPlayerPreLoginEvent event) {
-        String name = event.getName();
-        if (event.getLoginResult() == AsyncPlayerPreLoginEvent.Result.ALLOWED
-                && filter.blocks(name)) {
-            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, Component.text(
-                    "Your name has a word that isn't allowed here."));
-            report(name, "a login", name);
-        }
-    }
-
     private void refuse(Player player, Component refusal, String where, String text) {
         ((Audience) player).sendMessage(refusal);
         report(player.getName(), where, text);
@@ -143,7 +131,7 @@ public final class OasisFilter extends JavaPlugin implements Listener {
         Component notice = Component.text("[Filter] " + playerName + ", " + where + ": ",
                         NamedTextColor.GOLD)
                 .append(Component.text(shown, NamedTextColor.GRAY));
-        // Chat and logins arrive off the main thread.
+        // Chat arrives off the main thread.
         getServer().getScheduler().runTask(this, () -> {
             for (Player staff : getServer().getOnlinePlayers()) {
                 if (staff.hasPermission(NOTIFY_PERMISSION)) {
