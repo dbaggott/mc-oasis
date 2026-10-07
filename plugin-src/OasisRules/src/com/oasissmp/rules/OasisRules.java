@@ -4,6 +4,7 @@ import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.UUID;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -17,9 +18,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * {@code /rules} shows anyone the server rules, read from {@code rules.txt} at
- * start. A player is shown them with a welcome on joining until they've seen
- * the rules as they are now: which rules each player last saw is saved with
- * them, as the rules' {@link Rules#fingerprint() fingerprint}.
+ * start. A player is shown them on joining until they've seen the rules as
+ * they are now, with a welcome the first time and a notice that they've
+ * changed after that. Which rules each player last saw is saved with them, as
+ * the rules' {@link Rules#fingerprint() fingerprint}.
  */
 public final class OasisRules extends JavaPlugin implements Listener {
 
@@ -43,17 +45,21 @@ public final class OasisRules extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
+        UUID playerId = event.getPlayer().getUniqueId();
         String fingerprint = rules.fingerprint();
-        if (fingerprint.equals(player.getPersistentDataContainer()
-                .get(seenKey, PersistentDataType.STRING))) {
+        String seen = event.getPlayer().getPersistentDataContainer()
+                .get(seenKey, PersistentDataType.STRING);
+        if (fingerprint.equals(seen)) {
             return;
         }
         getServer().getScheduler().runTaskLater(this, () -> {
-            if (!player.isOnline()) {
+            // Looked up again, so a player who rejoined since gets it on their
+            // new connection and it's saved with them.
+            Player player = getServer().getPlayer(playerId);
+            if (player == null) {
                 return;
             }
-            sendWelcome(player);
+            sendWelcome(player, seen != null);
             // Saved only once sent, so a player who leaves first is shown them next time.
             player.getPersistentDataContainer().set(seenKey, PersistentDataType.STRING, fingerprint);
         }, JOIN_DELAY_TICKS);
@@ -61,9 +67,10 @@ public final class OasisRules extends JavaPlugin implements Listener {
 
     // Messages go out through Audience: Player's and CommandSender's own
     // sendMessage overloads reach for BungeeCord's chat classes, which aren't here.
-    private void sendWelcome(Audience audience) {
-        audience.sendMessage(Component.text(
-                "Welcome to The Oasis SMP!  Please make sure to follow the rules:",
+    private void sendWelcome(Audience audience, boolean rulesChanged) {
+        audience.sendMessage(Component.text(rulesChanged
+                ? "The Oasis SMP rules have changed. Please make sure to follow them:"
+                : "Welcome to The Oasis SMP!  Please make sure to follow the rules:",
                 NamedTextColor.GOLD));
         audience.sendMessage(Component.empty());
         sendRules(audience);
