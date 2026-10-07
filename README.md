@@ -38,6 +38,8 @@ docker build --platform linux/arm64 --tag mc-oasis:local .
 scripts/smoke-test.sh mc-oasis:local
 ```
 
+The smoke test needs Docker and `jq`.
+
 ## Changing a plugin, datapack or the Paper build
 
 Edit its line in `artifacts.lock`: version, URL and sha256 together. Take the sha256 from the publisher
