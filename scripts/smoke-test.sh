@@ -366,7 +366,7 @@ echo "LuckPerms has the repo's groups, ${lp_nodes} nodes, and tracks"
 
 # OasisStaff's /staff is registered, by the console being refused it. Whether
 # going off duty hides a prefix takes a player, which this can't be.
-reply="$(rcon staff)"
+reply="$(rcon staff onduty)"
 if [[ "$reply" != *"Only a player can go on or off duty."* ]]; then
   echo "error: /staff answered the console with '${reply}'" >&2
   exit 1

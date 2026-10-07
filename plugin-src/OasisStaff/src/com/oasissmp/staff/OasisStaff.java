@@ -1,17 +1,16 @@
 package com.oasissmp.staff;
 
-import io.papermc.paper.command.brigadier.BasicCommand;
+import com.mojang.brigadier.Command;
+import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
-import java.util.Collection;
-import java.util.List;
+import io.papermc.paper.command.brigadier.Commands;
+import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.context.ContextCalculator;
 import net.luckperms.api.context.ContextConsumer;
@@ -63,8 +62,9 @@ public final class OasisStaff extends JavaPlugin implements Listener {
         luckPerms.getEventBus().subscribe(this, UserDataRecalculateEvent.class,
                 event -> onRecalculate(event.getUser().getUniqueId()));
         getServer().getPluginManager().registerEvents(this, this);
-        registerCommand("staff", "Go on or off duty: off duty hides your staff prefix",
-                new StaffCommand());
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
+                event.registrar().register(staffCommand(),
+                        "Go on or off duty: off duty hides your staff prefix"));
         getServer().getOnlinePlayers().forEach(this::loadDuty);
     }
 
@@ -141,66 +141,31 @@ public final class OasisStaff extends JavaPlugin implements Listener {
         }
     }
 
-    private final class StaffCommand implements BasicCommand {
+    // Built from fixed words rather than free text, so the game itself answers
+    // a missing or wrong one, in its own words.
+    private LiteralCommandNode<CommandSourceStack> staffCommand() {
+        return Commands.literal("staff")
+                // Players need the permission even to see the command. The console
+                // doesn't, so it's told why it can't use it rather than that it's unknown.
+                .requires(source -> !(source.getSender() instanceof Player)
+                        || source.getSender().hasPermission(DUTY_PERMISSION))
+                .then(Commands.literal("onduty").executes(context -> setDuty(context.getSource(), true)))
+                .then(Commands.literal("offduty").executes(context -> setDuty(context.getSource(), false)))
+                .build();
+    }
 
-        private static final List<String> SUBCOMMANDS = List.of("onduty", "offduty");
-
-        @Override
-        public void execute(CommandSourceStack source, String[] args) {
-            // Messages go to it as an Audience: CommandSender's own sendMessage
-            // overloads reach for BungeeCord's chat classes, which aren't here.
-            Audience sender = source.getSender();
-            if (!(source.getSender() instanceof Player player)) {
-                sender.sendMessage(Component.text(
-                        "Only a player can go on or off duty.", NamedTextColor.RED));
-                return;
-            }
-            if (args.length == 0) {
-                sendIncomplete(sender);
-                return;
-            }
-            boolean wantOnDuty;
-            if (args.length == 1 && args[0].equalsIgnoreCase("onduty")) {
-                wantOnDuty = true;
-            } else if (args.length == 1 && args[0].equalsIgnoreCase("offduty")) {
-                wantOnDuty = false;
-            } else {
-                sender.sendMessage(Component.text(
-                        "Usage: /staff onduty or /staff offduty", NamedTextColor.RED));
-                return;
-            }
-            setOnDuty(player, wantOnDuty);
+    private int setDuty(CommandSourceStack source, boolean onDuty) {
+        // Messages go to it as an Audience: CommandSender's own sendMessage
+        // overloads reach for BungeeCord's chat classes, which aren't here.
+        Audience sender = source.getSender();
+        if (!(source.getSender() instanceof Player player)) {
             sender.sendMessage(Component.text(
-                    wantOnDuty ? "Staff prefix shown." : "Staff prefix hidden.",
-                    NamedTextColor.GREEN));
+                    "Only a player can go on or off duty.", NamedTextColor.RED));
+            return 0;
         }
-
-        // The game's own reply to a command missing its argument, which this
-        // command can't get from the game: it takes its arguments as free text.
-        private void sendIncomplete(Audience sender) {
-            sender.sendMessage(Component.translatable("command.unknown.command", NamedTextColor.RED));
-            sender.sendMessage(Component.text()
-                    .color(NamedTextColor.RED)
-                    .append(Component.text("staff", NamedTextColor.GRAY))
-                    .append(Component.translatable("command.context.here",
-                            NamedTextColor.RED, TextDecoration.ITALIC))
-                    .clickEvent(ClickEvent.suggestCommand("/staff")));
-        }
-
-        @Override
-        public Collection<String> suggest(CommandSourceStack source, String[] args) {
-            if (args.length > 1) {
-                return List.of();
-            }
-            String typed = args.length == 0 ? "" : args[0].toLowerCase();
-            return SUBCOMMANDS.stream().filter(sub -> sub.startsWith(typed)).toList();
-        }
-
-        // Players need the permission even to see the command. The console
-        // doesn't, so it's told why it can't use it rather than that it's unknown.
-        @Override
-        public boolean canUse(CommandSender sender) {
-            return !(sender instanceof Player) || sender.hasPermission(DUTY_PERMISSION);
-        }
+        setOnDuty(player, onDuty);
+        sender.sendMessage(Component.text(
+                onDuty ? "Staff prefix shown." : "Staff prefix hidden.", NamedTextColor.GREEN));
+        return Command.SINGLE_SUCCESS;
     }
 }
