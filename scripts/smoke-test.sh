@@ -61,6 +61,13 @@ if grep --quiet --fixed-strings ' ERROR]: ' <<<"$logs"; then
   echo "error: the server logged errors while starting" >&2
   exit 1
 fi
+# TAB reports a config.yml or groups.yml it can't read, or a key missing from
+# one, at INFO, and runs on its defaults.
+if grep --quiet --extended-regexp '\[TAB\] \[(WARN|ERROR)\]' <<<"$logs"; then
+  grep --extended-regexp '\[TAB\] \[(WARN|ERROR)\]' <<<"$logs" | head -n 20 || true
+  echo "error: TAB reported problems with its config" >&2
+  exit 1
+fi
 # The plugins in artifacts.lock, and the repo's own by the name in each
 # plugin-src/*/plugin.yml.
 failed=()
@@ -269,9 +276,7 @@ fi
 lp_nodes=0
 for file in "${lp_storage}"/groups/*.yml; do
   group="$(basename "$file" .yml)"
-  # To the `]` that closes the nodes list: one inside a prefix isn't followed
-  # by the `}` or `,` that follows the list's.
-  group_nodes="$(grep -oE "\"${group}\":\{\"nodes\":\[([^]]|\][^},])*\]" <<<"$exported")"
+  group_nodes="$(jq --raw-output --arg group "$group" '.groups[$group].nodes[] | "\(.key)\t\(.value)"' <<<"$exported")"
   if ! nodes="$(awk '
     /^[[:space:]]*(#|$)/ || /^name: / { next }
     /^[a-z]+:$/ { section = $1; next }
@@ -287,7 +292,7 @@ for file in "${lp_storage}"/groups/*.yml; do
     exit 1
   fi
   while IFS=$'\t' read -r node value; do
-    if ! grep --quiet --fixed-strings "\"key\":\"${node}\",\"value\":${value}}" <<<"$group_nodes"; then
+    if ! grep --quiet --line-regexp --fixed-strings "${node}"$'\t'"${value}" <<<"$group_nodes"; then
       echo "error: LuckPerms' ${group} group doesn't have ${node} ${value}" >&2
       exit 1
     fi

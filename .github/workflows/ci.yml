@@ -51,7 +51,9 @@ jobs:
         run: docker build --platform linux/arm64 --tag mc-oasis:ci .
 
       - name: Smoke test
-        run: scripts/smoke-test.sh mc-oasis:ci
+        run: |
+          command -v jq >/dev/null || { sudo apt-get update -q && sudo apt-get install -y -q jq; }
+          scripts/smoke-test.sh mc-oasis:ci
 
       # Handed to the push job as a file, so what gets pushed is the image that
       # was tested here rather than a rebuild of it.
