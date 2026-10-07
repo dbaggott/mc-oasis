@@ -9,7 +9,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.context.ContextCalculator;
 import net.luckperms.api.context.ContextConsumer;
@@ -155,8 +157,7 @@ public final class OasisStaff extends JavaPlugin implements Listener {
             }
             boolean onDuty = !offDuty.contains(player.getUniqueId());
             if (args.length == 0) {
-                sender.sendMessage(Component.text("You're " + (onDuty ? "on" : "off")
-                        + " duty. /staff onduty or /staff offduty to change it."));
+                sendIncomplete(sender);
                 return;
             }
             boolean wantOnDuty;
@@ -178,6 +179,18 @@ public final class OasisStaff extends JavaPlugin implements Listener {
             sender.sendMessage(Component.text(
                     wantOnDuty ? "Staff prefix shown." : "Staff prefix hidden.",
                     NamedTextColor.GREEN));
+        }
+
+        // The game's own reply to a command missing its argument, which this
+        // command can't get from the game: it takes its arguments as free text.
+        private void sendIncomplete(Audience sender) {
+            sender.sendMessage(Component.translatable("command.unknown.command", NamedTextColor.RED));
+            sender.sendMessage(Component.text()
+                    .color(NamedTextColor.RED)
+                    .append(Component.text("staff", NamedTextColor.GRAY))
+                    .append(Component.translatable("command.context.here",
+                            NamedTextColor.RED, TextDecoration.ITALIC))
+                    .clickEvent(ClickEvent.suggestCommand("/staff")));
         }
 
         @Override
