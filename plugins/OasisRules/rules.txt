@@ -1,0 +1,11 @@
+# The server rules, one per line, numbered in the order they're written. Lines
+# starting with # are comments.
+#
+# /rules shows them, and a player is shown them in chat on joining until
+# they've seen the rules as they are now. Changing a rule's wording, adding one
+# or reordering them shows everyone the rules again; changing a comment doesn't.
+
+Be kind. No harassment, slurs or hate.
+No griefing or stealing. Build away from others unless invited.
+No cheats, x-ray or hacked clients.
+Keep chat clean. The filter catches most of it, but don't test it.

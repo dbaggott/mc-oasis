@@ -338,6 +338,16 @@ if [[ "$reply" != *"Only a player can go on or off duty."* ]]; then
 fi
 echo "/staff registered"
 
+# OasisRules' /rules is registered and shows the repo's rules, by the console
+# being shown the first. The message on joining takes a player.
+first_rule="$(grep --invert-match --extended-regexp '^[[:space:]]*(#|$)' "${repo_root}/plugins/OasisRules/rules.txt" | head -n 1 | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+reply="$(rcon rules)"
+if [[ "$reply" != *"1. ${first_rule}"* ]]; then
+  echo "error: /rules answered the console with '${reply}'" >&2
+  exit 1
+fi
+echo "/rules registered"
+
 # The world borders, by width; `worldborder get` doesn't report the center.
 # Every `worldborder set` line has to parse, so a reworded one fails here
 # instead of going unchecked.
