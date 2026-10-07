@@ -45,7 +45,7 @@ permissions:
 parents:
 - helper
 prefixes:
-- '<red>[Admin]</red> ':
+- '<gold>[Admin]</gold> ':
     priority: 9
     context:
       staff-duty: 'on'
