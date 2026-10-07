@@ -28,9 +28,10 @@ docker run --detach --name "$name" --env MEMORY=2G \
   --security-opt no-new-privileges \
   "$image" >/dev/null
 # Started alongside, so its start overlaps the main one's. The image copies
-# nothing from a COPY_CONFIG_SRC that doesn't exist.
+# nothing from a COPY_CONFIG_SRC that doesn't exist. A flat world, since only
+# its configs are read, so generating it takes little CPU from the main start.
 docker run --detach --name "$reference_name" --env MEMORY=2G \
-  --env COPY_CONFIG_SRC=/nonexistent \
+  --env COPY_CONFIG_SRC=/nonexistent --env LEVEL_TYPE=minecraft:flat \
   --cap-drop ALL --cap-add CHOWN --cap-add SETUID --cap-add SETGID \
   --security-opt no-new-privileges \
   "$image" >/dev/null
@@ -177,31 +178,75 @@ yaml_settings() {
       print path "\t" value
     }' "$1"
 }
-config_value() {
-  docker exec --user 1000 "$1" mc-image-helper yaml-path --file "/data/$2" "$3" 2>/dev/null
+# Every setting in the repo's YAML files under a directory, as the file's path
+# under /data, a yaml-path and its value, tabs between.
+repo_settings() {
+  local dir="$1" under="$2" file settings
+  while read -r file; do
+    if ! settings="$(yaml_settings "${repo_root}/${dir}/${file}")"; then
+      echo "error: ${dir}/${file} isn't nested 'key: value' maps at two-space indents" >&2
+      return 1
+    fi
+    if [[ -n "$settings" ]]; then
+      awk -v file="${under}${file}" '{ print file "\t" $0 }' <<<"$settings"
+    fi
+  done < <(cd "${repo_root}/${dir}" && find . -type f -name '*.yml' | sed 's|^\./||' | LC_ALL=C sort)
 }
-config_settings=0
-while read -r file; do
-  config="${repo_root}/data/${file}"
-  if ! settings="$(yaml_settings "$config")"; then
-    echo "error: ${file} isn't nested 'key: value' maps at two-space indents" >&2
-    exit 1
-  fi
-  while IFS=$'\t' read -r path value; do
-    if ! config_value "$reference_name" "$file" "$path" >/dev/null; then
-      echo "error: ${file} ${path} isn't a setting the server knows" >&2
-      exit 1
-    fi
-    live="$(config_value "$name" "$file" "$path")" || live="(missing)"
-    if [[ "$live" != "$value" ]]; then
-      echo "error: ${file} ${path} is ${live}, not ${value}" >&2
-      exit 1
-    fi
-    config_settings=$((config_settings + 1))
-  done <<<"$settings"
-done < <(cd "${repo_root}/data" && find . -type f -name '*.yml' | sed 's|^\./||' | LC_ALL=C sort)
+setting_count() {
+  if [[ -z "$1" ]]; then echo 0; else wc -l <<<"$1" | tr -d ' '; fi
+}
+# Checks repo_settings against the files under a container's /data: that each
+# path holds its value, or with `known`, only that the path is there. Each
+# lookup starts a JVM, so they run in parallel, and each is compared where it
+# ran. Prints every failure, and fails on one or on a setting left unchecked.
+# Without UsePerfData, so parallel JVMs can't collide on a perf file and print
+# a warning where the value should be.
+check_settings() {
+  local container="$1" mode="$2" settings="$3"
+  if [[ -z "$settings" ]]; then return 0; fi
+  # shellcheck disable=SC2016 # expanded by the container's bash
+  docker exec --interactive --user 1000 --env MC_IMAGE_HELPER_OPTS=-XX:-UsePerfData "$container" bash -c '
+    mode="$1" expected="$2" results="$(mktemp -d)" n=0
+    while IFS="$(printf "\t")" read -r file path value; do
+      n=$((n + 1))
+      {
+        if live="$(mc-image-helper yaml-path --file "/data/${file}" "$path" 2>"${results}/${n}.stderr")"; then
+          :
+        elif grep --quiet PathNotFoundException "${results}/${n}.stderr"; then
+          live="(missing)"
+        else
+          unset live
+          echo "error: looking up ${file} ${path} failed: $(sed --quiet "s/\x1b\[[0-9;]*m//g; /Exception/{p;q}" "${results}/${n}.stderr")"
+        fi
+        if [[ "$mode" == known ]]; then
+          if [[ "$live" == "(missing)" ]]; then echo "error: ${file} ${path} isn'\''t a setting the server knows"; fi
+        elif [[ -n "${live+set}" && "$live" != "$value" ]]; then
+          echo "error: ${file} ${path} is ${live}, not ${value}"
+        fi
+      } >"${results}/${n}.partial" && mv "${results}/${n}.partial" "${results}/${n}" &
+      while (($(jobs -pr | wc -l) >= $(nproc))); do wait -n; done
+    done
+    wait
+    failed=0
+    for ((i = 1; i <= expected; i++)); do
+      if [[ ! -e "${results}/${i}" ]]; then
+        echo "error: setting ${i} of ${expected} was never checked"
+        failed=1
+      elif [[ -s "${results}/${i}" ]]; then
+        cat "${results}/${i}"
+        failed=1
+      fi
+    done
+    rm -r "$results"
+    exit "$failed"' _ "$mode" "$(setting_count "$settings")" <<<"$settings" >&2
+}
+settings="$(repo_settings data "")" || exit 1
+check_settings "$reference_name" known "$settings" &
+known_check=$!
+check_settings "$name" value "$settings" || exit 1
+wait "$known_check" || exit 1
 docker rm --force --volumes "$reference_name" >/dev/null
-echo "${config_settings} config settings in place"
+echo "$(setting_count "$settings") config settings in place"
 
 # The repo's plugin .properties files, by every `key=value` in them found as
 # the same line in the file the plugin is running with.
@@ -221,22 +266,9 @@ echo "${properties_settings} plugin properties in place"
 # The repo's LibertyBans settings, each read back from the file LibertyBans
 # rewrote on loading it. The repo's files leave keys out, so LibertyBans
 # rewrites each one in full, keeping the keys it knows and dropping any other.
-libertybans_settings=0
-while read -r file; do
-  if ! settings="$(yaml_settings "${repo_root}/plugins/LibertyBans/${file}")"; then
-    echo "error: plugins/LibertyBans/${file} isn't nested 'key: value' maps at two-space indents" >&2
-    exit 1
-  fi
-  while IFS=$'\t' read -r path value; do
-    live="$(config_value "$name" "plugins/LibertyBans/${file}" "$path")" || live="(missing)"
-    if [[ "$live" != "$value" ]]; then
-      echo "error: plugins/LibertyBans/${file} ${path} is ${live}, not ${value}" >&2
-      exit 1
-    fi
-    libertybans_settings=$((libertybans_settings + 1))
-  done <<<"$settings"
-done < <(cd "${repo_root}/plugins/LibertyBans" && find . -type f -name '*.yml' | sed 's|^\./||' | LC_ALL=C sort)
-echo "${libertybans_settings} LibertyBans settings in place"
+settings="$(repo_settings plugins/LibertyBans plugins/LibertyBans/)" || exit 1
+check_settings "$name" value "$settings" || exit 1
+echo "$(setting_count "$settings") LibertyBans settings in place"
 if ! grep --quiet --fixed-strings 'ExemptionLuckPermsAddon] LuckPerms detected and hooked' <<<"$logs"; then
   echo "error: LibertyBans' LuckPerms exemption add-on didn't hook into LuckPerms" >&2
   exit 1
