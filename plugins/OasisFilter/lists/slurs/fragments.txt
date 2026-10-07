@@ -1,0 +1,13 @@
+# Slurs matched inside longer words as well.
+
+# Race and ethnicity
+nigg
+niqq
+
+# Gender
+bitch
+slut
+whore
+
+# Sexual orientation
+fagg

@@ -1,7 +1,5 @@
-# Blocked as whole words: "spic" doesn't block "spicy". Plurals and other
-# forms are entries of their own. An entry of several words matches them
-# written apart or together. Disguised, repeated and spelled-out letters still
-# match; WordFilter in plugin-src/OasisFilter says how text is read.
+# Slurs against a race, ethnicity, gender, sexual orientation, gender
+# identity or disability, matched as whole words.
 
 # Race and ethnicity
 beaner
@@ -24,24 +22,36 @@ gook
 gooks
 half breed
 half breeds
+honkey
+honkeys
+honkies
+honky
 jap
 japs
 jigaboo
 jigaboos
+jiggerboo
+jiggerboos
 jungle bunnies
 jungle bunny
 kike
 kikes
 kneegrow
 kneegrows
-niga
-nigas
+negro
+negroes
 nibba
 nibbas
+nig nog
+nig nogs
+niga
+nigas
 paki
 pakis
 pickaninnies
 pickaninny
+pikey
+pikeys
 porch monkey
 porch monkeys
 raghead
@@ -51,6 +61,8 @@ redskins
 slant eye
 slant eyes
 spic
+spick
+spicks
 spics
 squaw
 squaws
@@ -69,6 +81,8 @@ zipperheads
 cunt
 cunts
 cunty
+kunt
+kunts
 skank
 skanks
 twat
@@ -77,6 +91,8 @@ twats
 # Sexual orientation and gender identity
 batty boy
 batty man
+bulldyke
+bulldykes
 dyke
 dykes
 fag
@@ -84,9 +100,20 @@ fagot
 fagots
 fags
 lesbo
+lezzie
+lezzies
 poofter
 poofters
 shemale
 shemales
 trannies
 tranny
+
+# Disability
+retard
+retarded
+retards
+spastic
+spastics
+spaz
+spazz

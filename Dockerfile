@@ -215,7 +215,8 @@ COPY --from=repo-datapacks /out/ /datapacks/
 COPY server-icon.png /server-icon.png
 
 # The copy over /data/plugins adds and replaces files but never deletes them,
-# so LuckPerms' group and track folders on the world volume are emptied first:
-# a group or track the repo no longer has is gone, not still loaded. As the
-# server's own user, which owns them; root has no capability to.
-ENTRYPOINT ["/bin/bash", "-c", "gosu minecraft:minecraft rm -rf /data/plugins/LuckPerms/yaml-storage/groups /data/plugins/LuckPerms/yaml-storage/tracks && exec /image/scripts/start \"$@\"", "start"]
+# so LuckPerms' group and track folders and OasisFilter's word lists on the
+# world volume are emptied first: a group, track or word list file the repo no
+# longer has is gone, not still loaded. As the server's own user, which owns
+# them; root has no capability to.
+ENTRYPOINT ["/bin/bash", "-c", "gosu minecraft:minecraft rm -rf /data/plugins/LuckPerms/yaml-storage/groups /data/plugins/LuckPerms/yaml-storage/tracks /data/plugins/OasisFilter/lists && exec /image/scripts/start \"$@\"", "start"]
