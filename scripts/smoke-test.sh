@@ -36,6 +36,7 @@ docker run --detach --name "$reference_name" --env MEMORY=2G \
   "$image" >/dev/null
 
 echo "waiting for the server to finish starting"
+started=$SECONDS
 deadline=$((SECONDS + startup_deadline_seconds))
 until grep --quiet --fixed-strings 'Done (' <<<"$(docker logs "$name" 2>&1)"; do
   if [[ "$(docker inspect --format '{{.State.Running}}' "$name")" != true ]]; then
@@ -48,8 +49,9 @@ until grep --quiet --fixed-strings 'Done (' <<<"$(docker logs "$name" 2>&1)"; do
     echo "error: no 'Done (' within ${startup_deadline_seconds}s" >&2
     exit 1
   fi
-  sleep 5
+  sleep 2
 done
+echo "server started in $((SECONDS - started))s"
 
 # A plugin that throws while enabling is disabled, and a datapack file that
 # won't parse (an advancement, a function, a loot table) is skipped, and either
@@ -155,8 +157,9 @@ until grep --quiet --fixed-strings 'INFO]: Done (' <<<"$(docker logs "$reference
     echo "error: the reference server didn't finish starting" >&2
     exit 1
   fi
-  sleep 5
+  sleep 2
 done
+echo "reference server started"
 # Every setting in a YAML file of nested maps of `key: value` at two-space
 # indents, as a yaml-path and its value, a tab between; fails on anything else.
 yaml_settings() {
@@ -527,7 +530,9 @@ for stale_file in "${stale_files[@]}"; do
     exit 1
   fi
 done
-docker stop --time "$stop_timeout_seconds" "$name" >/dev/null
+# Removed rather than stopped: a stop waits out the rest of the start, and how
+# the server stops was checked above.
+docker rm --force --volumes "$name" >/dev/null
 echo "LuckPerms groups and OasisFilter word lists the repo doesn't have are removed at start"
 
 echo "smoke test passed"
