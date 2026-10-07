@@ -1,6 +1,7 @@
 # Text the filter must block or must let through, checked against the word
-# lists in plugins/OasisFilter at every image build. One case per line:
-# "block <text>" or "pass <text>".
+# lists plugins/OasisFilter/lists.txt names, at every image build. One case
+# per line: "block <text>" or "pass <text>". Leaving a list out of lists.txt
+# turns its block cases into pass cases.
 
 # Plain
 block nigger
@@ -68,6 +69,56 @@ block porchmonkey
 block porch   monkey
 block p o r c h m o n k e y
 
+# Disability
+block retard
+block retarded
+block spaz
+
+# Telling someone to hurt themselves, and hate slogans
+block kys
+block kill yourself
+block killyourself
+block just kill urself
+block k y s
+block heil hitler
+block siegheil
+
+# Swearing
+block fuck
+block FUCKING
+block f u c k
+block motherfucker
+block fuuuuck
+block sh1t
+block bullshit
+block shitty
+block wtf
+block stfu
+block you ass
+block dumbass
+block asshole
+block bastard
+block dickhead
+block wanker
+
+# Sexual words
+block porn
+block pornhub
+block sexy
+block send nudes
+block blowjob
+block blow job
+block rape
+block masturbating
+
+# Mild swearing
+block damn
+block dammit
+block goddamn
+block what the hell
+block crap
+block pissed off
+
 # Innocent words containing a term, or near one
 pass Niger
 pass Nigeria is in Africa
@@ -92,6 +143,26 @@ pass therapist
 pass read the faq
 pass FAQ
 pass /faq
+pass shiitake mushrooms
+pass hello
+pass a nether shell
+pass scrap metal
+pass a bunch of grapes
+pass Essex
+pass analysis
+pass cucumber
+pass Dickens
+pass cocktail
+pass peacock
+pass hitchhike
+pass passion
+pass masses of sand
+pass skill
+pass bass
+pass titanium
+pass sextant
+pass the creeper killed you
+pass craps
 
 # Innocent phrases whose words run together into a term
 pass who reads this
@@ -100,6 +171,9 @@ pass I like your red skin
 pass if a group goes
 pass did you get it
 pass bit chunky
+pass this hit
+pass I was hit
+pass a shift key
 
 # Minecraft words
 pass hoe

@@ -40,8 +40,9 @@ public final class OasisFilter extends JavaPlugin implements Listener {
     private static final Component SHORT_REFUSAL =
             Component.text("That has a word that isn't allowed here.", NamedTextColor.RED);
     private static final Component MESSAGE_REFUSAL = Component.text(
-            "Your message wasn't sent. Some words can hurt or put people down, and this looks"
-                    + " like it might be one of them. We want everyone to be and feel welcome here.",
+            "Your message wasn't sent. Some words can hurt or put people down, or aren't right"
+                    + " for the younger players here, and this looks like it might be one of them."
+                    + " We want everyone to be and feel welcome here.",
             NamedTextColor.RED);
 
     private WordFilter filter;

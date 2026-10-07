@@ -1,7 +1,5 @@
-# Blocked as whole words: "spic" doesn't block "spicy". Plurals and other
-# forms are entries of their own. An entry of several words matches them
-# written apart or together. Disguised, repeated and spelled-out letters still
-# match; WordFilter in plugin-src/OasisFilter says how text is read.
+# Slurs against a race, ethnicity, gender, sexual orientation, gender
+# identity or disability, matched as whole words.
 
 # Race and ethnicity
 beaner
@@ -90,3 +88,12 @@ shemale
 shemales
 trannies
 tranny
+
+# Disability
+retard
+retarded
+retards
+spastic
+spastics
+spaz
+spazz

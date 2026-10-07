@@ -1,0 +1,15 @@
+# Milder swearing, matched as whole words: the first list to leave out if
+# the server's players are old enough for it.
+
+crap
+crappy
+dammit
+damn
+damned
+damnit
+god damn
+god damnit
+hell
+piss
+pissed
+pissing

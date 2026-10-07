@@ -1,0 +1,19 @@
+# The word lists the filter uses, one name per line. Each is a folder in
+# lists/ holding a words.txt, a fragments.txt or both. A list not named here
+# isn't used, so leaving one out allows its words again.
+#
+# words.txt: blocked as whole words, so "spic" doesn't block "spicy". Plurals
+# and other forms are entries of their own. An entry of several words matches
+# them written apart or together.
+#
+# fragments.txt: blocked inside longer words as well as on their own, for terms
+# no innocent word contains, or only the few in allowed.txt.
+#
+# Disguised, repeated and spelled-out letters still match; WordFilter in
+# plugin-src/OasisFilter says how text is read.
+
+slurs
+harm
+profanity
+sexual
+mild

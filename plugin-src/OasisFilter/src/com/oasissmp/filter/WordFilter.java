@@ -21,15 +21,18 @@ import java.util.Set;
  * A blocked term matches with any of its letters repeated, so "niiigger"
  * matches "nigger", though "niger" doesn't.
  *
- * <p>The lists are three files of one entry per line, {@code #} starting a
+ * <p>The terms come from the lists named in {@code lists.txt}, each a folder
+ * under {@code lists/}. Every file has one entry per line, {@code #} starting a
  * comment:
  * <ul>
- *   <li>{@code words.txt}: terms that match whole words only, so "spic"
- *       doesn't block "spicy". Plurals and other forms are entries of their
- *       own. An entry of several words matches them written apart or together.
- *   <li>{@code fragments.txt}: terms that match inside longer words too.
- *   <li>{@code allowed.txt}: words never matched, for the innocent words a
- *       fragment is part of.
+ *   <li>{@code words.txt}, in a list: terms that match whole words only, so
+ *       "spic" doesn't block "spicy". Plurals and other forms are entries of
+ *       their own. An entry of several words matches them written apart or
+ *       together.
+ *   <li>{@code fragments.txt}, in a list: terms that match inside longer words
+ *       too.
+ *   <li>{@code allowed.txt}, beside {@code lists.txt}: words never matched, for
+ *       the innocent words a fragment is part of.
  * </ul>
  *
  * <p>No term matches across the gap between two words of more than one
@@ -145,22 +148,27 @@ final class WordFilter {
     }
 
     static WordFilter load(Path folder) throws IOException {
-        Set<String> allowed = new HashSet<>();
-        for (String word : entries(folder.resolve("allowed.txt"))) {
-            if (word.contains(" ")) {
+        Set<String> allowed = new HashSet<>(oneWordEntries(folder.resolve("allowed.txt")));
+        List<String> words = new ArrayList<>();
+        List<String> fragments = new ArrayList<>();
+        for (Line line : lines(folder.resolve("lists.txt"))) {
+            String name = line.text;
+            Path list = folder.resolve("lists").resolve(name);
+            Path wordsFile = list.resolve("words.txt");
+            Path fragmentsFile = list.resolve("fragments.txt");
+            if (!Files.exists(wordsFile) && !Files.exists(fragmentsFile)) {
                 throw new IllegalArgumentException(
-                        "allowed.txt: '" + word + "' isn't one word once normalized");
+                        "lists.txt:" + line.number + ": lists/" + name
+                                + " has no words.txt or fragments.txt");
             }
-            allowed.add(word);
-        }
-        List<String> fragments = entries(folder.resolve("fragments.txt"));
-        for (String fragment : fragments) {
-            if (fragment.contains(" ")) {
-                throw new IllegalArgumentException(
-                        "fragments.txt: '" + fragment + "' isn't one word once normalized");
+            if (Files.exists(wordsFile)) {
+                words.addAll(entries(wordsFile));
+            }
+            if (Files.exists(fragmentsFile)) {
+                fragments.addAll(oneWordEntries(fragmentsFile));
             }
         }
-        return new WordFilter(entries(folder.resolve("words.txt")), fragments, allowed);
+        return new WordFilter(words, fragments, allowed);
     }
 
     boolean blocks(String text) {
@@ -233,20 +241,45 @@ final class WordFilter {
 
     private static List<String> entries(Path file) throws IOException {
         List<String> entries = new ArrayList<>();
-        List<String> lines = Files.readAllLines(file);
-        for (int i = 0; i < lines.size(); i++) {
-            String line = lines.get(i).strip();
-            if (line.isEmpty() || line.startsWith("#")) {
-                continue;
-            }
-            String entry = normalize(line).strip().replaceAll(" +", " ");
-            if (entry.isEmpty()) {
-                throw new IllegalArgumentException(
-                        file.getFileName() + ":" + (i + 1) + ": '" + line + "' has no letters");
+        for (Line line : lines(file)) {
+            entries.add(entry(file, line));
+        }
+        return entries;
+    }
+
+    private static List<String> oneWordEntries(Path file) throws IOException {
+        List<String> entries = new ArrayList<>();
+        for (Line line : lines(file)) {
+            String entry = entry(file, line);
+            if (entry.contains(" ")) {
+                throw new IllegalArgumentException(file + ":" + line.number + ": '" + line.text
+                        + "' isn't one word once normalized");
             }
             entries.add(entry);
         }
         return entries;
+    }
+
+    private static String entry(Path file, Line line) {
+        String entry = normalize(line.text).strip().replaceAll(" +", " ");
+        if (entry.isEmpty()) {
+            throw new IllegalArgumentException(
+                    file + ":" + line.number + ": '" + line.text + "' has no letters");
+        }
+        return entry;
+    }
+
+    // Each line stripped, leaving out blank lines and # comments.
+    private static List<Line> lines(Path file) throws IOException {
+        List<String> lines = Files.readAllLines(file);
+        List<Line> kept = new ArrayList<>();
+        for (int i = 0; i < lines.size(); i++) {
+            String text = lines.get(i).strip();
+            if (!text.isEmpty() && !text.startsWith("#")) {
+                kept.add(new Line(i + 1, text));
+            }
+        }
+        return kept;
     }
 
     /**
@@ -327,6 +360,9 @@ final class WordFilter {
         }
         return true;
     }
+
+    /** A line of a list file, and its number from 1. */
+    private record Line(int number, String text) { }
 
     /** One letter, and how many times it's repeated. */
     private record Run(char letter, int count) { }

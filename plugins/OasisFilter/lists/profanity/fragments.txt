@@ -1,0 +1,6 @@
+# Swearing matched inside longer words as well.
+
+asshole
+arsehole
+fuck
+shit
