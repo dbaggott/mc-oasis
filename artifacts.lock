@@ -60,6 +60,7 @@ datapack  51-bacaped                        2.9.2             6868ba9331356435c0
 datapack  60-players-drop-heads             107.1             300c62a6890beecdae1778d31c3ff82909256fdc2e855af92297554e92858c7b  https://cdn.modrinth.com/data/NU7qMnLN/versions/Nf8uzHHy/players-drop-heads-26.2-107.1.zip
 
 library  paper-api                        26.2.build.129-stable  f469d110d164a4ee7cb2428710cd6e433108eca8d8e0aebd6452547f408469a6  https://repo.papermc.io/repository/maven-public/io/papermc/paper/paper-api/26.2.build.129-stable/paper-api-26.2.build.129-stable.jar
+library  brigadier                        1.3.10                 c8ee4136e474ac7723ca2b432ec8d1a2bc88ef7d1ec57c314ba9e33cdc83dd75  https://libraries.minecraft.net/com/mojang/brigadier/1.3.10/brigadier-1.3.10.jar
 library  adventure-api                    5.2.0                  7e52fe7190be3e87b3b3f71712cfa12315fcd27109f302a7b440c12f01fae827  https://repo1.maven.org/maven2/net/kyori/adventure-api/5.2.0/adventure-api-5.2.0.jar
 library  adventure-key                    5.2.0                  0184d173200e2eef8fbc791f622d1d58fd459f8930c616b5a4fe79e83eda6c55  https://repo1.maven.org/maven2/net/kyori/adventure-key/5.2.0/adventure-key-5.2.0.jar
 library  adventure-text-serializer-plain  5.2.0                  f6424cc038a631b79cc4b74b6b353d5d007c99b38f9be482e0c2448a00eecd21  https://repo1.maven.org/maven2/net/kyori/adventure-text-serializer-plain/5.2.0/adventure-text-serializer-plain-5.2.0.jar

@@ -1,9 +1,10 @@
 package com.oasissmp.staff;
 
-import io.papermc.paper.command.brigadier.BasicCommand;
+import com.mojang.brigadier.Command;
+import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
-import java.util.Collection;
-import java.util.List;
+import io.papermc.paper.command.brigadier.Commands;
+import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,7 +18,6 @@ import net.luckperms.api.context.ContextSet;
 import net.luckperms.api.context.ImmutableContextSet;
 import net.luckperms.api.event.user.UserDataRecalculateEvent;
 import org.bukkit.NamespacedKey;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -61,8 +61,9 @@ public final class OasisStaff extends JavaPlugin implements Listener {
         luckPerms.getEventBus().subscribe(this, UserDataRecalculateEvent.class,
                 event -> onRecalculate(event.getUser().getUniqueId()));
         getServer().getPluginManager().registerEvents(this, this);
-        registerCommand("staff", "Go on or off duty: off duty hides your staff prefix",
-                new StaffCommand());
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
+                event.registrar().register(staffCommand(),
+                        "Go on or off duty: off duty hides your staff prefix"));
         getServer().getOnlinePlayers().forEach(this::loadDuty);
     }
 
@@ -139,62 +140,31 @@ public final class OasisStaff extends JavaPlugin implements Listener {
         }
     }
 
-    private final class StaffCommand implements BasicCommand {
+    // Built from fixed words rather than free text, so the game itself answers
+    // a missing or wrong one, in its own words.
+    private LiteralCommandNode<CommandSourceStack> staffCommand() {
+        return Commands.literal("staff")
+                // Players need the permission even to see the command. The console
+                // doesn't, so it's told why it can't use it rather than that it's unknown.
+                .requires(source -> !(source.getSender() instanceof Player)
+                        || source.getSender().hasPermission(DUTY_PERMISSION))
+                .then(Commands.literal("onduty").executes(context -> setDuty(context.getSource(), true)))
+                .then(Commands.literal("offduty").executes(context -> setDuty(context.getSource(), false)))
+                .build();
+    }
 
-        private static final List<String> SUBCOMMANDS = List.of("onduty", "offduty");
-
-        @Override
-        public void execute(CommandSourceStack source, String[] args) {
-            // Messages go to it as an Audience: CommandSender's own sendMessage
-            // overloads reach for BungeeCord's chat classes, which aren't here.
-            Audience sender = source.getSender();
-            if (!(source.getSender() instanceof Player player)) {
-                sender.sendMessage(Component.text(
-                        "Only a player can go on or off duty.", NamedTextColor.RED));
-                return;
-            }
-            boolean onDuty = !offDuty.contains(player.getUniqueId());
-            if (args.length == 0) {
-                sender.sendMessage(Component.text("You're " + (onDuty ? "on" : "off")
-                        + " duty. /staff onduty or /staff offduty to change it."));
-                return;
-            }
-            boolean wantOnDuty;
-            if (args.length == 1 && args[0].equalsIgnoreCase("onduty")) {
-                wantOnDuty = true;
-            } else if (args.length == 1 && args[0].equalsIgnoreCase("offduty")) {
-                wantOnDuty = false;
-            } else {
-                sender.sendMessage(Component.text(
-                        "Usage: /staff onduty or /staff offduty", NamedTextColor.RED));
-                return;
-            }
-            if (wantOnDuty == onDuty) {
-                sender.sendMessage(Component.text(
-                        "You're already " + (onDuty ? "on" : "off") + " duty."));
-                return;
-            }
-            setOnDuty(player, wantOnDuty);
-            sender.sendMessage(Component.text(wantOnDuty
-                    ? "You're on duty: your staff prefix shows."
-                    : "You're off duty: your staff prefix is hidden. Your permissions are unchanged.",
-                    NamedTextColor.GREEN));
+    private int setDuty(CommandSourceStack source, boolean onDuty) {
+        // Messages go to it as an Audience: CommandSender's own sendMessage
+        // overloads reach for BungeeCord's chat classes, which aren't here.
+        Audience sender = source.getSender();
+        if (!(source.getSender() instanceof Player player)) {
+            sender.sendMessage(Component.text(
+                    "Only a player can go on or off duty.", NamedTextColor.RED));
+            return 0;
         }
-
-        @Override
-        public Collection<String> suggest(CommandSourceStack source, String[] args) {
-            if (args.length > 1) {
-                return List.of();
-            }
-            String typed = args.length == 0 ? "" : args[0].toLowerCase();
-            return SUBCOMMANDS.stream().filter(sub -> sub.startsWith(typed)).toList();
-        }
-
-        // Players need the permission even to see the command. The console
-        // doesn't, so it's told why it can't use it rather than that it's unknown.
-        @Override
-        public boolean canUse(CommandSender sender) {
-            return !(sender instanceof Player) || sender.hasPermission(DUTY_PERMISSION);
-        }
+        setOnDuty(player, onDuty);
+        sender.sendMessage(Component.text(
+                onDuty ? "Staff prefix shown." : "Staff prefix hidden.", NamedTextColor.GREEN));
+        return Command.SINGLE_SUCCESS;
     }
 }

@@ -50,8 +50,8 @@ Changing the Minecraft version also means changing `VERSION` in the `Dockerfile`
 jar, and the formats in each `datapacks/*/pack.mcmeta` to the new version's data pack format.
 
 The `library` lines are what `plugin-src/` compiles against, so they follow what the server runs: `paper-api`
-the Paper build, the `adventure-*` libraries the Adventure version and `guava` the version that `paper-api`'s
-POM names, `jetbrains-annotations` the version `adventure-api`'s POM names, `luckperms-api` the LuckPerms
+the Paper build, the `adventure-*` libraries the Adventure version, `guava` and `brigadier` the versions that
+`paper-api`'s POM names, `jetbrains-annotations` the version `adventure-api`'s POM names, `luckperms-api` the LuckPerms
 plugin's major and minor version, and `voicechat-api` the Simple Voice Chat plugin. Changing the Java version
 means changing the JDK image and `--release` in the `Dockerfile`'s `repo-plugins` stage too.
 
