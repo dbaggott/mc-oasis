@@ -22,6 +22,7 @@ public final class MessageCommandsTest {
             Map.entry("/rg define spawn", false),
             Map.entry("/minecraft:team add reds", false),
             Map.entry("/message Steve hello", false),
+            Map.entry("/foo:msg Steve hello", false),
             Map.entry("/", false));
 
     private MessageCommandsTest() { }
