@@ -39,5 +39,5 @@ permissions:
 parents:
 - admin
 prefixes:
-- OWNER:
+- '<gold>[Owner]</gold> ':
     priority: 10

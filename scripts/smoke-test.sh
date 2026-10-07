@@ -269,7 +269,9 @@ fi
 lp_nodes=0
 for file in "${lp_storage}"/groups/*.yml; do
   group="$(basename "$file" .yml)"
-  group_nodes="$(grep -o "\"${group}\":{\"nodes\":\[[^]]*\]" <<<"$exported")"
+  # To the `]` that closes the nodes list: one inside a prefix isn't followed
+  # by the `}` or `,` that follows the list's.
+  group_nodes="$(grep -oE "\"${group}\":\{\"nodes\":\[([^]]|\][^},])*\]" <<<"$exported")"
   if ! nodes="$(awk '
     /^[[:space:]]*(#|$)/ || /^name: / { next }
     /^[a-z]+:$/ { section = $1; next }
@@ -278,6 +280,7 @@ for file in "${lp_storage}"/groups/*.yml; do
     section == "permissions:" && /^    value: (true|false)$/ && node != "" { print node "\t" $2; node = ""; next }
     section == "parents:" && /^- [^ :]+$/ { print "group." $2 "\ttrue"; next }
     section == "prefixes:" && /^- [^ :]+:$/ { prefix = substr($2, 1, length($2) - 1); next }
+    section == "prefixes:" && /^- \x27[^\x27]+\x27:$/ { prefix = substr($0, 4, length($0) - 5); next }
     section == "prefixes:" && /^    priority: [0-9]+$/ && prefix != "" { print "prefix." $2 "." prefix "\ttrue"; prefix = ""; next }
     { exit 1 }' "$file")"; then
     echo "error: ${file#"${repo_root}/"} isn't in the form LuckPerms writes" >&2

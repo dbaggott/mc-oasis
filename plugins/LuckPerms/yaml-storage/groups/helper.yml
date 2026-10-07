@@ -17,5 +17,5 @@ permissions:
 parents:
 - default
 prefixes:
-- HELPER:
+- '<aqua>[Helper]</aqua> ':
     priority: 2
