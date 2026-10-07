@@ -1,0 +1,6 @@
+# Every player's tab list name is their LuckPerms prefix, then their name. The
+# prefixes are the LuckPerms groups' own; a player in several groups gets the
+# one with the highest priority. Staff prefixes apply only while the player is
+# on duty (OasisStaff's /staff).
+_DEFAULT_:
+  tabprefix: "%luckperms-prefix%"

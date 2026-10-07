@@ -38,6 +38,8 @@ docker build --platform linux/arm64 --tag mc-oasis:local .
 scripts/smoke-test.sh mc-oasis:local
 ```
 
+The smoke test needs Docker and `jq`.
+
 ## Changing a plugin, datapack or the Paper build
 
 Edit its line in `artifacts.lock`: version, URL and sha256 together. Take the sha256 from the publisher
@@ -49,9 +51,9 @@ jar, and the formats in each `datapacks/*/pack.mcmeta` to the new version's data
 
 The `library` lines are what `plugin-src/` compiles against, so they follow what the server runs: `paper-api`
 the Paper build, the `adventure-*` libraries the Adventure version and `guava` the version that `paper-api`'s
-POM names, `jetbrains-annotations` the version `adventure-api`'s POM names, and `voicechat-api` the Simple
-Voice Chat plugin. Changing the Java version means changing the JDK image and `--release` in the
-`Dockerfile`'s `repo-plugins` stage too.
+POM names, `jetbrains-annotations` the version `adventure-api`'s POM names, `luckperms-api` the LuckPerms
+plugin's major and minor version, and `voicechat-api` the Simple Voice Chat plugin. Changing the Java version
+means changing the JDK image and `--release` in the `Dockerfile`'s `repo-plugins` stage too.
 
 Worldgen datapacks (terrain and structures) shape the world only as it is first generated, and removing one
 from an existing world breaks what it generated. The comment at the top of `artifacts.lock` covers their

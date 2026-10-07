@@ -205,8 +205,9 @@ COPY --from=libertybans-addons /out/ /plugins/
 # Simple Voice Chat's turns recording off: some players are minors.
 # TradeCycle's keeps only its swap-hands-key trigger: its sneak-click one is
 # ClickVillagers' pickup.
-# TAB's turns on only its spectator fix, so a player in spectator doesn't show
-# as one in non-ops' tab lists.
+# TAB's turns on its spectator fix, so a player in spectator doesn't show as
+# one in non-ops' tab lists, and puts each player's LuckPerms prefix before
+# their name in the tab list.
 # OasisFilter's are its word lists.
 COPY plugins/ /plugins/
 COPY data/ /config/

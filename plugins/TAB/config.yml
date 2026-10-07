@@ -1,6 +1,10 @@
-# Only the spectator fix: other players see a player in spectator as in
-# survival in the tab list, rather than grayed out at the bottom. Holders of
+# The spectator fix: other players see a player in spectator as in survival in
+# the tab list, rather than grayed out at the bottom. Holders of
 # tab.spectatorbypass, ops by default, still see the real game mode.
+#
+# Tab list names carry the player's LuckPerms prefix, set in groups.yml. The
+# list isn't sorted by group: that takes scoreboard teams, which also change
+# nametags and collisions.
 #
 # TAB turns on a feature whose key is missing here when its own default is on,
 # so every feature defaulting on is turned off by name.
@@ -10,7 +14,9 @@ prevent-spectator-effect:
 header-footer:
   enabled: false
 tablist-name-formatting:
-  enabled: false
+  enabled: true
+  # TAB's default, which TAB warns about when missing; there's no such world.
+  disable-condition: '%world%=disabledworld'
 scoreboard-teams:
   enabled: false
 playerlist-objective:
