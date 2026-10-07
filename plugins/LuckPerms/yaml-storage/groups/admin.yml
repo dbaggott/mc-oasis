@@ -47,3 +47,5 @@ parents:
 prefixes:
 - '<red>[Admin]</red> ':
     priority: 9
+    context:
+      staff-duty: 'on'

@@ -276,24 +276,39 @@ fi
 lp_nodes=0
 for file in "${lp_storage}"/groups/*.yml; do
   group="$(basename "$file" .yml)"
-  group_nodes="$(jq --raw-output --arg group "$group" '.groups[$group].nodes[] | "\(.key)\t\(.value)"' <<<"$exported")"
+  group_nodes="$(jq --raw-output --arg group "$group" '.groups[$group].nodes[]
+    | "\(.key)\t\(.value)\t\(.context // {} | to_entries | map("\(.key)=\(.value)") | join(","))"' <<<"$exported")"
+  # Each node as its key, value and contexts (`key=value`, comma-separated), a
+  # tab between. A prefix is printed once its priority and contexts are read.
   if ! nodes="$(awk '
+    function prefix_done() {
+      if (prefix != "" && priority == "") exit 1
+      if (prefix != "") print "prefix." priority "." prefix "\ttrue\t" context
+      prefix = priority = context = ""
+    }
     /^[[:space:]]*(#|$)/ || /^name: / { next }
-    /^[a-z]+:$/ { section = $1; next }
+    /^[a-z]+:$/ { prefix_done(); section = $1; next }
     section == "permissions:" && /^- [^ :]+$/ { print $2 "\ttrue"; next }
     section == "permissions:" && /^- [^ :]+:$/ { node = substr($2, 1, length($2) - 1); next }
     section == "permissions:" && /^    value: (true|false)$/ && node != "" { print node "\t" $2; node = ""; next }
     section == "parents:" && /^- [^ :]+$/ { print "group." $2 "\ttrue"; next }
-    section == "prefixes:" && /^- [^ :]+:$/ { prefix = substr($2, 1, length($2) - 1); next }
-    section == "prefixes:" && /^- \x27[^\x27]+\x27:$/ { prefix = substr($0, 4, length($0) - 5); next }
-    section == "prefixes:" && /^    priority: [0-9]+$/ && prefix != "" { print "prefix." $2 "." prefix "\ttrue"; prefix = ""; next }
-    { exit 1 }' "$file")"; then
+    section == "prefixes:" && /^- [^ :]+:$/ { prefix_done(); prefix = substr($2, 1, length($2) - 1); next }
+    section == "prefixes:" && /^- \x27[^\x27]+\x27:$/ { prefix_done(); prefix = substr($0, 4, length($0) - 5); next }
+    section == "prefixes:" && /^    priority: [0-9]+$/ && prefix != "" && priority == "" { priority = $2; next }
+    section == "prefixes:" && /^    context:$/ && priority != "" { next }
+    section == "prefixes:" && /^      [a-z0-9_-]+: \x27?[^ \x27]+\x27?$/ && priority != "" {
+      value = $2; gsub(/\x27/, "", value)
+      context = context (context == "" ? "" : ",") substr($1, 1, length($1) - 1) "=" value
+      next
+    }
+    { exit 1 }
+    END { prefix_done() }' "$file")"; then
     echo "error: ${file#"${repo_root}/"} isn't in the form LuckPerms writes" >&2
     exit 1
   fi
-  while IFS=$'\t' read -r node value; do
-    if ! grep --quiet --line-regexp --fixed-strings "${node}"$'\t'"${value}" <<<"$group_nodes"; then
-      echo "error: LuckPerms' ${group} group doesn't have ${node} ${value}" >&2
+  while IFS=$'\t' read -r node value context; do
+    if ! grep --quiet --line-regexp --fixed-strings "${node}"$'\t'"${value}"$'\t'"${context}" <<<"$group_nodes"; then
+      echo "error: LuckPerms' ${group} group doesn't have ${node} ${value}${context:+ in ${context}}" >&2
       exit 1
     fi
     lp_nodes=$((lp_nodes + 1))
@@ -312,6 +327,15 @@ for file in "${lp_storage}"/tracks/*.yml; do
   fi
 done
 echo "LuckPerms has the repo's groups, ${lp_nodes} nodes, and tracks"
+
+# OasisStaff's /staff is registered, by the console being refused it. Whether
+# going off duty hides a prefix takes a player, which this can't be.
+reply="$(rcon staff)"
+if [[ "$reply" != *"Only a player can go on or off duty."* ]]; then
+  echo "error: /staff answered the console with '${reply}'" >&2
+  exit 1
+fi
+echo "/staff registered"
 
 # The world borders, by width; `worldborder get` doesn't report the center.
 # Every `worldborder set` line has to parse, so a reworded one fails here

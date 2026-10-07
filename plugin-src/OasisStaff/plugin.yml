@@ -1,0 +1,10 @@
+name: OasisStaff
+version: 1.0.0
+main: com.oasissmp.staff.OasisStaff
+api-version: '26.2'
+description: Lets staff go off duty, hiding their group's prefix
+depend: [LuckPerms]
+permissions:
+  oasisstaff.duty:
+    description: Go on and off duty with /staff
+    default: false

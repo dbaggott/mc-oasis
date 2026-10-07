@@ -19,3 +19,5 @@ parents:
 prefixes:
 - '<aqua>[Helper]</aqua> ':
     priority: 2
+    context:
+      staff-duty: 'on'
