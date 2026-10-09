@@ -55,10 +55,10 @@ test("built assets inline no data: URL other than an image", () => {
   }
 });
 
-test("the home page carries every rule from rules.txt, in order", () => {
+test("the rules page carries every rule from rules.txt, in order", () => {
   const rules = parseRules(readFileSync(resolve(import.meta.dirname, "../../plugins/OasisRules/rules.txt"), "utf8"));
   assert.ok(rules.length > 0, "rules.txt has no rules");
-  const html = readFileSync(resolve(dist, "index.html"), "utf8");
+  const html = readFileSync(resolve(dist, "rules/index.html"), "utf8");
   assert.doesNotMatch(html, /<!-- rules -->/, "the rules marker was left in the page");
   const list = html.match(/<ol class="rules">(.*?)<\/ol>/s)?.[1] ?? "";
   const unescaped = { "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#39;": "'" };
@@ -76,12 +76,35 @@ test("the built request form sends the body hash the Function URL requires", () 
   assert.match(readFileSync(resolve(assets, form), "utf8"), /x-amz-content-sha256/);
 });
 
-test("the home page carries the logo, drawn at build time, and the dirt tile is built", () => {
+test("the logo and the dirt tile are built, and the home page shows the logo large", () => {
+  assert.match(readFileSync(resolve(dist, "logo.svg"), "utf8"), /^<svg xmlns="http:\/\/www.w3.org\/2000\/svg"/);
+  assert.ok(existsSync(resolve(dist, "dirt.svg")), "dirt.svg, which the stylesheet repeats, was not built");
   const html = readFileSync(resolve(dist, "index.html"), "utf8");
   assert.doesNotMatch(html, /<!-- logo -->/, "the logo marker was left in the page");
-  assert.match(html, /<svg class="logo-art"[^>]*aria-label="Oasis SMP"/);
-  assert.ok(existsSync(resolve(dist, "dirt.svg")), "dirt.svg, which the stylesheet repeats, was not built");
+  assert.match(html, /<img class="logo-art" src="\/logo.svg" alt="Oasis SMP"/);
 });
+
+// Which link each page's bar marks as the current page; none for the 404.
+const CURRENT = {
+  "index.html": "/",
+  "play/index.html": "/play/",
+  "rules/index.html": "/rules/",
+  "request-access/index.html": "/request-access/",
+  "404.html": null,
+};
+
+for (const page of pages) {
+  test(`${page} carries the shared navigation and footer, marking the right page`, () => {
+    const html = readFileSync(resolve(dist, page), "utf8");
+    assert.doesNotMatch(html, /<!-- (nav|footer) -->/, "a chrome marker was left in the page");
+    assert.match(html, /<nav class="nav" aria-label="Site">/);
+    assert.match(html, /<footer class="site-footer">/);
+    const marked = [...html.matchAll(/href="([^"]+)" aria-current="page"/g)].map((m) => m[1]);
+    assert.deepEqual(marked, CURRENT[page] ? [CURRENT[page]] : []);
+    // The home page opens with the logo itself, so its bar leaves the logo out.
+    assert.equal(html.includes('class="nav-logo"'), page !== "index.html");
+  });
+}
 
 // The OFL asks that the font's license travel with it.
 test("the Monocraft license is published beside the site", () => {

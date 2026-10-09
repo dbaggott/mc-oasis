@@ -110,9 +110,9 @@ function word(text, texture, ox, oy, salt) {
 
 let logo;
 
-// The whole logo as one <svg>, sized by its viewBox so CSS sets its width.
-// "OASIS" is drawn at 1.5 times the scale of "SMP". Drawn once per process: it
-// never varies.
+// The whole logo as a standalone SVG file, served at /logo.svg for every page's
+// <img> to share, so a visitor downloads it once. Drawn once per process: it
+// never varies. "OASIS" is drawn at 1.5 times the scale of "SMP".
 export function logoSvg() {
   if (logo) return logo;
   const big = 1.5;
@@ -122,13 +122,24 @@ export function logoSvg() {
   const gap = 4;
   const width = top.width * big + 2 * pad;
   const height = top.height * big + gap + bottom.height + 2 * pad;
-  logo = [
-    `<svg class="logo-art" viewBox="0 0 ${width} ${height}" role="img" aria-label="Oasis SMP" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">`,
-    `<g transform="translate(${pad} ${pad}) scale(${big})">${top.svg}</g>`,
-    `<g transform="translate(${(width - bottom.width) / 2} ${pad + top.height * big + gap})">${bottom.svg}</g>`,
-    "</svg>",
-  ].join("");
+  logo = {
+    width,
+    height,
+    svg: [
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" shape-rendering="crispEdges">`,
+      `<g transform="translate(${pad} ${pad}) scale(${big})">${top.svg}</g>`,
+      `<g transform="translate(${(width - bottom.width) / 2} ${pad + top.height * big + gap})">${bottom.svg}</g>`,
+      "</svg>",
+    ].join(""),
+  };
   return logo;
+}
+
+// An <img> of the logo. Its width and height are the drawing's own, so the
+// browser reserves the right shape before the file arrives; CSS sets the size.
+export function logoImg(className) {
+  const { width, height } = logoSvg();
+  return `<img class="${className}" src="/logo.svg" alt="Oasis SMP" width="${width}" height="${height}" />`;
 }
 
 // A dirt tile, 16 by 16 texture pixels, darkened the way Minecraft darkens dirt

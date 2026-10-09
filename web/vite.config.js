@@ -2,7 +2,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import { pages } from "./pages.mjs";
-import { dirtSvg, logoSvg } from "./logo.mjs";
+import { footerHtml, navHtml } from "./chrome.mjs";
+import { dirtSvg, logoImg, logoSvg } from "./logo.mjs";
 import { parseRules, rulesHtml } from "./rules.mjs";
 
 const repoRoot = resolve(import.meta.dirname, "..");
@@ -20,23 +21,43 @@ if (!existsSync(resolve(import.meta.dirname, "node_modules/vite"))) {
 // "request-access/index.html" -> "request-access", "index.html" -> "index".
 const entryName = (page) => page.replace(/(\/index)?\.html$/, "");
 
-// The art logo.mjs draws: the logo, put in place of <!-- logo --> so it arrives
-// with the page, and the dirt tile the stylesheet repeats, served at /dirt.svg.
+// The art logo.mjs draws, as files at the site's root: the logo every page's
+// <img> shares, and the dirt tile the stylesheet repeats. <!-- logo --> in a
+// page becomes the large logo.
+const artFiles = {
+  "logo.svg": () => logoSvg().svg,
+  "dirt.svg": dirtSvg,
+};
+
 function art() {
   return {
     name: "oasis-art",
     configureServer(server) {
-      server.middlewares.use("/dirt.svg", (req, res) => {
-        res.setHeader("Content-Type", "image/svg+xml");
-        res.end(dirtSvg());
-      });
+      for (const [file, draw] of Object.entries(artFiles)) {
+        server.middlewares.use(`/${file}`, (req, res) => {
+          res.setHeader("Content-Type", "image/svg+xml");
+          res.end(draw());
+        });
+      }
     },
     generateBundle() {
-      this.emitFile({ type: "asset", fileName: "dirt.svg", source: dirtSvg() });
+      for (const [file, draw] of Object.entries(artFiles)) {
+        this.emitFile({ type: "asset", fileName: file, source: draw() });
+      }
     },
     transformIndexHtml(html) {
-      if (!html.includes("<!-- logo -->")) return html;
-      return html.replace("<!-- logo -->", logoSvg());
+      return html.replace("<!-- logo -->", logoImg("logo-art"));
+    },
+  };
+}
+
+// The navigation bar and footer every page shares (chrome.mjs), put in place of
+// <!-- nav --> and <!-- footer -->, with the bar marking the page it is on.
+function chrome() {
+  return {
+    name: "oasis-chrome",
+    transformIndexHtml(html, ctx) {
+      return html.replace("<!-- nav -->", navHtml(ctx.path)).replace("<!-- footer -->", footerHtml());
     },
   };
 }
@@ -65,7 +86,7 @@ const inlinableAsset = (filePath) =>
   /\.(avif|gif|ico|jpe?g|png|svg|webp)$/i.test(filePath) ? undefined : false;
 
 export default defineConfig({
-  plugins: [art(), rules()],
+  plugins: [art(), chrome(), rules()],
   server: {
     // The form imports ../shared, outside web/.
     fs: { allow: [repoRoot] },

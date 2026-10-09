@@ -33,6 +33,11 @@
   --button-hover-dark: #3d4170;
   --button-ink: #ffffff;
   --button-ink-shadow: #3f3f3f;
+  --tile: #1f1712;
+  --tile-light: #4a3a2c;
+  --cta: #2f6f62;
+  --cta-light: #5aa695;
+  --cta-dark: #1d4a41;
   --input: #000000;
   --input-edge: #a0a0a0;
   --pixel: "Monocraft", ui-monospace, monospace;
@@ -69,8 +74,8 @@ h1,
 h2,
 h3,
 legend,
-.brand,
-.tagline {
+.tagline,
+.eyebrow {
   font-family: var(--pixel);
   font-weight: normal;
   line-height: 1.25;
@@ -101,23 +106,257 @@ code {
   outline-offset: 3px;
 }
 
-.wrap {
-  max-width: 1040px;
+/* Skip link: out of sight until a keyboard reaches it. */
+.skip-link {
+  position: absolute;
+  left: 16px;
+  top: -100px;
+  z-index: 10;
+  background: var(--gold);
+  color: #000000;
+  padding: 8px 12px;
+  font-family: var(--pixel);
+}
+
+.skip-link:focus {
+  top: 8px;
+}
+
+/* The navigation bar: dark tiles either side of the logo, the page you are on
+   in gold, and the call to action in prismarine. */
+.site-nav {
+  padding: 18px 16px 8px;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 0 16px;
 }
 
-.wrap.narrow {
-  max-width: 720px;
+.nav-links {
+  display: flex;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-.band {
-  padding: 32px 0 56px;
+/* With no logo between them (the home page), the two halves sit as one row. */
+.nav:not(:has(.nav-logo)) {
+  gap: 10px;
 }
 
-.lede {
-  font-size: 1.15rem;
+.nav-item {
+  display: block;
+  font-family: var(--pixel);
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: none;
+  background: var(--tile);
+  border: 2px solid #000000;
+  box-shadow:
+    inset 0 2px 0 var(--tile-light),
+    0 4px 0 #000000;
+  padding: 10px 16px;
+  white-space: nowrap;
+}
+
+.nav-item:hover {
+  color: var(--gold);
+  background: #2b2018;
+}
+
+.nav-item:active {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 2px 0 var(--tile-light),
+    0 2px 0 #000000;
+}
+
+.nav-item[aria-current="page"] {
+  color: var(--gold);
+  text-shadow: 2px 2px 0 var(--gold-shadow);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+}
+
+.nav-cta {
+  color: var(--button-ink);
+  background: var(--cta);
+  box-shadow:
+    inset 0 2px 0 var(--cta-light),
+    inset 0 -3px 0 var(--cta-dark),
+    0 4px 0 #000000;
+}
+
+.nav-cta:hover {
+  color: var(--button-ink);
+  background: #367f71;
+}
+
+.nav-logo {
+  display: block;
+  flex: none;
+}
+
+.nav-logo-art {
+  display: block;
+  height: 64px;
+  width: auto;
+  filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.35));
+}
+
+.nav-toggle {
+  display: none;
+  background: var(--tile);
+  border: 2px solid #000000;
+  box-shadow:
+    inset 0 2px 0 var(--tile-light),
+    0 4px 0 #000000;
+  width: 48px;
+  height: 44px;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* Three bars, drawn as one bar and its two shadows. */
+.nav-toggle-bars {
+  display: block;
+  width: 22px;
+  height: 3px;
+  margin: 0 auto;
+  background: var(--ink);
+  box-shadow:
+    0 -7px 0 var(--ink),
+    0 7px 0 var(--ink);
+}
+
+@media (max-width: 760px) {
+  .nav {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .nav-toggle {
+    display: block;
+  }
+
+  .nav-logo {
+    margin: 0 auto;
+    /* Centred against the menu button on its left. */
+    transform: translateX(-24px);
+  }
+
+  .nav-logo-art {
+    height: 48px;
+  }
+
+  .nav-links {
+    display: none;
+    flex-basis: 100%;
+    flex-direction: column;
+    order: 3;
+  }
+
+  .nav-open .nav-links {
+    display: flex;
+  }
+
+  .nav-item {
+    text-align: center;
+  }
+}
+
+/* An inner page: one readable column. */
+.page {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 32px 16px 56px;
+}
+
+.page h2 {
+  margin-top: 1.6em;
+}
+
+.eyebrow {
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.85rem;
+  margin: 0 0 0.4em;
+}
+
+/* The Play page's server addresses, each with a copy button. */
+.addresses {
+  display: grid;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.address {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 16px;
+  background: var(--panel);
+  border: 2px solid #000000;
+  box-shadow:
+    inset 0 2px 0 var(--panel-edge),
+    0 4px 0 #000000;
+  padding: 14px 16px;
+}
+
+.address-label {
+  grid-column: 1;
+  margin: 0;
   color: var(--muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.address-value {
+  grid-column: 1;
+  margin: 0;
+  font-size: clamp(1rem, 4.5vw, 1.3rem);
+}
+
+/* An address broken across lines invites typing it with a space. */
+.address-value code {
+  white-space: nowrap;
+}
+
+.copy {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  font-family: var(--pixel);
+  font-size: 0.9rem;
+  color: var(--button-ink);
+  text-shadow: 1px 1px 0 var(--button-ink-shadow);
+  background: var(--button);
+  border: 2px solid #000000;
+  box-shadow:
+    inset 2px 2px 0 var(--button-light),
+    inset -2px -3px 0 var(--button-dark);
+  padding: 8px 14px 10px;
+  min-width: 96px;
+  cursor: pointer;
+}
+
+.copy:hover {
+  background: var(--button-hover);
+  box-shadow:
+    inset 2px 2px 0 var(--button-hover-light),
+    inset -2px -3px 0 var(--button-hover-dark);
 }
 
 /* The home page: the logo, centred, with everything stacked beneath it. */
@@ -184,49 +423,6 @@ code {
   color: var(--ink);
   max-width: 36em;
   margin: 0 auto 32px;
-}
-
-.home-rules,
-.home-joining {
-  margin: 56px auto 0;
-  max-width: 600px;
-  text-align: left;
-}
-
-.home-rules h2,
-.home-joining h2 {
-  text-align: center;
-}
-
-.addresses {
-  margin: 0 0 0.8em;
-  display: grid;
-  gap: 10px;
-}
-
-.addresses div {
-  background: var(--panel);
-  border: 2px solid var(--panel-edge);
-  padding: 12px 14px;
-}
-
-.addresses dt {
-  font-family: var(--pixel);
-  color: var(--gold);
-}
-
-.addresses dd {
-  margin: 0;
-}
-
-/* An address broken across lines invites typing it with a space. */
-.addresses code {
-  white-space: nowrap;
-}
-
-.note {
-  color: var(--muted);
-  font-size: 0.95rem;
 }
 
 /* A Minecraft menu button: grey stone, a light top edge, a dark bottom one,
@@ -307,30 +503,6 @@ code {
   color: var(--button-ink);
   font-family: var(--pixel);
   text-shadow: 1px 1px 0 var(--outline);
-}
-
-/* Header and footer on the inner pages. */
-
-.site-header {
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 16px;
-  width: 100%;
-}
-
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--gold);
-  text-shadow: 2px 2px 0 var(--gold-shadow);
-  text-decoration: none;
-  font-size: 1.25rem;
-}
-
-.brand img {
-  image-rendering: pixelated;
-  border: 2px solid var(--outline);
 }
 
 .site-footer {
