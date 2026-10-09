@@ -1,37 +1,28 @@
-:root {
-  --bg: #f7f1e3;
-  --bg-alt: #efe5cd;
-  --card: #fffbf2;
-  --ink: #1d2a24;
-  --muted: #5b6a61;
-  --line: #dccfae;
-  --accent: #1c7c66;
-  --accent-ink: #ffffff;
-  --accent-soft: #d6ede4;
-  --sun: #d9962b;
-  --error: #b3261e;
-  --focus: #e0a63a;
-  --radius: 10px;
-  --heading: "Pixelify Sans Variable", ui-monospace, monospace;
-  --body: "Karla Variable", system-ui, sans-serif;
-  color-scheme: light;
+/* Monocraft, by Idrees Hassan, under the SIL Open Font License 1.1
+   (public/licenses/Monocraft-OFL.txt, served beside the site). Subset to Latin, with its programming ligatures
+   left out so that "->" in ordinary text stays two characters. */
+@font-face {
+  font-family: "Monocraft";
+  src: url("./fonts/monocraft.woff2") format("woff2");
+  font-display: swap;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #121a17;
-    --bg-alt: #17221e;
-    --card: #1c2924;
-    --ink: #ece6d6;
-    --muted: #a3b0a7;
-    --line: #2e3d36;
-    --accent: #45c29f;
-    --accent-ink: #0e1a16;
-    --accent-soft: #1f3a31;
-    --sun: #e8b04f;
-    --error: #ff8a80;
-    color-scheme: dark;
-  }
+/* One palette, light text on dark earth, like Minecraft's own menus. */
+:root {
+  --bg: #2b1f17;
+  --bg-deep: #1e150f;
+  --panel: #3a2b20;
+  --panel-edge: #57432f;
+  --ink: #f2ead8;
+  --muted: #c9bba0;
+  --gold: #ffff55;
+  --gold-shadow: #3f3f15;
+  --accent: #6db3a5;
+  --error: #ff8a80;
+  --focus: #ffff55;
+  --pixel: "Monocraft", ui-monospace, monospace;
+  --body: "Karla Variable", system-ui, sans-serif;
+  color-scheme: dark;
 }
 
 *,
@@ -42,32 +33,42 @@
 
 body {
   margin: 0;
-  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg);
+  /* Dark dirt, drawn by logo.mjs and emitted by the build at /dirt.svg. */
+  background-image: url("/dirt.svg");
+  background-size: 64px 64px;
   color: var(--ink);
   font-family: var(--body);
   font-size: 1.0625rem;
   line-height: 1.6;
 }
 
+main {
+  flex: 1;
+}
+
 h1,
 h2,
-h3 {
-  font-family: var(--heading);
-  font-weight: 600;
-  line-height: 1.15;
-  margin: 0 0 0.5em;
+h3,
+legend,
+.brand,
+.tagline {
+  font-family: var(--pixel);
+  font-weight: normal;
+  line-height: 1.25;
 }
 
 h1 {
-  font-size: clamp(2rem, 5vw, 3.25rem);
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  margin: 0 0 0.6em;
 }
 
 h2 {
-  font-size: clamp(1.5rem, 3.5vw, 2rem);
-}
-
-h3 {
-  font-size: 1.2rem;
+  font-size: 1.35rem;
+  margin: 0 0 0.6em;
 }
 
 a {
@@ -75,17 +76,13 @@ a {
 }
 
 code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.92em;
-  background: var(--accent-soft);
-  padding: 0.1em 0.35em;
-  border-radius: 4px;
-  overflow-wrap: anywhere;
+  font-family: var(--pixel);
+  font-size: 0.9em;
 }
 
 :focus-visible {
   outline: 3px solid var(--focus);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
 .wrap {
@@ -98,269 +95,222 @@ code {
   max-width: 720px;
 }
 
-/* Header */
+.band {
+  padding: 32px 0 56px;
+}
 
-.site-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 24px;
-  max-width: 1040px;
+.lede {
+  font-size: 1.15rem;
+  color: var(--muted);
+}
+
+/* The home page: the logo, centred, with everything stacked beneath it. */
+
+.home {
+  max-width: 760px;
   margin: 0 auto;
-  padding: 16px;
+  padding: 48px 16px 40px;
+  text-align: center;
 }
 
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
+.logo {
+  position: relative;
+  margin: 0 auto 28px;
+  max-width: 640px;
+}
+
+.logo-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 8px 0 rgba(0, 0, 0, 0.35));
+}
+
+/* The yellow line that sits tilted on the corner of every Minecraft title. */
+.splash {
+  position: absolute;
+  right: -1%;
+  top: 62%;
+  font-family: var(--pixel);
+  font-size: clamp(0.85rem, 2.6vw, 1.3rem);
+  color: var(--gold);
+  text-shadow: 2px 2px 0 var(--gold-shadow);
+  transform: rotate(-18deg);
+  white-space: nowrap;
+  animation: splash 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes splash {
+  from {
+    transform: rotate(-18deg) scale(1);
+  }
+  to {
+    transform: rotate(-18deg) scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash {
+    animation: none;
+  }
+}
+
+.tagline {
+  font-size: clamp(1.05rem, 3vw, 1.35rem);
+  color: var(--gold);
+  text-shadow: 2px 2px 0 var(--gold-shadow);
+  text-wrap: balance;
+  margin: 0 0 20px;
+}
+
+.intro {
+  font-size: 1.15rem;
   color: var(--ink);
-  text-decoration: none;
-  font-family: var(--heading);
-  font-size: 1.35rem;
-  font-weight: 600;
+  max-width: 36em;
+  margin: 0 auto 32px;
 }
 
-.brand img {
-  image-rendering: pixelated;
-  border-radius: 6px;
+.home-rules {
+  margin: 56px auto 0;
+  max-width: 600px;
+  text-align: left;
 }
 
-.site-header nav {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 18px;
+.home-rules h2 {
+  text-align: center;
 }
 
-.site-header nav a:not(.button) {
-  color: var(--ink);
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.site-header nav a:not(.button):hover {
-  color: var(--accent);
-}
-
-/* Buttons */
-
-.button {
+/* A Minecraft menu button: grey stone, a light top edge, a dark bottom one,
+   white pixel text with a drop shadow, and a black border. */
+.mc-button {
   display: inline-block;
-  border: 0;
-  border-radius: var(--radius);
-  background: var(--accent);
-  color: var(--accent-ink);
-  font: inherit;
-  font-weight: 700;
-  padding: 0.75em 1.3em;
+  font-family: var(--pixel);
+  font-size: 1.05rem;
+  color: #ffffff;
+  text-shadow: 2px 2px 0 #3f3f3f;
   text-decoration: none;
+  background: #7d7d7d;
+  border: 3px solid #000000;
+  box-shadow:
+    inset 3px 3px 0 #aaaaaa,
+    inset -3px -4px 0 #555555;
+  padding: 14px 28px 16px;
   cursor: pointer;
-  box-shadow: 0 3px 0 color-mix(in srgb, var(--accent) 60%, black);
+  image-rendering: pixelated;
 }
 
-.button:hover {
-  filter: brightness(1.06);
+.mc-button:hover {
+  background: #8a8fb8;
+  box-shadow:
+    inset 3px 3px 0 #bcc1e6,
+    inset -3px -4px 0 #5b5f86;
+  color: #ffffa0;
 }
 
-.button:active {
-  transform: translateY(2px);
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 60%, black);
+.mc-button:active {
+  box-shadow:
+    inset 3px 4px 0 #555555,
+    inset -3px -3px 0 #aaaaaa;
 }
 
-.button:disabled {
+.mc-button:disabled {
   opacity: 0.6;
   cursor: progress;
 }
 
-.button-small {
-  padding: 0.45em 0.9em;
-  font-size: 0.95rem;
-}
-
-.button-quiet {
-  background: transparent;
+.link-button {
+  font: inherit;
   color: var(--accent);
-  box-shadow: none;
+  background: none;
+  border: 0;
   padding: 0.4em 0;
   text-decoration: underline;
-}
-
-/* Sections */
-
-.hero {
-  padding: 56px 0 72px;
-  background:
-    radial-gradient(ellipse at 85% 0%, color-mix(in srgb, var(--sun) 28%, transparent) 0, transparent 55%),
-    linear-gradient(180deg, var(--bg) 0%, var(--accent-soft) 100%);
-  border-bottom: 1px solid var(--line);
-}
-
-.eyebrow {
-  margin: 0 0 0.5em;
-  color: var(--accent);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  font-size: 0.85rem;
-}
-
-.lede {
-  font-size: 1.2rem;
-  color: var(--muted);
-  max-width: 38em;
-}
-
-.band {
-  padding: 56px 0;
-}
-
-.band-alt {
-  background: var(--bg-alt);
-  border-block: 1px solid var(--line);
-}
-
-.cards {
-  list-style: none;
-  padding: 0;
-  margin: 24px 0 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-}
-
-.cards li {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 20px;
-}
-
-.cards p {
-  margin: 0;
-  color: var(--muted);
+  cursor: pointer;
 }
 
 .rules {
   counter-reset: rule;
   list-style: none;
   padding: 0;
-  margin: 24px 0 0;
+  margin: 16px 0 0;
 }
 
 .rules li {
   counter-increment: rule;
   position: relative;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 14px 16px 14px 60px;
+  background: var(--panel);
+  border: 2px solid var(--panel-edge);
+  padding: 12px 16px 12px 58px;
   margin-bottom: 10px;
-  font-weight: 600;
 }
 
 .rules li::before {
   content: counter(rule);
   position: absolute;
-  left: 14px;
+  left: 12px;
   top: 50%;
   transform: translateY(-50%);
   width: 32px;
   height: 32px;
   display: grid;
   place-items: center;
-  border-radius: 6px;
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-family: var(--heading);
+  background: #4f8f81;
+  border: 2px solid #1a1a1a;
+  color: #ffffff;
+  font-family: var(--pixel);
+  text-shadow: 1px 1px 0 #1a1a1a;
 }
 
-.steps {
-  counter-reset: step;
-  list-style: none;
-  padding: 0;
-  margin: 24px 0 0;
+/* Header and footer on the inner pages. */
+
+.site-header {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 16px;
+  width: 100%;
 }
 
-.steps > li {
-  counter-increment: step;
-  position: relative;
-  padding: 0 0 24px 52px;
-  border-left: 2px dashed var(--line);
-  margin-left: 16px;
-}
-
-.steps > li:last-child {
-  border-left-color: transparent;
-}
-
-.steps > li::before {
-  content: counter(step);
-  position: absolute;
-  left: -17px;
-  top: -2px;
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--sun);
-  color: #1d2a24;
-  font-family: var(--heading);
-}
-
-.steps p {
-  margin: 0 0 0.6em;
-}
-
-.addresses {
-  margin: 0 0 0.8em;
-  display: grid;
+.brand {
+  display: inline-flex;
+  align-items: center;
   gap: 10px;
+  color: var(--gold);
+  text-shadow: 2px 2px 0 var(--gold-shadow);
+  text-decoration: none;
+  font-size: 1.25rem;
 }
 
-.addresses div {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 12px 14px;
-}
-
-.addresses dt {
-  font-weight: 700;
-}
-
-.addresses dd {
-  margin: 0;
-}
-
-.note {
-  color: var(--muted);
-  font-size: 0.95rem;
+.brand img {
+  image-rendering: pixelated;
+  border: 2px solid #1a1a1a;
 }
 
 .site-footer {
-  border-top: 1px solid var(--line);
-  padding: 24px 0;
+  padding: 24px 16px;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  text-align: center;
+  border-top: 2px solid var(--panel-edge);
 }
 
-/* The request form */
+.site-footer p {
+  margin: 0.2em 0;
+}
+
+/* The request form, as panels like Minecraft's settings screens. */
 
 .request-form fieldset {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--card);
+  border: 2px solid var(--panel-edge);
+  background: var(--panel);
   padding: 20px;
   margin: 0 0 20px;
   min-width: 0;
 }
 
 .request-form legend {
-  font-family: var(--heading);
-  font-size: 1.15rem;
+  font-size: 1.05rem;
+  color: var(--gold);
+  text-shadow: 2px 2px 0 var(--gold-shadow);
   padding: 0 6px;
 }
 
@@ -383,16 +333,15 @@ code {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border: 2px solid var(--panel-edge);
   padding: 12px 14px;
   cursor: pointer;
-  background: var(--bg);
+  background: var(--bg-deep);
 }
 
 .choice:has(input:checked) {
   border-color: var(--accent);
-  background: var(--accent-soft);
+  background: #24332e;
 }
 
 .choice input {
@@ -408,6 +357,11 @@ code {
   flex-direction: column;
 }
 
+.choice strong {
+  font-family: var(--pixel);
+  font-weight: normal;
+}
+
 .choice small {
   color: var(--muted);
   font-size: 0.9rem;
@@ -420,16 +374,16 @@ code {
 }
 
 .field label {
-  font-weight: 700;
+  font-family: var(--pixel);
 }
 
+/* Text inputs like Minecraft's: black, with a grey border. */
 .field input,
 .field select {
   font: inherit;
   color: var(--ink);
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  background: #000000;
+  border: 2px solid #a0a0a0;
   padding: 0.6em 0.75em;
   width: 100%;
   min-height: 44px;
@@ -459,9 +413,8 @@ code {
 }
 
 .thanks {
-  background: var(--card);
-  border: 1px solid var(--accent);
-  border-radius: var(--radius);
+  background: var(--panel);
+  border: 2px solid var(--accent);
   padding: 24px;
 }
 

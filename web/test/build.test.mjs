@@ -75,3 +75,15 @@ test("the built request form sends the body hash the Function URL requires", () 
   assert.ok(form, "no request-access script in dist/assets/");
   assert.match(readFileSync(resolve(assets, form), "utf8"), /x-amz-content-sha256/);
 });
+
+test("the home page carries the logo, drawn at build time, and the dirt tile is built", () => {
+  const html = readFileSync(resolve(dist, "index.html"), "utf8");
+  assert.doesNotMatch(html, /<!-- logo -->/, "the logo marker was left in the page");
+  assert.match(html, /<svg class="logo-art"[^>]*aria-label="Oasis SMP"/);
+  assert.ok(existsSync(resolve(dist, "dirt.svg")), "dirt.svg, which the stylesheet repeats, was not built");
+});
+
+// The OFL asks that the font's license travel with it.
+test("the Monocraft license is published beside the site", () => {
+  assert.match(readFileSync(resolve(dist, "licenses/Monocraft-OFL.txt"), "utf8"), /SIL OPEN FONT LICENSE/);
+});

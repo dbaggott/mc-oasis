@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import { pages } from "./pages.mjs";
+import { dirtSvg, logoSvg } from "./logo.mjs";
 import { parseRules, rulesHtml } from "./rules.mjs";
 
 const repoRoot = resolve(import.meta.dirname, "..");
@@ -18,6 +19,26 @@ if (!existsSync(resolve(import.meta.dirname, "node_modules/vite"))) {
 
 // "request-access/index.html" -> "request-access", "index.html" -> "index".
 const entryName = (page) => page.replace(/(\/index)?\.html$/, "");
+
+// The art logo.mjs draws: the logo, put in place of <!-- logo --> so it arrives
+// with the page, and the dirt tile the stylesheet repeats, served at /dirt.svg.
+function art() {
+  return {
+    name: "oasis-art",
+    configureServer(server) {
+      server.middlewares.use("/dirt.svg", (req, res) => {
+        res.setHeader("Content-Type", "image/svg+xml");
+        res.end(dirtSvg());
+      });
+    },
+    generateBundle() {
+      this.emitFile({ type: "asset", fileName: "dirt.svg", source: dirtSvg() });
+    },
+    transformIndexHtml(html) {
+      return html.replace("<!-- logo -->", logoSvg());
+    },
+  };
+}
 
 // Replaces <!-- rules --> in a page with the rules as a list, at build time, so
 // the rules are in the page itself rather than fetched by a script.
@@ -43,7 +64,7 @@ const inlinableAsset = (filePath) =>
   /\.(avif|gif|ico|jpe?g|png|svg|webp)$/i.test(filePath) ? undefined : false;
 
 export default defineConfig({
-  plugins: [rules()],
+  plugins: [art(), rules()],
   server: {
     // The form imports ../shared, outside web/.
     fs: { allow: [repoRoot] },

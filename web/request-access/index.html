@@ -8,14 +8,9 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <script type="module" src="/src/request-access.js"></script>
   </head>
-  <body>
+  <body class="menu">
     <header class="site-header">
       <a class="brand" href="/"><img src="/favicon.png" alt="" width="32" height="32" /><span>Oasis SMP</span></a>
-      <nav aria-label="Site">
-        <a href="/#about">About</a>
-        <a href="/#rules">Rules</a>
-        <a href="/#joining">Joining</a>
-      </nav>
     </header>
 
     <main class="band">
@@ -77,7 +72,7 @@
               <label for="parentEmail-0">Your email address</label>
             </div>
             <p class="error" id="parentEmails-error" hidden></p>
-            <button type="button" class="button button-quiet" id="add-email">Add another parent's email</button>
+            <button type="button" class="link-button" id="add-email">Add another parent's email</button>
           </fieldset>
 
           <!-- For bots that fill in every field. Hidden from people and from screen readers. -->
@@ -89,7 +84,7 @@
           <p class="privacy" id="privacy"></p>
 
           <p class="error" id="form-error" role="alert" hidden></p>
-          <button type="submit" class="button" id="submit">Send request</button>
+          <button type="submit" class="mc-button" id="submit">Send request</button>
         </form>
 
         <div class="thanks" id="thanks" tabindex="-1" hidden>
@@ -101,9 +96,8 @@
     </main>
 
     <footer class="site-footer">
-      <div class="wrap">
-        <p>Not an official Minecraft service. Not approved by or associated with Mojang or Microsoft.</p>
-      </div>
+      <p>Not an official Oasis School program.</p>
+      <p>Not an official Minecraft service. Not approved by or associated with Mojang or Microsoft.</p>
     </footer>
   </body>
 </html>
