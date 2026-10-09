@@ -34,8 +34,10 @@
   --button-ink: #ffffff;
   --button-ink-shadow: #3f3f3f;
   --tile: #1f1712;
+  --tile-hover: #2b2018;
   --tile-light: #4a3a2c;
   --cta: #2f6f62;
+  --cta-hover: #367f71;
   --cta-light: #5aa695;
   --cta-dark: #1d4a41;
   --input: #000000;
@@ -146,7 +148,7 @@ code {
 }
 
 /* With no logo between them (the home page), the two halves sit as one row. */
-.nav:not(:has(.nav-logo)) {
+.nav-no-logo {
   gap: 10px;
 }
 
@@ -169,7 +171,7 @@ code {
 
 .nav-item:hover {
   color: var(--gold);
-  background: #2b2018;
+  background: var(--tile-hover);
 }
 
 .nav-item:active {
@@ -198,7 +200,7 @@ code {
 
 .nav-cta:hover {
   color: var(--button-ink);
-  background: #367f71;
+  background: var(--cta-hover);
 }
 
 .nav-logo {
@@ -238,21 +240,25 @@ code {
     0 7px 0 var(--ink);
 }
 
+/* A phone: the menu button and the logo on one row, the logo centred by an
+   empty third column as wide as the button, and the links beneath, shown once
+   the button opens them. */
 @media (max-width: 760px) {
-  .nav {
-    flex-wrap: wrap;
-    justify-content: space-between;
+  .nav,
+  .nav-no-logo {
+    display: grid;
+    grid-template-columns: 48px 1fr 48px;
     gap: 12px;
   }
 
-  .nav-toggle {
+  .js .nav-toggle {
     display: block;
   }
 
   .nav-logo {
-    margin: 0 auto;
-    /* Centred against the menu button on its left. */
-    transform: translateX(-24px);
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
   }
 
   .nav-logo-art {
@@ -260,19 +266,26 @@ code {
   }
 
   .nav-links {
-    display: none;
-    flex-basis: 100%;
+    grid-column: 1 / -1;
     flex-direction: column;
-    order: 3;
   }
 
-  .nav-open .nav-links {
+  .js .nav-links {
+    display: none;
+  }
+
+  .js .nav-open .nav-links {
     display: flex;
   }
 
   .nav-item {
     text-align: center;
   }
+}
+
+.lede {
+  font-size: 1.15rem;
+  color: var(--muted);
 }
 
 /* An inner page: one readable column. */
@@ -338,25 +351,7 @@ code {
 .copy {
   grid-column: 2;
   grid-row: 1 / span 2;
-  font-family: var(--pixel);
-  font-size: 0.9rem;
-  color: var(--button-ink);
-  text-shadow: 1px 1px 0 var(--button-ink-shadow);
-  background: var(--button);
-  border: 2px solid #000000;
-  box-shadow:
-    inset 2px 2px 0 var(--button-light),
-    inset -2px -3px 0 var(--button-dark);
-  padding: 8px 14px 10px;
   min-width: 96px;
-  cursor: pointer;
-}
-
-.copy:hover {
-  background: var(--button-hover);
-  box-shadow:
-    inset 2px 2px 0 var(--button-hover-light),
-    inset -2px -3px 0 var(--button-hover-dark);
 }
 
 /* The home page: the logo, centred, with everything stacked beneath it. */
@@ -455,6 +450,11 @@ code {
   box-shadow:
     inset 3px 4px 0 var(--button-dark),
     inset -3px -3px 0 var(--button-light);
+}
+
+.mc-button-small {
+  font-size: 0.9rem;
+  padding: 8px 14px 10px;
 }
 
 .mc-button:disabled {

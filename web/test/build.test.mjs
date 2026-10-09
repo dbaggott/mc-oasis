@@ -97,7 +97,7 @@ for (const page of pages) {
   test(`${page} carries the shared navigation and footer, marking the right page`, () => {
     const html = readFileSync(resolve(dist, page), "utf8");
     assert.doesNotMatch(html, /<!-- (nav|footer) -->/, "a chrome marker was left in the page");
-    assert.match(html, /<nav class="nav" aria-label="Site">/);
+    assert.match(html, /<nav class="nav[^"]*" aria-label="Site">/);
     assert.match(html, /<footer class="site-footer">/);
     const marked = [...html.matchAll(/href="([^"]+)" aria-current="page"/g)].map((m) => m[1]);
     assert.deepEqual(marked, CURRENT[page] ? [CURRENT[page]] : []);

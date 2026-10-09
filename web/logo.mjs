@@ -111,7 +111,7 @@ function word(text, texture, ox, oy, salt) {
 let logo;
 
 // The whole logo as a standalone SVG file, served at /logo.svg for every page's
-// <img> to share, so a visitor downloads it once. Drawn once per process: it
+// <img> to share, rather than inlined into each page. Drawn once per process: it
 // never varies. "OASIS" is drawn at 1.5 times the scale of "SMP".
 export function logoSvg() {
   if (logo) return logo;
