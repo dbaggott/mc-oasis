@@ -4,7 +4,9 @@ import { build } from "esbuild";
 
 await build({
   entryPoints: [new URL("./src/index.js", import.meta.url).pathname],
-  outfile: new URL("./dist/index.js", import.meta.url).pathname,
+  // .mjs, so Node runs the bundle as an ES module without a package.json beside
+  // it to say so.
+  outfile: new URL("./dist/index.mjs", import.meta.url).pathname,
   bundle: true,
   platform: "node",
   target: "node24",

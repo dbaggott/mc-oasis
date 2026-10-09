@@ -59,7 +59,7 @@ jobs:
           command -v jq >/dev/null || { sudo apt-get update -q && sudo apt-get install -y -q jq; }
           scripts/smoke-test.sh mc-oasis:ci
 
-      # Handed to the publish job as a file, so what gets pushed is the image
+      # Handed to publish-server as a file, so what gets pushed is the image
       # that was tested here rather than a rebuild of it.
       - name: Save the image
         if: github.event_name != 'pull_request'
@@ -144,11 +144,15 @@ jobs:
           retention-days: 1
           compression-level: 0
 
-  # The only job that can reach AWS. The publish role trusts the `publish`
-  # environment and nothing else in this repo, and this job must keep running
-  # only on push and workflow_dispatch, never on anything a fork can trigger.
-  publish:
-    needs: [server, site, api]
+  # The only jobs that can reach AWS, one per artifact, so each publishes as soon
+  # as its own build passes and a failed one re-runs alone. The publish role
+  # trusts the `publish` environment and nothing else in this repo, and these
+  # jobs must keep running only on push and workflow_dispatch, never on
+  # anything a fork can trigger.
+
+  # Pushes the server's image as tested in `server`.
+  publish-server:
+    needs: server
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment: publish
@@ -160,19 +164,8 @@ jobs:
         with:
           name: image
 
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: api-image
-
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: site
-          path: site
-
-      - name: Load the images
-        run: |
-          gunzip --stdout image.tar.gz | docker load
-          gunzip --stdout api-image.tar.gz | docker load
+      - name: Load the image
+        run: gunzip --stdout image.tar.gz | docker load
 
       - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
@@ -184,7 +177,7 @@ jobs:
           aws ecr get-login-password --region "${{ vars.AWS_REGION }}" \
             | docker login --username AWS --password-stdin "${{ vars.ECR_REGISTRY }}"
 
-      - name: Push the images
+      - name: Push
         env:
           ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
           BRANCH: ${{ github.ref_name }}
@@ -193,23 +186,84 @@ jobs:
           set -euo pipefail
           # The tag apps/app resolves a branch to, sanitized the same way.
           TAG="$(printf '%s' "$BRANCH" | sed 's/[^a-zA-Z0-9._-]/_/g')_${SHA}"
-          # The repositories are immutable, so re-running this for a commit
-          # that already pushed fails here; push a new commit instead.
-          push() {
-            docker tag "$1" "$2"
-            docker push "$2"
-            echo "Pushed $2"
-          }
-          push mc-oasis:ci "${ECR_REGISTRY}/dbaggott/mc-oasis:${TAG}"
-          push mc-oasis-api:ci "${ECR_REGISTRY}/dbaggott/mc-oasis-api:${TAG}"
+          IMAGE="${ECR_REGISTRY}/dbaggott/mc-oasis:${TAG}"
+          docker tag mc-oasis:ci "$IMAGE"
+          # The repository is immutable, so re-running this for a commit that
+          # already pushed fails here; push a new commit instead.
+          docker push "$IMAGE"
+          echo "Pushed $IMAGE"
 
-      - name: Publish the website
+  # Pushes the API's image as tested in `api`.
+  publish-api:
+    needs: api
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: publish
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: api-image
+
+      - name: Load the image
+        run: gunzip --stdout api-image.tar.gz | docker load
+
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        run: |
+          aws ecr get-login-password --region "${{ vars.AWS_REGION }}" \
+            | docker login --username AWS --password-stdin "${{ vars.ECR_REGISTRY }}"
+
+      - name: Push
+        env:
+          ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          # The tag apps/app resolves a branch to, sanitized the same way.
+          TAG="$(printf '%s' "$BRANCH" | sed 's/[^a-zA-Z0-9._-]/_/g')_${SHA}"
+          IMAGE="${ECR_REGISTRY}/dbaggott/mc-oasis-api:${TAG}"
+          docker tag mc-oasis-api:ci "$IMAGE"
+          # The repository is immutable, so re-running this for a commit that
+          # already pushed fails here; push a new commit instead.
+          docker push "$IMAGE"
+          echo "Pushed $IMAGE"
+
+  # Writes the website's release as built in `site`.
+  publish-site:
+    needs: site
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: publish
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: site
+          path: site
+
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Publish
         env:
           RELEASES_BUCKET: ${{ vars.RELEASES_BUCKET }}
           BRANCH: ${{ github.ref_name }}
           SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
+          # The tag apps/app resolves a branch to, sanitized the same way.
           TAG="$(printf '%s' "$BRANCH" | sed 's/[^a-zA-Z0-9._-]/_/g')_${SHA}"
           DEST="s3://${RELEASES_BUCKET}/mc-oasis-site/${TAG}"
 
@@ -232,10 +286,10 @@ jobs:
   # dbaggott/infrastructure), so a job starts gating a merge by being added to
   # this `needs:` list. `if: always()` is what keeps a failed dependency from
   # SKIPPING this job, which branch protection would read as success. A skipped
-  # dependency is accepted, which is how `publish` passes on a pull request.
+  # dependency is accepted, which is how the publish jobs pass on a pull request.
   ci-required:
     if: always()
-    needs: [server, site, api, publish]
+    needs: [server, site, api, publish-server, publish-api, publish-site]
     runs-on: ubuntu-latest
     steps:
       - name: Verify every required job succeeded

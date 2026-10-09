@@ -57,6 +57,12 @@ test("a Bedrock request keeps its devices and gamertag", async () => {
   assert.deepEqual(saved.devices, ["switch", "mobile"]);
 });
 
+test("a gamertag in another script is accepted", async () => {
+  const { app, store } = setup();
+  assert.equal((await post(app, { ...bedrock, playerName: "ゲーマー 7" })).status, 200);
+  assert.equal(store.requests[0].playerName, "ゲーマー 7");
+});
+
 // Java runs on a computer only, so devices sent with a Java request (a parent
 // who picked Bedrock, ticked a console, then switched) are not believed.
 test("devices sent with a Java request are replaced by computer", async () => {

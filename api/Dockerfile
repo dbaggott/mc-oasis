@@ -19,7 +19,7 @@ RUN npm run build --prefix api
 FROM node:${NODE_VERSION}-slim
 COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:1.0.1 /lambda-adapter /opt/extensions/lambda-adapter
 WORKDIR /app
-COPY --from=builder /repo/api/dist/index.js /repo/api/dist/index.js.map ./
+COPY --from=builder /repo/api/dist/index.mjs /repo/api/dist/index.mjs.map ./
 
 ENV PORT=8080
 # The adapter counts a 404 as ready, so a mistyped path here passes silently;
@@ -37,4 +37,4 @@ ENV BUILD_BRANCH=$BUILD_BRANCH \
     BUILD_COMMIT=$BUILD_COMMIT \
     BUILD_TIME=$BUILD_TIME
 
-CMD ["node", "index.js"]
+CMD ["node", "index.mjs"]

@@ -57,7 +57,8 @@ for (const value of ["K", ...Array.from({ length: 12 }, (_, i) => String(i + 1))
 
 document.getElementById("privacy").textContent =
   "We use these answers only to let your child in and to write to you about it. " +
-  `Requests are deleted after ${REQUEST_RETENTION_DAYS} days. This site sets no cookies and runs no tracking.`;
+  `We keep each request for ${REQUEST_RETENTION_DAYS} days, and we're sent an email copy of it when it arrives. ` +
+  "This site sets no cookies and runs no tracking.";
 
 function addEmailField() {
   const index = emails.querySelectorAll("input").length;
@@ -150,7 +151,9 @@ form.addEventListener("submit", async (event) => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
     });
-    if (res.status === 429) {
+    if (res.status === 400) {
+      showError("form", "Some of these answers weren't accepted. Check the Minecraft name and the email addresses.");
+    } else if (res.status === 429) {
       showError("form", "We've had a lot of requests from your connection. Please try again in an hour.");
     } else if (!res.ok) {
       showError("form", "Something on our end didn't work, and your request wasn't sent. Please try again.");

@@ -47,17 +47,18 @@ export const JAVA_NAME_PATTERN = /^[A-Za-z0-9_]{3,16}$/;
 
 // A Bedrock gamertag. Kept loose on purpose: Xbox has changed its gamertag
 // rules more than once, and a refused real gamertag costs a request, where a
-// malformed one costs a reply. Letters, digits and spaces, with the "#1234"
-// suffix newer gamertags carry.
-export const BEDROCK_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9 _]{0,15}(#[0-9]{1,4})?$/;
+// malformed one costs a reply. Letters in any script, digits, spaces and
+// underscores, with the "#1234" suffix newer gamertags carry.
+export const BEDROCK_NAME_PATTERN = /^[\p{L}\p{N}][\p{L}\p{N} _]{0,15}(#[0-9]{1,4})?$/u;
 
 export const PARENT_EMAILS_MAX = 3;
 export const EMAIL_MAX = 254;
 
 // The honeypot. The page hides a field by this name, and anything in it came
 // from something filling the form blind; the route drops that request while
-// answering as if it had kept it.
-export const TRAP_FIELD = "website";
+// answering as if it had kept it. Named so that no browser or password manager
+// recognises it and fills it in, which would drop a real request.
+export const TRAP_FIELD = "oasis_hp";
 
 // The largest body the route reads, in bytes of JSON, checked from
 // Content-Length before parsing.

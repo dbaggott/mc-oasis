@@ -28,8 +28,10 @@ import {
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 
-// Per client address, per hour. A household with a few children sends a few
-// requests; what this has to stop is a script filling the operator's inbox.
+// Per client address, per hour window. A household with a few children sends a
+// few requests; what this has to stop is a script filling the operator's inbox.
+// The windows are fixed, so a burst straddling a window's end can reach twice
+// this.
 export const REQUESTS_PER_IP_PER_HOUR = 10;
 
 const common = {
@@ -90,7 +92,9 @@ function ipv6Groups(ip) {
 }
 
 // The rate-limit counter is keyed by a digest of the address rather than the
-// address, so the table never holds a visitor's IP.
+// address, so the table doesn't hold a visitor's IP in readable form. The
+// digest is unsalted, so it hides an address from a casual read, not from
+// someone set on recovering it; each counter is deleted an hour on.
 function clientKey(c) {
   return createHash("sha256").update(clientIp(c)).digest("hex");
 }
