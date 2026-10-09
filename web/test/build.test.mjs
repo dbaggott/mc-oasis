@@ -65,3 +65,13 @@ test("the home page carries every rule from rules.txt, in order", () => {
   const items = [...list.matchAll(/<li>(.*?)<\/li>/g)].map((m) => m[1].replace(/&(amp|lt|gt|quot|#39);/g, (e) => unescaped[e]));
   assert.deepEqual(items, rules);
 });
+
+// In production a POST reaches the API only with the SHA-256 of its body in
+// this header (src/request-access.js says why). Nothing local exercises that
+// path, so the built form is checked for it here.
+test("the built request form sends the body hash the Function URL requires", () => {
+  const assets = resolve(dist, "assets");
+  const form = readdirSync(assets).find((file) => /^request-access-.*\.js$/.test(file));
+  assert.ok(form, "no request-access script in dist/assets/");
+  assert.match(readFileSync(resolve(assets, form), "utf8"), /x-amz-content-sha256/);
+});

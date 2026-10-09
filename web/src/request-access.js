@@ -91,6 +91,15 @@ form.elements.platform.forEach((radio) =>
   }),
 );
 
+// In production the API sits behind a signed Lambda Function URL, and Lambda
+// requires the SHA-256 of a request's body in this header before it will run
+// anything. CloudFront signs the request but cannot compute the hash itself, so
+// without it every submission is refused, and only in production.
+async function bodyHash(body) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(body));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 function showError(field, message) {
   const el = document.getElementById(`${field}-error`);
   el.textContent = message;
@@ -146,10 +155,12 @@ form.addEventListener("submit", async (event) => {
   submit.disabled = true;
   submit.textContent = "Sending…";
   try {
+    // Hashed and sent as the one string, so the hash is of exactly what is sent.
+    const json = JSON.stringify(body);
     const res = await fetch("/api/access-requests", {
       method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
+      headers: { "content-type": "application/json", "x-amz-content-sha256": await bodyHash(json) },
+      body: json,
     });
     if (res.status === 400) {
       showError("form", "Some of these answers weren't accepted. Check the Minecraft name and the email addresses.");
