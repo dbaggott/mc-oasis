@@ -18,8 +18,23 @@
   --gold: #ffff55;
   --gold-shadow: #3f3f15;
   --accent: #6db3a5;
+  --accent-deep: #24332e;
+  --badge: #38705f;
+  --outline: #1a1a1a;
   --error: #ff8a80;
   --focus: #ffff55;
+  /* The stone menu button, dark enough that white text on it passes WCAG AA,
+     and the blue-grey Minecraft lights it with under the pointer. */
+  --button: #6b6b6b;
+  --button-light: #9a9a9a;
+  --button-dark: #474747;
+  --button-hover: #5a5f96;
+  --button-hover-light: #8a8fc4;
+  --button-hover-dark: #3d4170;
+  --button-ink: #ffffff;
+  --button-ink-shadow: #3f3f3f;
+  --input: #000000;
+  --input-edge: #a0a0a0;
   --pixel: "Monocraft", ui-monospace, monospace;
   --body: "Karla Variable", system-ui, sans-serif;
   color-scheme: dark;
@@ -78,6 +93,7 @@ a {
 code {
   font-family: var(--pixel);
   font-size: 0.9em;
+  overflow-wrap: anywhere;
 }
 
 :focus-visible {
@@ -170,14 +186,47 @@ code {
   margin: 0 auto 32px;
 }
 
-.home-rules {
+.home-rules,
+.home-joining {
   margin: 56px auto 0;
   max-width: 600px;
   text-align: left;
 }
 
-.home-rules h2 {
+.home-rules h2,
+.home-joining h2 {
   text-align: center;
+}
+
+.addresses {
+  margin: 0 0 0.8em;
+  display: grid;
+  gap: 10px;
+}
+
+.addresses div {
+  background: var(--panel);
+  border: 2px solid var(--panel-edge);
+  padding: 12px 14px;
+}
+
+.addresses dt {
+  font-family: var(--pixel);
+  color: var(--gold);
+}
+
+.addresses dd {
+  margin: 0;
+}
+
+/* An address broken across lines invites typing it with a space. */
+.addresses code {
+  white-space: nowrap;
+}
+
+.note {
+  color: var(--muted);
+  font-size: 0.95rem;
 }
 
 /* A Minecraft menu button: grey stone, a light top edge, a dark bottom one,
@@ -186,31 +235,30 @@ code {
   display: inline-block;
   font-family: var(--pixel);
   font-size: 1.05rem;
-  color: #ffffff;
-  text-shadow: 2px 2px 0 #3f3f3f;
+  color: var(--button-ink);
+  text-shadow: 2px 2px 0 var(--button-ink-shadow);
   text-decoration: none;
-  background: #7d7d7d;
-  border: 3px solid #000000;
+  background: var(--button);
+  border: 3px solid var(--input);
   box-shadow:
-    inset 3px 3px 0 #aaaaaa,
-    inset -3px -4px 0 #555555;
+    inset 3px 3px 0 var(--button-light),
+    inset -3px -4px 0 var(--button-dark);
   padding: 14px 28px 16px;
   cursor: pointer;
   image-rendering: pixelated;
 }
 
 .mc-button:hover {
-  background: #8a8fb8;
+  background: var(--button-hover);
   box-shadow:
-    inset 3px 3px 0 #bcc1e6,
-    inset -3px -4px 0 #5b5f86;
-  color: #ffffa0;
+    inset 3px 3px 0 var(--button-hover-light),
+    inset -3px -4px 0 var(--button-hover-dark);
 }
 
 .mc-button:active {
   box-shadow:
-    inset 3px 4px 0 #555555,
-    inset -3px -3px 0 #aaaaaa;
+    inset 3px 4px 0 var(--button-dark),
+    inset -3px -3px 0 var(--button-light);
 }
 
 .mc-button:disabled {
@@ -254,11 +302,11 @@ code {
   height: 32px;
   display: grid;
   place-items: center;
-  background: #4f8f81;
-  border: 2px solid #1a1a1a;
-  color: #ffffff;
+  background: var(--badge);
+  border: 2px solid var(--outline);
+  color: var(--button-ink);
   font-family: var(--pixel);
-  text-shadow: 1px 1px 0 #1a1a1a;
+  text-shadow: 1px 1px 0 var(--outline);
 }
 
 /* Header and footer on the inner pages. */
@@ -282,7 +330,7 @@ code {
 
 .brand img {
   image-rendering: pixelated;
-  border: 2px solid #1a1a1a;
+  border: 2px solid var(--outline);
 }
 
 .site-footer {
@@ -341,7 +389,7 @@ code {
 
 .choice:has(input:checked) {
   border-color: var(--accent);
-  background: #24332e;
+  background: var(--accent-deep);
 }
 
 .choice input {
@@ -382,8 +430,8 @@ code {
 .field select {
   font: inherit;
   color: var(--ink);
-  background: #000000;
-  border: 2px solid #a0a0a0;
+  background: var(--input);
+  border: 2px solid var(--input-edge);
   padding: 0.6em 0.75em;
   width: 100%;
   min-height: 44px;

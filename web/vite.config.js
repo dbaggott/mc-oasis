@@ -35,6 +35,7 @@ function art() {
       this.emitFile({ type: "asset", fileName: "dirt.svg", source: dirtSvg() });
     },
     transformIndexHtml(html) {
+      if (!html.includes("<!-- logo -->")) return html;
       return html.replace("<!-- logo -->", logoSvg());
     },
   };

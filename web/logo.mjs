@@ -61,23 +61,32 @@ function layout(word) {
   return { blocks, width: x - 1, height: 7 };
 }
 
-// One word's rects, in texture pixels of size `px`, at (ox, oy). Drawn in three
-// passes so each sits under the next: outline, extruded side, face.
-function word(text, texture, px, ox, oy, salt) {
+// Rectangles collected by colour and written as one <path> per colour, so the
+// art is a few dozen elements rather than one per texture pixel.
+function paths(rects) {
+  const byColour = new Map();
+  for (const [x, y, w, h, fill] of rects) {
+    if (!byColour.has(fill)) byColour.set(fill, []);
+    byColour.get(fill).push(`M${x} ${y}h${w}v${h}h${-w}z`);
+  }
+  return [...byColour].map(([fill, d]) => `<path fill="${fill}" d="${d.join("")}"/>`).join("");
+}
+
+// One word in texture-pixel units, each block SUB of them across, at (ox, oy).
+// Drawn in three passes so each sits under the next: outline, extruded side,
+// face.
+function word(text, texture, ox, oy, salt) {
   const { blocks, width, height } = layout(text);
   const t = TEXTURES[texture];
-  const cell = SUB * px;
-  const depth = Math.round(cell * 0.6);
-  const edge = px;
-  const out = [];
-  const rect = (x, y, w, h, fill) =>
-    out.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}"/>`);
+  const depth = 3;
+  const under = [];
+  const face = [];
 
   for (const [bx, by] of blocks) {
-    rect(ox + bx * cell - edge, oy + by * cell - edge, cell + 2 * edge, cell + depth + 2 * edge, OUTLINE);
+    under.push([ox + bx * SUB - 1, oy + by * SUB - 1, SUB + 2, SUB + depth + 2, OUTLINE]);
   }
   for (const [bx, by] of blocks) {
-    rect(ox + bx * cell, oy + by * cell + cell, cell, depth, t.side);
+    under.push([ox + bx * SUB, oy + by * SUB + SUB, SUB, depth, t.side]);
   }
   // The bevel runs along the letter's own edges, not each block's, so a letter
   // reads as one carved piece: lit where it faces up or left, shaded where it
@@ -90,28 +99,36 @@ function word(text, texture, px, ox, oy, salt) {
         let fill = t.face[Math.floor(noise(bx * SUB + sx, by * SUB + sy, salt) * t.face.length)];
         if ((sy === 0 && open(bx, by - 1)) || (sx === 0 && open(bx - 1, by))) fill = t.light;
         if ((sy === SUB - 1 && open(bx, by + 1)) || (sx === SUB - 1 && open(bx + 1, by))) fill = t.dark;
-        rect(ox + bx * cell + sx * px, oy + by * cell + sy * px, px, px, fill);
+        face.push([ox + bx * SUB + sx, oy + by * SUB + sy, 1, 1, fill]);
       }
     }
   }
-  return { svg: out.join(""), width: width * cell, height: height * cell + depth };
+  // Outline and side first, as one layer, so no block's outline covers its
+  // neighbour's face.
+  return { svg: paths(under) + paths(face), width: width * SUB, height: height * SUB + depth };
 }
 
+let logo;
+
 // The whole logo as one <svg>, sized by its viewBox so CSS sets its width.
-export function logoSvg({ label = "Oasis SMP" } = {}) {
-  const pad = 6;
-  const top = word("OASIS", "sandstone", 6, 0, 0, 1);
-  const bottom = word("SMP", "prismarine", 4, 0, 0, 2);
-  const width = Math.max(top.width, bottom.width) + 2 * pad;
-  const gap = 18;
-  const height = top.height + gap + bottom.height + 2 * pad;
-  const shift = (w) => Math.round((width - w) / 2);
-  return [
-    `<svg class="logo-art" viewBox="0 0 ${width} ${height}" role="img" aria-label="${label}" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">`,
-    `<g transform="translate(${shift(top.width)} ${pad})">${top.svg}</g>`,
-    `<g transform="translate(${shift(bottom.width)} ${pad + top.height + gap})">${bottom.svg}</g>`,
+// "OASIS" is drawn at 1.5 times the scale of "SMP". Drawn once per process: it
+// never varies.
+export function logoSvg() {
+  if (logo) return logo;
+  const big = 1.5;
+  const top = word("OASIS", "sandstone", 0, 0, 1);
+  const bottom = word("SMP", "prismarine", 0, 0, 2);
+  const pad = 2;
+  const gap = 4;
+  const width = top.width * big + 2 * pad;
+  const height = top.height * big + gap + bottom.height + 2 * pad;
+  logo = [
+    `<svg class="logo-art" viewBox="0 0 ${width} ${height}" role="img" aria-label="Oasis SMP" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">`,
+    `<g transform="translate(${pad} ${pad}) scale(${big})">${top.svg}</g>`,
+    `<g transform="translate(${(width - bottom.width) / 2} ${pad + top.height * big + gap})">${bottom.svg}</g>`,
     "</svg>",
   ].join("");
+  return logo;
 }
 
 // A dirt tile, 16 by 16 texture pixels, darkened the way Minecraft darkens dirt
@@ -123,9 +140,8 @@ export function dirtSvg() {
   const rects = [];
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const fill = DIRT[Math.floor(noise(x, y, 3) * DIRT.length)];
-      rects.push(`<rect x="${x}" y="${y}" width="1" height="1" fill="${fill}"/>`);
+      rects.push([x, y, 1, 1, DIRT[Math.floor(noise(x, y, 3) * DIRT.length)]]);
     }
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">${rects.join("")}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">${paths(rects)}</svg>`;
 }
