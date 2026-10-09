@@ -1,0 +1,27 @@
+{
+  "name": "mc-oasis-api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "www.oasis-smp.com's /api — served from a container Lambda behind the site's CloudFront",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "build": "node build.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1136.0",
+    "@aws-sdk/client-sns": "^3.1136.0",
+    "@aws-sdk/lib-dynamodb": "^3.1136.0",
+    "@hono/node-server": "^2.1.1",
+    "@hono/zod-validator": "^0.9.1",
+    "hono": "^4.13.8",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}

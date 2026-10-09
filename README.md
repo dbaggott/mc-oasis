@@ -1,6 +1,7 @@
 # mc-oasis
 
-Hosted Paper Minecraft server for Java and Bedrock players: server image, plugins, and config.
+Hosted Paper Minecraft server for Java and Bedrock players: server image, plugins, and config, plus the
+server's website at www.oasis-smp.com.
 
 This repo builds the server's Docker image. The image is
 [itzg/minecraft-server](https://github.com/itzg/docker-minecraft-server) running Paper, with
@@ -27,7 +28,10 @@ plugin-src/<Name>/       the repo's own plugins, each a plugin.yml and Java sour
 scripts/
   fetch-artifacts.sh     downloads everything in artifacts.lock and verifies each sha256
   smoke-test.sh          starts a built image on a throwaway world; checks every plugin and datapack loads and every config setting applies
-.github/workflows/ci.yml builds and tests every PR; pushes main and dispatched branches to ECR
+web/                     the website: a Vite site whose home page renders plugins/OasisRules/rules.txt
+api/                     the website's API: a parent's request for their child to be let in, as a container-image Lambda
+shared/                  what the request form and the API both import, so they agree on every field
+.github/workflows/ci.yml builds and tests every PR; publishes main and dispatched branches (images to ECR, the website to S3)
 ```
 
 ## Building locally
@@ -39,6 +43,17 @@ scripts/smoke-test.sh mc-oasis:local
 ```
 
 The smoke test needs Docker and `jq`.
+
+## Working on the website
+
+```bash
+npm ci --prefix web && npm ci --prefix api
+npm run dev:api --prefix web   # the API on :8787, keeping requests in memory
+npm run dev --prefix web       # the site, proxying /api to it
+```
+
+`npm test --prefix api` tests the API; `npm run build --prefix web && npm test --prefix web` builds the site and
+checks the build. Requests sent to a local API are kept in memory and never leave the machine.
 
 ## Changing a plugin, datapack or the Paper build
 
