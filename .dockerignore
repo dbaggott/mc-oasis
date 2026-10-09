@@ -1,0 +1,5 @@
+# Both images build from the repository root. Neither copies these, and sending
+# them as build context costs time for nothing.
+**/node_modules
+**/dist
+.worktrees/

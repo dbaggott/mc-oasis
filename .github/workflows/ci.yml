@@ -1,11 +1,15 @@
 ################################################################################
-# CI — fetch and verify every artifact, build the arm64 server image, and smoke
-# test it. Outside pull requests, push it to ECR as <sanitized-branch>_<sha>.
+# CI — build and test the three things this repo ships: the arm64 server image,
+# the website (web/) and the website's API (api/). Outside pull requests,
+# publish all three under one tag, <sanitized-branch>_<sha>: both images to ECR,
+# the website to the operations release bucket.
 #
-# PUSHING IS NOT DEPLOYING. `apps/app deploy mc-oasis <branch>` in
-# dbaggott/infrastructure records an image for the server, which runs it from
-# its next start. AWS_ROLE_ARN, AWS_REGION and ECR_REGISTRY are repo variables
-# set from there (accounts/github/mc_oasis_ci.tf).
+# PUBLISHING IS NOT DEPLOYING. In dbaggott/infrastructure, `apps/app deploy
+# mc-oasis <branch>` records an image for the server, which runs it from its
+# next start; `mc-oasis-api` swaps the API's image into its Lambda; and
+# `mc-oasis-site` copies the website's release into the site. AWS_ROLE_ARN,
+# AWS_REGION, ECR_REGISTRY and RELEASES_BUCKET are repo variables set from
+# there (accounts/github/mc_oasis_ci.tf).
 #
 # Third-party actions are pinned to commit SHAs: this repo is public, and a
 # moved tag would run someone else's code with this workflow's permissions.
@@ -17,23 +21,23 @@ on:
   push:
     branches: [main]
   pull_request:
-  # Pushes a branch's build, for `apps/app deploy mc-oasis <branch>`.
+  # Publishes a branch's build, for `apps/app deploy <app> <branch>`.
   # Dispatchable once this file is on the default branch; a dispatched run uses
-  # the chosen branch's copy, push job included, so anyone who can push a branch
-  # decides what runs with the push role.
+  # the chosen branch's copy, publish job included, so anyone who can push a
+  # branch decides what runs with the publish role.
   workflow_dispatch:
 
 permissions:
   contents: read
 
 # A new push to a PR supersedes the run in flight for it. Every other run gets a
-# group of its own commit, since each pushes a distinct image.
+# group of its own commit, since each publishes a distinct build.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  build:
+  server:
     # The server runs on Graviton, so the image is built and tested natively.
     runs-on: ubuntu-24.04-arm
     steps:
@@ -55,8 +59,8 @@ jobs:
           command -v jq >/dev/null || { sudo apt-get update -q && sudo apt-get install -y -q jq; }
           scripts/smoke-test.sh mc-oasis:ci
 
-      # Handed to the push job as a file, so what gets pushed is the image that
-      # was tested here rather than a rebuild of it.
+      # Handed to the publish job as a file, so what gets pushed is the image
+      # that was tested here rather than a rebuild of it.
       - name: Save the image
         if: github.event_name != 'pull_request'
         run: docker save mc-oasis:ci | gzip > image.tar.gz
@@ -69,14 +73,85 @@ jobs:
           retention-days: 1
           compression-level: 0
 
-  # The only job that can reach AWS. The push role trusts the `ecr-push`
+  # The website under web/, deployed as the mc-oasis-site app.
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .tool-versions
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefix web
+
+      - name: Build
+        run: npm run build --prefix web
+
+      - name: Check the build
+        run: npm test --prefix web
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: github.event_name != 'pull_request'
+        with:
+          name: site
+          path: web/dist
+          retention-days: 1
+
+  # The website's API under api/, deployed as the mc-oasis-api app: an arm64
+  # container-image Lambda.
+  api:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .tool-versions
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefix api
+
+      - name: Test
+        run: npm test --prefix api
+
+      - name: Build the image
+        env:
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          docker build --platform linux/arm64 -f api/Dockerfile \
+            --build-arg "NODE_VERSION=$(awk '/^node /{print $2}' .tool-versions)" \
+            --build-arg "BUILD_BRANCH=${BRANCH}" \
+            --build-arg "BUILD_COMMIT=${SHA}" \
+            --build-arg "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --tag mc-oasis-api:ci .
+
+      - name: Save the image
+        if: github.event_name != 'pull_request'
+        run: docker save mc-oasis-api:ci | gzip > api-image.tar.gz
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: github.event_name != 'pull_request'
+        with:
+          name: api-image
+          path: api-image.tar.gz
+          retention-days: 1
+          compression-level: 0
+
+  # The only job that can reach AWS. The publish role trusts the `publish`
   # environment and nothing else in this repo, and this job must keep running
   # only on push and workflow_dispatch, never on anything a fork can trigger.
-  push:
-    needs: build
+  publish:
+    needs: [server, site, api]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    environment: ecr-push
+    environment: publish
     permissions:
       contents: read
       id-token: write
@@ -85,8 +160,19 @@ jobs:
         with:
           name: image
 
-      - name: Load the image
-        run: gunzip --stdout image.tar.gz | docker load
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: api-image
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: site
+          path: site
+
+      - name: Load the images
+        run: |
+          gunzip --stdout image.tar.gz | docker load
+          gunzip --stdout api-image.tar.gz | docker load
 
       - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
@@ -98,7 +184,7 @@ jobs:
           aws ecr get-login-password --region "${{ vars.AWS_REGION }}" \
             | docker login --username AWS --password-stdin "${{ vars.ECR_REGISTRY }}"
 
-      - name: Push
+      - name: Push the images
         env:
           ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
           BRANCH: ${{ github.ref_name }}
@@ -107,21 +193,49 @@ jobs:
           set -euo pipefail
           # The tag apps/app resolves a branch to, sanitized the same way.
           TAG="$(printf '%s' "$BRANCH" | sed 's/[^a-zA-Z0-9._-]/_/g')_${SHA}"
-          IMAGE="${ECR_REGISTRY}/dbaggott/mc-oasis:${TAG}"
-          docker tag mc-oasis:ci "$IMAGE"
-          # The repository is immutable, so re-running this for a commit that
-          # already pushed fails here; push a new commit instead.
-          docker push "$IMAGE"
-          echo "Pushed $IMAGE"
+          # The repositories are immutable, so re-running this for a commit
+          # that already pushed fails here; push a new commit instead.
+          push() {
+            docker tag "$1" "$2"
+            docker push "$2"
+            echo "Pushed $2"
+          }
+          push mc-oasis:ci "${ECR_REGISTRY}/dbaggott/mc-oasis:${TAG}"
+          push mc-oasis-api:ci "${ECR_REGISTRY}/dbaggott/mc-oasis-api:${TAG}"
+
+      - name: Publish the website
+        env:
+          RELEASES_BUCKET: ${{ vars.RELEASES_BUCKET }}
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          TAG="$(printf '%s' "$BRANCH" | sed 's/[^a-zA-Z0-9._-]/_/g')_${SHA}"
+          DEST="s3://${RELEASES_BUCKET}/mc-oasis-site/${TAG}"
+
+          # Vite content-hashes everything under assets/, so a changed file
+          # arrives at a new URL and a cached one never needs revalidating.
+          aws s3 cp site/assets "${DEST}/assets" --recursive --only-show-errors \
+            --cache-control "public, max-age=31536000, immutable"
+          aws s3 cp site "${DEST}" --recursive --exclude "assets/*" --only-show-errors \
+            --cache-control "no-cache"
+
+          # Last, because a deploy treats its presence as the release being
+          # complete, and the live site serving it as the deploy having landed.
+          jq -n --arg release "$TAG" --arg commit "$SHA" '{release: $release, commit: $commit}' > release.json
+          aws s3 cp release.json "${DEST}/release.json" --only-show-errors \
+            --content-type application/json --cache-control "no-cache"
+
+          echo "Published ${DEST}/"
 
   # THE ONE CONTEXT BRANCH PROTECTION NAMES (accounts/github/main.tf in
   # dbaggott/infrastructure), so a job starts gating a merge by being added to
   # this `needs:` list. `if: always()` is what keeps a failed dependency from
   # SKIPPING this job, which branch protection would read as success. A skipped
-  # dependency is accepted, which is how `push` passes on a pull request.
+  # dependency is accepted, which is how `publish` passes on a pull request.
   ci-required:
     if: always()
-    needs: [build, push]
+    needs: [server, site, api, publish]
     runs-on: ubuntu-latest
     steps:
       - name: Verify every required job succeeded
