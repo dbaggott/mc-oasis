@@ -28,20 +28,18 @@ function links(items, current, id) {
   return `<ul class="nav-links" id="${id}">${lis.join("")}</ul>`;
 }
 
-// The bar. On the home page the logo is left out of it, and the bar marked
-// nav-no-logo: the page itself opens with the logo, large.
+// The bar, the same on every page so that moving between pages never moves it.
 export function navHtml(path) {
   const current = pageOf(path);
-  const logo = current === "/" ? "" : `<a class="nav-logo" href="/">${logoImg("nav-logo-art")}</a>`;
   return [
     '<a class="skip-link" href="#main">Skip to content</a>',
     '<header class="site-nav">',
-    `<nav class="nav${logo ? "" : " nav-no-logo"}" aria-label="Site">`,
+    '<nav class="nav" aria-label="Site">',
     '<button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-left nav-right" aria-label="Menu">',
     '<span class="nav-toggle-bars" aria-hidden="true"></span>',
     "</button>",
     links(LEFT, current, "nav-left"),
-    logo,
+    `<a class="nav-logo" href="/">${logoImg("nav-logo-art")}</a>`,
     links(RIGHT, current, "nav-right"),
     "</nav>",
     "</header>",

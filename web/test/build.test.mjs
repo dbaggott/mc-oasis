@@ -101,10 +101,19 @@ for (const page of pages) {
     assert.match(html, /<footer class="site-footer">/);
     const marked = [...html.matchAll(/href="([^"]+)" aria-current="page"/g)].map((m) => m[1]);
     assert.deepEqual(marked, CURRENT[page] ? [CURRENT[page]] : []);
-    // The home page opens with the logo itself, so its bar leaves the logo out.
-    assert.equal(html.includes('class="nav-logo"'), page !== "index.html");
   });
 }
+
+// Every page's bar is the same apart from which link it marks, so moving
+// between pages never shifts it.
+test("every page carries the same navigation bar", () => {
+  const bars = pages.map((page) =>
+    readFileSync(resolve(dist, page), "utf8")
+      .match(/<header class="site-nav">.*?<\/header>/s)[0]
+      .replace(/ aria-current="page"/g, ""),
+  );
+  for (const bar of bars) assert.equal(bar, bars[0]);
+});
 
 // The OFL asks that the font's license travel with it.
 test("the Monocraft license is published beside the site", () => {

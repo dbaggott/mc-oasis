@@ -147,11 +147,6 @@ code {
   padding: 0;
 }
 
-/* With no logo between them (the home page), the two halves sit as one row. */
-.nav-no-logo {
-  gap: 10px;
-}
-
 .nav-item {
   display: block;
   font-family: var(--pixel);
@@ -244,8 +239,7 @@ code {
    empty third column as wide as the button, and the links beneath, shown once
    the button opens them. */
 @media (max-width: 760px) {
-  .nav,
-  .nav-no-logo {
+  .nav {
     display: grid;
     grid-template-columns: 48px 1fr 48px;
     gap: 12px;
