@@ -115,6 +115,7 @@ for (const [why, body] of [
   ["an empty device list", { ...bedrock, devices: [] }],
   ["an unknown device", { ...bedrock, devices: ["toaster"] }],
   ["an unknown grade", { ...computer, grade: "13" }],
+  ["kindergarten, which the server does not take", { ...computer, grade: "K" }],
   ["a numeric grade", { ...computer, grade: 5 }],
   ["no parent email", { ...computer, parentEmails: [] }],
   ["a parent email that is not one", { ...computer, parentEmails: ["not an email"] }],

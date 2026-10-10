@@ -26,6 +26,8 @@ export function editionOf(devices) {
   return devices.some((device) => device !== "computer") ? "bedrock" : null;
 }
 
+// Listed in key order, which JavaScript gives integer-like keys, so the form
+// shows them in this order only while every key is a number.
 export const GRADES = {
   1: "1st grade",
   2: "2nd grade",

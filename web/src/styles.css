@@ -717,6 +717,14 @@ code {
   background-size: 0.8em auto;
 }
 
+/* Forced colours drop background images, and the drawn caret with them, so the
+   browser's own caret comes back there. */
+@media (forced-colors: active) {
+  .field select {
+    appearance: auto;
+  }
+}
+
 .field .hint {
   margin: 0;
 }
