@@ -400,7 +400,7 @@ code {
 }
 
 /* An address broken across lines invites typing it with a space. The pixel
-   font is hard to read letter by letter, and this is read to be typed. */
+   font is hard to read letter by letter, which an address is read. */
 .address-value code {
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   font-weight: 700;
@@ -571,6 +571,10 @@ code {
 
 .rules h2 {
   margin: 28px 0 12px;
+}
+
+.rules h2:first-child {
+  margin-top: 0;
 }
 
 .rules ol {
