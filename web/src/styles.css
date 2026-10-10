@@ -13,7 +13,7 @@
   --panel: #3a2b20;
   --panel-edge: #57432f;
   /* The earth of the panels, letting a little of the backdrop through. */
-  --veil: rgb(30 21 15 / 82%);
+  --veil: color-mix(in srgb, var(--bg-deep) 82%, transparent);
   --ink: #f2ead8;
   --muted: #c9bba0;
   --gold: #ffff55;
@@ -69,11 +69,16 @@ body::before {
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(180deg, rgb(30 21 15 / 10%), rgb(30 21 15 / 20%) 45%, rgb(30 21 15 / 75%)),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-deep) 10%, transparent),
+      color-mix(in srgb, var(--bg-deep) 20%, transparent) 45%,
+      color-mix(in srgb, var(--bg-deep) 75%, transparent)
+    ),
     url("/gazebo-sunset.webp") 12% 40% / cover no-repeat;
 }
 
-/* Text never sits on the backdrop itself, only on a panel over it. */
+/* Running text sits on a panel, never on the backdrop itself. */
 .intro,
 .page {
   background: var(--veil);
