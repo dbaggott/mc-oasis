@@ -376,8 +376,9 @@ done
 echo "/staff registered"
 
 # OasisRules' /rules is registered and shows the repo's rules, by the console
-# being shown the first. The message on joining takes a player.
-first_rule="$(grep --invert-match --extended-regexp '^[[:space:]]*(#|$)' "${repo_root}/plugins/OasisRules/rules.txt" | head -n 1 | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+# being shown the first rule, past any comment or heading. The message on
+# joining takes a player.
+first_rule="$(grep --invert-match --extended-regexp '^[[:space:]]*(#|\[.*\][[:space:]]*$|$)' "${repo_root}/plugins/OasisRules/rules.txt" | head -n 1 | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
 reply="$(rcon rules)"
 if [[ "$reply" != *"1. ${first_rule}"* ]]; then
   echo "error: /rules answered the console with '${reply}'" >&2

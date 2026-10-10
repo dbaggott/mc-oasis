@@ -399,8 +399,11 @@ code {
   font-size: clamp(1rem, 4.5vw, 1.3rem);
 }
 
-/* An address broken across lines invites typing it with a space. */
+/* An address broken across lines invites typing it with a space. The pixel
+   font is hard to read letter by letter, and this is read to be typed. */
 .address-value code {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -563,9 +566,17 @@ code {
 
 .rules {
   counter-reset: rule;
+  margin: 16px 0 0;
+}
+
+.rules h2 {
+  margin: 28px 0 12px;
+}
+
+.rules ol {
   list-style: none;
   padding: 0;
-  margin: 16px 0 0;
+  margin: 0;
 }
 
 .rules li {

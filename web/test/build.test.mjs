@@ -61,15 +61,17 @@ test("built assets inline no data: URL other than an image", () => {
   }
 });
 
-test("the rules page carries every rule from rules.txt, in order", () => {
-  const rules = parseRules(readFileSync(resolve(import.meta.dirname, "../../plugins/OasisRules/rules.txt"), "utf8"));
-  assert.ok(rules.length > 0, "rules.txt has no rules");
+test("the rules page carries every heading and rule from rules.txt, in order", () => {
+  const sections = parseRules(readFileSync(resolve(import.meta.dirname, "../../plugins/OasisRules/rules.txt"), "utf8"));
+  assert.ok(sections.some(({ rules }) => rules.length > 0), "rules.txt has no rules");
   const html = readFileSync(resolve(dist, "rules/index.html"), "utf8");
   assert.doesNotMatch(html, /<!-- rules -->/, "the rules marker was left in the page");
-  const list = html.match(/<ol class="rules">(.*?)<\/ol>/s)?.[1] ?? "";
+  const block = html.match(/<div class="rules">(.*?)<\/div>/s)?.[1] ?? "";
   const unescaped = { "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#39;": "'" };
-  const items = [...list.matchAll(/<li>(.*?)<\/li>/g)].map((m) => m[1].replace(/&(amp|lt|gt|quot|#39);/g, (e) => unescaped[e]));
-  assert.deepEqual(items, rules);
+  const text = (s) => s.replace(/&(amp|lt|gt|quot|#39);/g, (e) => unescaped[e]);
+  const expected = sections.flatMap(({ heading, rules }) => [...(heading === null ? [] : [`h2 ${heading}`]), ...rules.map((r) => `li ${r}`)]);
+  const found = [...block.matchAll(/<(h2|li)>(.*?)<\/\1>/g)].map((m) => `${m[1]} ${text(m[2])}`);
+  assert.deepEqual(found, expected);
 });
 
 // In production a POST reaches the API only with the SHA-256 of its body in
