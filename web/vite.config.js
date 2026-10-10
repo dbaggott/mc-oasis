@@ -2,6 +2,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import { pages } from "./pages.mjs";
+import { scheduleHtml } from "./calendar.mjs";
+import { navHtml } from "./chrome.mjs";
+import { dirtSvg, faviconPng, faviconSvg, logoImg, logoSvg } from "./logo.mjs";
 import { parseRules, rulesHtml } from "./rules.mjs";
 
 const repoRoot = resolve(import.meta.dirname, "..");
@@ -18,6 +21,58 @@ if (!existsSync(resolve(import.meta.dirname, "node_modules/vite"))) {
 
 // "request-access/index.html" -> "request-access", "index.html" -> "index".
 const entryName = (page) => page.replace(/(\/index)?\.html$/, "");
+
+// The art logo.mjs draws, as files at the site's root: the logo every page's
+// <img> shares, the dirt tile the stylesheet repeats, and the favicon in each
+// form browsers ask for. <!-- logo --> in a page becomes the large logo, and
+// every page's <head> gets the favicon links.
+const artFiles = {
+  "logo.svg": { type: "image/svg+xml", draw: () => logoSvg().svg },
+  "dirt.svg": { type: "image/svg+xml", draw: dirtSvg },
+  "favicon.svg": { type: "image/svg+xml", draw: faviconSvg },
+  "favicon.png": { type: "image/png", draw: () => faviconPng(32) },
+  "apple-touch-icon.png": { type: "image/png", draw: () => faviconPng(180) },
+};
+
+const iconLinks = [
+  { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+  { rel: "icon", href: "/favicon.png", type: "image/png", sizes: "32x32" },
+  { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+].map((attrs) => ({ tag: "link", attrs, injectTo: "head" }));
+
+function art() {
+  return {
+    name: "oasis-art",
+    configureServer(server) {
+      for (const [file, { type, draw }] of Object.entries(artFiles)) {
+        server.middlewares.use(`/${file}`, (req, res) => {
+          res.setHeader("Content-Type", type);
+          res.end(draw());
+        });
+      }
+    },
+    generateBundle() {
+      for (const [file, { draw }] of Object.entries(artFiles)) {
+        this.emitFile({ type: "asset", fileName: file, source: draw() });
+      }
+    },
+    transformIndexHtml(html) {
+      return { html: html.replace("<!-- logo -->", logoImg("logo-art")), tags: iconLinks };
+    },
+  };
+}
+
+// The navigation bar every page shares (chrome.mjs), put in place of
+// <!-- nav -->, marking the page it is on; and the schedule (calendar.mjs), in
+// place of <!-- schedule -->.
+function chrome() {
+  return {
+    name: "oasis-chrome",
+    transformIndexHtml(html, ctx) {
+      return html.replace("<!-- nav -->", navHtml(ctx.path)).replace("<!-- schedule -->", scheduleHtml());
+    },
+  };
+}
 
 // Replaces <!-- rules --> in a page with the rules as a list, at build time, so
 // the rules are in the page itself rather than fetched by a script.
@@ -43,7 +98,7 @@ const inlinableAsset = (filePath) =>
   /\.(avif|gif|ico|jpe?g|png|svg|webp)$/i.test(filePath) ? undefined : false;
 
 export default defineConfig({
-  plugins: [rules()],
+  plugins: [art(), chrome(), rules()],
   server: {
     // The form imports ../shared, outside web/.
     fs: { allow: [repoRoot] },

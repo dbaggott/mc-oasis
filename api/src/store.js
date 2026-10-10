@@ -1,8 +1,10 @@
 // Where the API keeps what it is sent: DynamoDB in production, memory for
 // development and tests. Both answer the same two calls.
 //
-//   putRequest(request)                          keep one access request
+//   put(kind, item)                              keep one submission of a form
 //   hitRateLimit(key, windowMs, limit, now)      count a hit; false once over
+//
+// `kind` is "request" (an access request) or "message" (the contact form).
 
 // A fixed window: every hit in the same `windowMs`-wide slice of time counts
 // against one counter, which starts again at the next slice.
@@ -11,14 +13,14 @@ function windowStartOf(now, windowMs) {
 }
 
 export function memoryStore() {
-  const requests = [];
+  const items = { request: [], message: [] };
   const counters = new Map();
 
   return {
-    requests,
+    items,
 
-    async putRequest(item) {
-      requests.push(item);
+    async put(kind, item) {
+      items[kind].push(item);
     },
 
     async hitRateLimit(key, windowMs, limit, now) {
@@ -31,14 +33,14 @@ export function memoryStore() {
   };
 }
 
-// One table, because everything in it expires: a request at its `expiresAt`,
-// a rate counter when its window ends. DynamoDB deletes each by its `ttl`, in
+// One table, because everything in it expires: a submission at its
+// `expiresAt`, a rate counter when its window ends. DynamoDB deletes each by its `ttl`, in
 // epoch seconds. Deletion by TTL is lazy, so a request can outlive its
 // `expiresAt` by a few days; nothing reads a counter from an earlier window,
 // since each window is a key of its own.
 //
-// Requests share a partition, sorted by when they arrived, so reading the
-// inbox is a single Query:
+// Each kind shares a partition (REQUEST, MESSAGE), sorted by when they
+// arrived, so reading one inbox is a single Query:
 //
 //   aws dynamodb query --table-name mc-oasis-api \
 //     --key-condition-expression "pk = :p" \
@@ -50,12 +52,12 @@ export async function dynamoStore({ table }) {
   const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
   return {
-    async putRequest(item) {
+    async put(kind, item) {
       await ddb.send(
         new PutCommand({
           TableName: table,
           Item: {
-            pk: "REQUEST",
+            pk: kind.toUpperCase(),
             sk: `${new Date(item.createdAt).toISOString()}#${item.id}`,
             ttl: Math.ceil(item.expiresAt / 1000),
             ...item,

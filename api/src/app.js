@@ -4,6 +4,7 @@
 //   GET  /api/                  what is running: the build identity
 //   ANY  /api/ping              200, having read and discarded any body
 //   POST /api/access-requests   a parent asking for their child to be let in
+//   POST /api/contact           a message from the contact page
 //
 // Everything is answered `Cache-Control: no-store`. CloudFront caches nothing
 // under /api/*, but it still collapses simultaneous requests that share a cache
@@ -13,55 +14,47 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import {
-  BEDROCK_NAME_PATTERN,
-  DEVICES,
-  EMAIL_MAX,
-  GRADES,
-  JAVA_NAME_PATTERN,
-  PARENT_EMAILS_MAX,
-  REQUEST_BYTES_MAX,
-  REQUEST_RETENTION_DAYS,
-  TRAP_FIELD,
-} from "../../shared/access-request.js";
+import { COMMENTS_MAX, DEVICES, GRADES, isPlayerName, REQUEST_BYTES_MAX } from "../../shared/access-request.js";
+import { CONTACT_BYTES_MAX, MESSAGE_MAX } from "../../shared/contact.js";
+import { EMAIL_MAX, EMAILS_MAX, RETENTION_DAYS, TRAP_FIELD } from "../../shared/forms.js";
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 
-// Per client address, per hour window. A household with a few children sends a
-// few requests; what this has to stop is a script filling the operator's inbox.
-// The windows are fixed, so a burst straddling a window's end can reach twice
-// this.
-export const REQUESTS_PER_IP_PER_HOUR = 10;
+// Per client address, per hour window, for each form. A household with a few
+// children sends a few requests; what this has to stop is a script filling the
+// operator's inbox. The windows are fixed, so a burst straddling a window's end
+// can reach twice this.
+export const SUBMISSIONS_PER_IP_PER_HOUR = 10;
 
-const common = {
-  grade: z.enum(Object.keys(GRADES)),
-  parentEmails: z
-    .array(z.string().trim().toLowerCase().max(EMAIL_MAX).pipe(z.email()))
+// Addresses to reply to: trimmed, lowercased and each sent once.
+const Emails = z
+  .array(z.string().trim().toLowerCase().max(EMAIL_MAX).pipe(z.email()))
+  .min(1)
+  .max(EMAILS_MAX)
+  .transform((emails) => [...new Set(emails)]);
+
+// `unknown`, so that nothing put in the trap can be refused: a validation error
+// names the field, which would tell a bot which one to leave alone.
+const Trap = z.unknown().optional();
+
+export const AccessRequestSchema = z.object({
+  playerName: z.string().trim().refine(isPlayerName),
+  devices: z
+    .array(z.enum(Object.keys(DEVICES)))
     .min(1)
-    .max(PARENT_EMAILS_MAX)
-    .transform((emails) => [...new Set(emails)]),
-  // `unknown`, so that nothing put in the trap can be refused: a validation
-  // error names the field, which would tell a bot which one to leave alone.
-  [TRAP_FIELD]: z.unknown().optional(),
-};
+    .transform((devices) => [...new Set(devices)]),
+  grade: z.enum(Object.keys(GRADES)),
+  parentEmails: Emails,
+  comments: z.string().trim().max(COMMENTS_MAX).optional(),
+  [TRAP_FIELD]: Trap,
+});
 
-export const AccessRequestSchema = z.discriminatedUnion("platform", [
-  z.object({
-    platform: z.literal("java"),
-    playerName: z.string().trim().regex(JAVA_NAME_PATTERN),
-    ...common,
-  }),
-  z.object({
-    platform: z.literal("bedrock"),
-    playerName: z.string().trim().regex(BEDROCK_NAME_PATTERN),
-    devices: z
-      .array(z.enum(Object.keys(DEVICES)))
-      .min(1)
-      .transform((devices) => [...new Set(devices)]),
-    ...common,
-  }),
-]);
+export const ContactSchema = z.object({
+  message: z.string().trim().min(1).max(MESSAGE_MAX),
+  emails: Emails,
+  [TRAP_FIELD]: Trap,
+});
 
 // The viewer's address, from the header CloudFront sets itself when the origin
 // request policy asks for it (modules/static-site in dbaggott/infrastructure):
@@ -127,50 +120,69 @@ export function createApp({ store, notify, build, now = Date.now }) {
     return c.json({ ok: true });
   });
 
-  app.post(
-    "/api/access-requests",
-    // Ahead of the validator, which reads the whole body first. A request with
-    // no Content-Length passes; the Function URL's own request cap bounds it.
-    async (c, next) => {
-      const declared = Number(c.req.header("content-length") || 0);
-      if (declared > REQUEST_BYTES_MAX) {
-        return c.json({ error: "request too large", limit: REQUEST_BYTES_MAX }, 413);
-      }
-      return next();
-    },
-    zValidator("json", AccessRequestSchema),
-    async (c) => {
-      const allowed = await store.hitRateLimit(`request:ip:${clientKey(c)}`, HOUR, REQUESTS_PER_IP_PER_HOUR, now());
-      if (!allowed) return c.json({ error: "too many requests; try again later" }, 429);
+  // A form's route: refuse an oversized body before reading it, validate,
+  // count the caller against the form's hourly limit, drop anything the trap
+  // caught while answering as if it were kept, then store and announce what
+  // remains. `kind` names the form to the store and the notifier; `record`
+  // turns a valid body into what is kept.
+  function form(path, kind, { schema, bytesMax, record }) {
+    app.post(
+      path,
+      // Ahead of the validator, which reads the whole body first. A request
+      // with no Content-Length passes; the Function URL's own cap bounds it.
+      async (c, next) => {
+        const declared = Number(c.req.header("content-length") || 0);
+        if (declared > bytesMax) return c.json({ error: "request too large", limit: bytesMax }, 413);
+        return next();
+      },
+      zValidator("json", schema),
+      async (c) => {
+        const allowed = await store.hitRateLimit(`${kind}:ip:${clientKey(c)}`, HOUR, SUBMISSIONS_PER_IP_PER_HOUR, now());
+        if (!allowed) return c.json({ error: "too many requests; try again later" }, 429);
 
-      // Answered exactly as an accepted request is, so the trap never shows
-      // which field sprang it. Below the counter, so a trapped submission still
-      // spends the caller's allowance.
-      const { [TRAP_FIELD]: trapped, ...body } = c.req.valid("json");
-      if (trapped) return c.json({ ok: true });
+        // Answered exactly as an accepted submission is, so the trap never
+        // shows which field sprang it. Below the counter, so a trapped one
+        // still spends the caller's allowance.
+        const { [TRAP_FIELD]: trapped, ...body } = c.req.valid("json");
+        if (trapped) return c.json({ ok: true });
 
-      const createdAt = now();
-      const request = {
-        id: crypto.randomUUID(),
-        createdAt,
-        expiresAt: createdAt + REQUEST_RETENTION_DAYS * DAY,
-        playerName: body.playerName,
-        platform: body.platform,
-        devices: body.platform === "java" ? ["computer"] : body.devices,
-        grade: body.grade,
-        parentEmails: body.parentEmails,
-      };
+        const createdAt = now();
+        const item = {
+          id: crypto.randomUUID(),
+          createdAt,
+          expiresAt: createdAt + RETENTION_DAYS * DAY,
+          ...record(body),
+        };
 
-      // Stored before it is announced, so a notification never names a request
-      // that was not kept; a failed store answers 500 and the parent can retry.
-      // Both are awaited because Lambda freezes the process once the response
-      // is sent.
-      await store.putRequest(request);
-      await notify(request);
+        // Stored before it is announced, so a notification never names a
+        // submission that was not kept; a failed store answers 500 and the
+        // sender can retry. Both are awaited because Lambda freezes the
+        // process once the response is sent.
+        await store.put(kind, item);
+        await notify(kind, item);
 
-      return c.json({ ok: true });
-    },
-  );
+        return c.json({ ok: true });
+      },
+    );
+  }
+
+  form("/api/access-requests", "request", {
+    schema: AccessRequestSchema,
+    bytesMax: REQUEST_BYTES_MAX,
+    record: (body) => ({
+      playerName: body.playerName,
+      devices: body.devices,
+      grade: body.grade,
+      parentEmails: body.parentEmails,
+      comments: body.comments || null,
+    }),
+  });
+
+  form("/api/contact", "message", {
+    schema: ContactSchema,
+    bytesMax: CONTACT_BYTES_MAX,
+    record: (body) => ({ message: body.message, emails: body.emails }),
+  });
 
   app.notFound((c) => c.json({ error: "not found" }, 404));
 
@@ -178,7 +190,7 @@ export function createApp({ store, notify, build, now = Date.now }) {
     // Malformed JSON, say, which carries its own response.
     if (err instanceof HTTPException) return err.getResponse();
     // The method and path only: an error's message can quote the request it
-    // failed on, and a request carries a child's name and a parent's email.
+    // failed on, and a submission carries a child's name or a parent's email.
     console.error(`${c.req.method} ${c.req.path} failed:`, err?.name || "error");
     return c.json({ error: "internal error" }, 500);
   });

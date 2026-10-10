@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Contact · Oasis SMP</title>
+    <meta name="description" content="Send a message to the people who run the Oasis SMP server." />
+    <script type="module" src="/src/contact.js"></script>
+  </head>
+  <body>
+    <!-- nav -->
+    <main id="main" class="page">
+      <h1>Contact</h1>
+
+      <form id="contact-form" class="site-form" novalidate>
+        <fieldset>
+          <legend>Your message</legend>
+          <div class="field">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" rows="6" required></textarea>
+            <p class="error" id="message-error" hidden></p>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>How to reach you</legend>
+          <div class="field" id="emails">
+            <label for="contactEmail-0">Your email address</label>
+          </div>
+          <p class="error" id="emails-error" hidden></p>
+          <button type="button" class="link-button" id="add-email">Add another contact email</button>
+        </fieldset>
+
+        <!-- For bots that fill in every field. Hidden from people and from screen readers. -->
+        <div class="trap" aria-hidden="true">
+          <label for="oasis_hp">Leave this empty</label>
+          <input id="oasis_hp" name="oasis_hp" tabindex="-1" autocomplete="off" />
+        </div>
+
+        <p class="error" id="form-error" role="alert" hidden></p>
+        <button type="submit" class="mc-button">Send message</button>
+      </form>
+
+      <div class="thanks" id="thanks" tabindex="-1" hidden>
+        <h2>Thanks, your message is on its way.</h2>
+        <p>We'll reply to the email address you gave.</p>
+        <p><a href="/">Back to the home page</a></p>
+      </div>
+    </main>
+  </body>
+</html>
