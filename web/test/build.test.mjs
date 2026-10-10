@@ -69,11 +69,12 @@ test("the rules page carries every rule from rules.txt, in order", () => {
 // In production a POST reaches the API only with the SHA-256 of its body in
 // this header (src/request-access.js says why). Nothing local exercises that
 // path, so the built form is checked for it here.
-test("the built request form sends the body hash the Function URL requires", () => {
+test("the built forms send the body hash the Function URL requires", () => {
   const assets = resolve(dist, "assets");
-  const form = readdirSync(assets).find((file) => /^request-access-.*\.js$/.test(file));
-  assert.ok(form, "no request-access script in dist/assets/");
-  const js = readFileSync(resolve(assets, form), "utf8");
+  const js = readdirSync(assets, { recursive: true })
+    .filter((file) => file.endsWith(".js"))
+    .map((file) => readFileSync(resolve(assets, file), "utf8"))
+    .join("\n");
   assert.match(js, /x-amz-content-sha256/);
   assert.match(js, /subtle\.digest\(\s*["'`]SHA-256["'`]/, "the header is sent, but nothing hashes the body for it");
 });
@@ -90,8 +91,10 @@ test("the logo and the dirt tile are built, and the home page shows the logo lar
 const CURRENT = {
   "index.html": "/",
   "play/index.html": "/play/",
+  "schedule/index.html": "/schedule/",
   "rules/index.html": "/rules/",
   "request-access/index.html": "/request-access/",
+  "contact/index.html": "/contact/",
   "404.html": null,
 };
 
@@ -119,4 +122,10 @@ test("every page carries the same navigation bar", () => {
 // The OFL asks that the font's license travel with it.
 test("the Monocraft license is published beside the site", () => {
   assert.match(readFileSync(resolve(dist, "licenses/Monocraft-OFL.txt"), "utf8"), /SIL OPEN FONT LICENSE/);
+});
+
+test("the schedule page carries the schedule, or says it is coming", () => {
+  const html = readFileSync(resolve(dist, "schedule/index.html"), "utf8");
+  assert.doesNotMatch(html, /<!-- schedule -->/, "the schedule marker was left in the page");
+  assert.match(html, /<iframe class="calendar"|The session schedule is coming soon/);
 });

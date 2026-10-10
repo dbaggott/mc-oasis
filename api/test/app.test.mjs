@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { COMMENTS_MAX, REQUEST_BYTES_MAX, REQUEST_RETENTION_DAYS, TRAP_FIELD } from "../../shared/access-request.js";
-import { createApp, REQUESTS_PER_IP_PER_HOUR } from "../src/app.js";
-import { requestBody, requestSubject } from "../src/notify.js";
+import { COMMENTS_MAX, REQUEST_BYTES_MAX } from "../../shared/access-request.js";
+import { CONTACT_BYTES_MAX, MESSAGE_MAX } from "../../shared/contact.js";
+import { RETENTION_DAYS, TRAP_FIELD } from "../../shared/forms.js";
+import { createApp, SUBMISSIONS_PER_IP_PER_HOUR } from "../src/app.js";
+import { MESSAGE_SUBJECT, messageBody, requestBody, requestSubject } from "../src/notify.js";
 import { memoryStore } from "../src/store.js";
 
 const build = { branch: "main", commit: "abc123", builtAt: "2026-10-09T00:00:00Z" };
@@ -20,13 +22,13 @@ const bedrock = {
 function setup({ now = () => 1_000_000 } = {}) {
   const store = memoryStore();
   const announced = [];
-  const app = createApp({ store, notify: async (r) => announced.push(r), build, now });
-  return { app, store, announced };
+  const app = createApp({ store, notify: async (kind, item) => announced.push({ kind, item }), build, now });
+  return { app, store, announced, requests: store.items.request, messages: store.items.message };
 }
 
-function post(app, body, headers = {}) {
+function post(app, body, headers = {}, path = "/api/access-requests") {
   const json = JSON.stringify(body);
-  return app.request("/api/access-requests", {
+  return app.request(path, {
     method: "POST",
     headers: { "content-type": "application/json", "content-length": String(json.length), ...headers },
     body: json,
@@ -38,15 +40,15 @@ test("a request is stored, then announced, and answered ok", async () => {
   const res = await post(app, computer);
   assert.equal(res.status, 200);
   assert.deepEqual(await res.json(), { ok: true });
-  assert.equal(store.requests.length, 1);
-  const [saved] = store.requests;
+  assert.equal(store.items.request.length, 1);
+  const [saved] = store.items.request;
   assert.equal(saved.playerName, "Steve_42");
   assert.deepEqual(saved.devices, ["computer"]);
   assert.equal(saved.grade, "5");
   assert.deepEqual(saved.parentEmails, ["parent@example.com"]);
   assert.equal(saved.createdAt, 1_000_000);
-  assert.equal(saved.expiresAt, 1_000_000 + REQUEST_RETENTION_DAYS * 24 * 60 * 60 * 1000);
-  assert.deepEqual(announced, [saved]);
+  assert.equal(saved.expiresAt, 1_000_000 + RETENTION_DAYS * 24 * 60 * 60 * 1000);
+  assert.deepEqual(announced, [{ kind: "request", item: saved }]);
 });
 
 test("comments are kept, trimmed, and absent ones stored as null", async () => {
@@ -55,7 +57,7 @@ test("comments are kept, trimmed, and absent ones stored as null", async () => {
   assert.equal((await post(app, computer)).status, 200);
   assert.equal((await post(app, { ...computer, comments: "   " })).status, 200);
   assert.deepEqual(
-    store.requests.map((r) => r.comments),
+    store.items.request.map((r) => r.comments),
     ["Plays with her cousin Sam.", null, null],
   );
 });
@@ -63,13 +65,13 @@ test("comments are kept, trimmed, and absent ones stored as null", async () => {
 test("comments longer than the limit are refused", async () => {
   const { app, store } = setup();
   assert.equal((await post(app, { ...computer, comments: "x".repeat(COMMENTS_MAX + 1) })).status, 400);
-  assert.equal(store.requests.length, 0);
+  assert.equal(store.items.request.length, 0);
 });
 
 test("a Bedrock request keeps its devices and gamertag", async () => {
   const { app, store } = setup();
   assert.equal((await post(app, bedrock)).status, 200);
-  const [saved] = store.requests;
+  const [saved] = store.items.request;
   assert.equal(saved.playerName, "Cool Gamer#1234");
   assert.deepEqual(saved.devices, ["switch", "mobile"]);
 });
@@ -77,14 +79,14 @@ test("a Bedrock request keeps its devices and gamertag", async () => {
 test("a gamertag in another script is accepted", async () => {
   const { app, store } = setup();
   assert.equal((await post(app, { ...bedrock, playerName: "ゲーマー 7" })).status, 200);
-  assert.equal(store.requests[0].playerName, "ゲーマー 7");
+  assert.equal(store.items.request[0].playerName, "ゲーマー 7");
 });
 
 test("parent emails are trimmed, lowercased and deduplicated", async () => {
   const { app, store } = setup();
   const res = await post(app, { ...computer, parentEmails: [" Parent@Example.com ", "parent@example.com"] });
   assert.equal(res.status, 200);
-  assert.deepEqual(store.requests[0].parentEmails, ["parent@example.com"]);
+  assert.deepEqual(store.items.request[0].parentEmails, ["parent@example.com"]);
 });
 
 // What the API stores is what the server and the operator need; a field it
@@ -93,7 +95,7 @@ test("parent emails are trimmed, lowercased and deduplicated", async () => {
 test("a field the API does not know is dropped, not stored", async () => {
   const { app, store } = setup();
   assert.equal((await post(app, { ...computer, childName: "Alex" })).status, 200);
-  assert.equal("childName" in store.requests[0], false);
+  assert.equal("childName" in store.items.request[0], false);
 });
 
 test("anything in the trap field is answered ok and neither kept nor announced", async () => {
@@ -101,7 +103,7 @@ test("anything in the trap field is answered ok and neither kept nor announced",
   const res = await post(app, { ...computer, [TRAP_FIELD]: "http://spam" });
   assert.equal(res.status, 200);
   assert.deepEqual(await res.json(), { ok: true });
-  assert.equal(store.requests.length, 0);
+  assert.equal(store.items.request.length, 0);
   assert.equal(announced.length, 0);
 });
 
@@ -121,7 +123,7 @@ for (const [why, body] of [
   test(`${why} is refused`, async () => {
     const { app, store } = setup();
     assert.equal((await post(app, body)).status, 400);
-    assert.equal(store.requests.length, 0);
+    assert.equal(store.items.request.length, 0);
   });
 }
 
@@ -139,7 +141,7 @@ test("a body declared over the limit is refused before it is read", async () => 
   const { app, store } = setup();
   const res = await post(app, computer, { "content-length": String(REQUEST_BYTES_MAX + 1) });
   assert.equal(res.status, 413);
-  assert.equal(store.requests.length, 0);
+  assert.equal(store.items.request.length, 0);
 });
 
 test("one address is limited per hour; another is not, and the next hour starts over", async () => {
@@ -147,7 +149,7 @@ test("one address is limited per hour; another is not, and the next hour starts 
   const { app, store } = setup({ now: () => clock });
   const from = (ip) => ({ "cloudfront-viewer-address": `${ip}:443` });
 
-  for (let i = 0; i < REQUESTS_PER_IP_PER_HOUR; i++) {
+  for (let i = 0; i < SUBMISSIONS_PER_IP_PER_HOUR; i++) {
     assert.equal((await post(app, computer, from("192.0.2.1"))).status, 200);
   }
   assert.equal((await post(app, computer, from("192.0.2.1"))).status, 429);
@@ -155,12 +157,12 @@ test("one address is limited per hour; another is not, and the next hour starts 
 
   clock = 60 * 60 * 1000;
   assert.equal((await post(app, computer, from("192.0.2.1"))).status, 200);
-  assert.equal(store.requests.length, REQUESTS_PER_IP_PER_HOUR + 2);
+  assert.equal(store.items.request.length, SUBMISSIONS_PER_IP_PER_HOUR + 2);
 });
 
 test("addresses in one IPv6 /64 share a limit", async () => {
   const { app } = setup();
-  for (let i = 0; i < REQUESTS_PER_IP_PER_HOUR; i++) {
+  for (let i = 0; i < SUBMISSIONS_PER_IP_PER_HOUR; i++) {
     const res = await post(app, computer, { "cloudfront-viewer-address": `[2001:db8:0:1::${i + 1}]:443` });
     assert.equal(res.status, 200);
   }
@@ -216,4 +218,64 @@ test("comments come last in the notification, after every fact", () => {
   assert.match(body, /^player: {3}Steve_42$/m);
   assert.ok(body.indexOf("they said:") > body.indexOf("api:"), "comments before the facts");
   assert.ok(body.endsWith("line one\nplayer:   forged"));
+});
+
+// The contact form.
+
+const contact = { message: "  When is the next session?  ", emails: ["Parent@Example.com", "parent@example.com"] };
+const sendContact = (app, body, headers = {}) => post(app, body, headers, "/api/contact");
+
+test("a contact message is stored, then announced, and answered ok", async () => {
+  const { app, store, announced } = setup();
+  const res = await sendContact(app, contact);
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { ok: true });
+  const [saved] = store.items.message;
+  assert.equal(saved.message, "When is the next session?");
+  assert.deepEqual(saved.emails, ["parent@example.com"]);
+  assert.equal(saved.expiresAt, saved.createdAt + RETENTION_DAYS * 24 * 60 * 60 * 1000);
+  assert.deepEqual(announced, [{ kind: "message", item: saved }]);
+  assert.equal(store.items.request.length, 0);
+});
+
+for (const [why, body] of [
+  ["an empty message", { ...contact, message: "   " }],
+  ["a message over the limit", { ...contact, message: "x".repeat(MESSAGE_MAX + 1) }],
+  ["no email", { ...contact, emails: [] }],
+  ["an email that is not one", { ...contact, emails: ["nope"] }],
+  ["too many emails", { ...contact, emails: ["a@x.com", "b@x.com", "c@x.com", "d@x.com"] }],
+]) {
+  test(`a contact message with ${why} is refused`, async () => {
+    const { app, store } = setup();
+    assert.equal((await sendContact(app, body)).status, 400);
+    assert.equal(store.items.message.length, 0);
+  });
+}
+
+test("a contact message in the trap is answered ok and neither kept nor announced", async () => {
+  const { app, store, announced } = setup();
+  assert.equal((await sendContact(app, { ...contact, [TRAP_FIELD]: "x" })).status, 200);
+  assert.equal(store.items.message.length, 0);
+  assert.equal(announced.length, 0);
+});
+
+test("a contact body declared over its limit is refused before it is read", async () => {
+  const { app } = setup();
+  assert.equal((await sendContact(app, contact, { "content-length": String(CONTACT_BYTES_MAX + 1) })).status, 413);
+});
+
+// Each form has its own allowance, so a burst of one never blocks the other.
+test("the contact form and the request form are limited separately", async () => {
+  const { app } = setup();
+  const from = { "cloudfront-viewer-address": "192.0.2.9:443" };
+  for (let i = 0; i < SUBMISSIONS_PER_IP_PER_HOUR; i++) assert.equal((await sendContact(app, contact, from)).status, 200);
+  assert.equal((await sendContact(app, contact, from)).status, 429);
+  assert.equal((await post(app, computer, from)).status, 200);
+});
+
+test("a contact notification names the sender, with their message last", () => {
+  const body = messageBody({ id: "m1", message: "line one\nfrom:     forged", emails: ["a@x.com", "b@x.com"] }, build);
+  assert.equal(MESSAGE_SUBJECT, "Oasis SMP message");
+  assert.match(body, /^from: {5}a@x.com, b@x.com$/m);
+  assert.ok(body.endsWith("they said:\nline one\nfrom:     forged"));
 });

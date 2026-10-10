@@ -36,10 +36,6 @@
   --tile: #1f1712;
   --tile-hover: #2b2018;
   --tile-light: #4a3a2c;
-  --cta: #2f6f62;
-  --cta-hover: #367f71;
-  --cta-light: #5aa695;
-  --cta-dark: #1d4a41;
   --input: #000000;
   --input-edge: #a0a0a0;
   --pixel: "Monocraft", ui-monospace, monospace;
@@ -123,8 +119,8 @@ code {
   top: 8px;
 }
 
-/* The navigation bar: dark tiles either side of the logo, the page you are on
-   in gold, and the call to action in prismarine. */
+/* The navigation bar: dark tiles either side of the logo, and the page you
+   are on in gold. */
 .site-nav {
   padding: 18px 16px 8px;
 }
@@ -194,20 +190,6 @@ code {
   text-underline-offset: 6px;
 }
 
-.nav-cta {
-  color: var(--button-ink);
-  background: var(--cta);
-  box-shadow:
-    inset 0 2px 0 var(--cta-light),
-    inset 0 -3px 0 var(--cta-dark),
-    0 4px 0 #000000;
-}
-
-.nav-cta:hover {
-  color: var(--button-ink);
-  background: var(--cta-hover);
-}
-
 .nav-logo {
   display: block;
   flex: none;
@@ -248,7 +230,7 @@ code {
 /* A phone: the menu button and the logo on one row, the logo centred by an
    empty third column as wide as the button, and the links beneath, shown once
    the button opens them. */
-@media (max-width: 760px) {
+@media (max-width: 960px) {
   .nav {
     display: grid;
     grid-template-columns: 48px 1fr 48px;
@@ -342,6 +324,33 @@ code {
 /* An address broken across lines invites typing it with a space. */
 .address-value code {
   white-space: nowrap;
+}
+
+/* Too long to keep on one line on a phone; it is copied, not typed. */
+.address-long {
+  font-size: 0.9rem;
+}
+
+.address-long code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* The Schedule page: subscribe buttons, then Google's agenda view. */
+.subscribe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 24px 0 16px;
+}
+
+.calendar {
+  display: block;
+  width: 100%;
+  height: 560px;
+  margin-top: 24px;
+  border: 2px solid #000000;
+  background: #ffffff;
 }
 
 .copy {
@@ -503,7 +512,7 @@ code {
 
 /* The request form, as panels like Minecraft's settings screens. */
 
-.request-form fieldset {
+.site-form fieldset {
   border: 2px solid var(--panel-edge);
   background: var(--panel);
   padding: 20px;
@@ -511,7 +520,7 @@ code {
   min-width: 0;
 }
 
-.request-form legend {
+.site-form legend {
   font-size: 1.05rem;
   color: var(--gold);
   text-shadow: 2px 2px 0 var(--gold-shadow);

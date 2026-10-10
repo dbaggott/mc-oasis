@@ -1,6 +1,6 @@
-// What the request-access page sends and POST /api/access-requests accepts.
-// Both import this file, so the form and the route cannot disagree about a
-// field or a limit.
+// What the request-access page sends and POST /api/access-requests accepts,
+// beyond what every form shares (forms.js). Both import this file, so the form
+// and the route cannot disagree about a field or a limit.
 //
 // The form is filled in by a parent, for their child. It asks for no more than
 // it takes to set up the child's access and to reach the parent about it: no
@@ -58,23 +58,10 @@ export function isPlayerName(name) {
   return JAVA_NAME_PATTERN.test(name) || BEDROCK_NAME_PATTERN.test(name);
 }
 
-export const PARENT_EMAILS_MAX = 3;
-export const EMAIL_MAX = 254;
-
 // The optional free-text box: anything the parent wants to add.
 export const COMMENTS_MAX = 1_000;
-
-// The honeypot. The page hides a field by this name, and anything in it came
-// from something filling the form blind; the route drops that request while
-// answering as if it had kept it. Named so that no browser or password manager
-// recognises it and fills it in, which would drop a real request.
-export const TRAP_FIELD = "oasis_hp";
 
 // The largest body the route reads, in bytes of JSON, checked from
 // Content-Length before parsing. Room for a full comments box in any script,
 // at up to four bytes a character, alongside every other field.
 export const REQUEST_BYTES_MAX = 8_000;
-
-// Requests are deleted this long after they arrive. Long enough to act on one;
-// short enough that nothing about a child is kept indefinitely.
-export const REQUEST_RETENTION_DAYS = 90;

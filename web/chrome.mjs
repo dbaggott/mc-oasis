@@ -2,15 +2,16 @@
 // in place of <!-- nav -->, so a page carries the marker and no copy of it.
 import { logoImg } from "./logo.mjs";
 
-// Either side of the logo, in order. The last on the right is the call to
-// action, drawn apart from the others.
+// Either side of the logo, in order.
 const LEFT = [
   { href: "/", label: "Home" },
   { href: "/play/", label: "Play" },
+  { href: "/schedule/", label: "Schedule" },
 ];
 const RIGHT = [
   { href: "/rules/", label: "Rules" },
-  { href: "/request-access/", label: "Request Access", cta: true },
+  { href: "/request-access/", label: "Request Access" },
+  { href: "/contact/", label: "Contact" },
 ];
 
 // The page a link names, from the path Vite hands transformIndexHtml:
@@ -20,9 +21,9 @@ export function pageOf(path) {
 }
 
 function links(items, current, id) {
-  const lis = items.map(({ href, label, cta }) => {
+  const lis = items.map(({ href, label }) => {
     const here = href === current ? ' aria-current="page"' : "";
-    return `<li><a class="nav-item${cta ? " nav-cta" : ""}" href="${href}"${here}>${label}</a></li>`;
+    return `<li><a class="nav-item" href="${href}"${here}>${label}</a></li>`;
   });
   return `<ul class="nav-links" id="${id}">${lis.join("")}</ul>`;
 }

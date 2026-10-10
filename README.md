@@ -30,7 +30,7 @@ scripts/
   smoke-test.sh          starts a built image on a throwaway world; checks every plugin and datapack loads and every config setting applies
 web/                     the website: a Vite site; its rules page renders plugins/OasisRules/rules.txt
 api/                     the website's API: a parent's request for their child to be let in, as a container-image Lambda
-shared/                  what the request form and the API both import, so they agree on every field
+shared/                  what the site's forms and the API both import, so they agree on every field
 .github/workflows/ci.yml builds and tests every PR; publishes main and dispatched branches (images to ECR, the website to S3)
 ```
 

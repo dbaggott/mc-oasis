@@ -1,11 +1,11 @@
-// Telling the operator a request arrived, through the SNS topic shared by every
+// Telling the operator a form was sent, through the SNS topic shared by every
 // app in the production account (accounts/production in
 // dbaggott/infrastructure). The topic's subscriptions decide where it goes;
 // this only publishes.
 //
-// Never throws. By the time it runs the request is stored, so a failed publish
-// costs the notification and not the request, and answering 500 would tell a
-// parent their request was lost when it was not.
+// Never throws. By the time it runs the submission is stored, so a failed
+// publish costs the notification and not the submission, and answering 500
+// would tell a parent their request was lost when it was not.
 import { CONSOLE_DEVICES, DEVICES, editionOf, GRADES } from "../../shared/access-request.js";
 
 // Never anything the parent typed: SNS refuses a subject over 99 characters or
@@ -51,8 +51,30 @@ export function requestBody(request, build) {
   return lines.join("\n");
 }
 
-// With no topic the request is still stored; only the announcement is skipped.
-// That is a development instance, not a fault.
+export const MESSAGE_SUBJECT = "Oasis SMP message";
+
+// The sender's addresses, then the message last, for the same reason as a
+// request's comments.
+export function messageBody(message, build) {
+  return [
+    `from:     ${message.emails.join(", ")}`,
+    "",
+    `message:  ${message.id}`,
+    `api:      ${build.commit ?? "(not a built image)"}`,
+    "",
+    "they said:",
+    message.message,
+  ].join("\n");
+}
+
+// How each kind of submission is announced.
+const FORMATS = {
+  request: { subject: requestSubject, body: requestBody },
+  message: { subject: () => MESSAGE_SUBJECT, body: messageBody },
+};
+
+// With no topic the submission is still stored; only the announcement is
+// skipped. That is a development instance, not a fault.
 export function createNotifier(topicArn, build) {
   if (!topicArn) return async () => {};
 
@@ -63,15 +85,16 @@ export function createNotifier(topicArn, build) {
     return (subject, message) => client.send(new PublishCommand({ TopicArn: topicArn, Subject: subject, Message: message }));
   };
 
-  return async (request) => {
+  return async (kind, item) => {
     try {
       publisher ??= makePublisher();
-      await (await publisher)(requestSubject(request), requestBody(request, build));
+      const { subject, body } = FORMATS[kind];
+      await (await publisher)(subject(item), body(item, build));
     } catch (e) {
       // Forget a failed client, or one bad construction would fail every
       // publish for the life of a reused Lambda process.
       publisher = null;
-      console.error(`failed to announce request ${request.id}:`, e?.name || "error");
+      console.error(`failed to announce ${kind} ${item.id}:`, e?.name || "error");
     }
   };
 }
