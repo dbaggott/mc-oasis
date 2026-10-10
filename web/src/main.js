@@ -3,17 +3,18 @@
 // from any other origin.
 import "@fontsource-variable/karla";
 import "./styles.css";
-import { SKIES, skyAt } from "./sky.js";
+import { skyFor } from "./sky.js";
 
 // On a narrow screen the links fold behind a menu button. The stylesheet hides
 // them only once this script has run and marked the page, so without it they
 // stay in sight.
 document.documentElement.classList.add("js");
 
-// The stylesheet picks the backdrop from this, and loads only that one. A
-// `?sky=` naming one of the skies shows it whatever the hour.
-const askedSky = new URLSearchParams(location.search).get("sky");
-document.documentElement.dataset.sky = SKIES.has(askedSky) ? askedSky : skyAt(new Date().getHours());
+// The stylesheet picks the backdrop from this, and loads only that one.
+document.documentElement.dataset.sky = skyFor(
+  new URLSearchParams(location.search).get("sky"),
+  new Date().getHours(),
+);
 
 const toggle = document.querySelector(".nav-toggle");
 toggle?.addEventListener("click", () => {
