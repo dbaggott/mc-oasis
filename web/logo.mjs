@@ -1,5 +1,4 @@
-// The site's pixel art, drawn at build time: the logo, the dirt background and
-// the favicon.
+// The site's pixel art, drawn at build time: the logo and the favicon.
 //
 // The Oasis SMP logo is drawn as an SVG of blocks, in the manner of
 // Minecraft's edition logos: chunky pixel letters, each pixel a textured block
@@ -144,20 +143,9 @@ export function logoImg(className) {
   return `<img class="${className}" src="/logo.svg" alt="Oasis SMP" width="${width}" height="${height}" />`;
 }
 
-// A dirt tile, 16 by 16 texture pixels, darkened the way Minecraft darkens dirt
-// behind its menus, for the page background to repeat.
+// Dirt, darkened the way Minecraft darkens it behind its menus, for the
+// favicon's ground.
 const DIRT = ["#3b2a1e", "#34261b", "#43301f", "#2d2017", "#4a3626", "#382819"];
-
-export function dirtSvg() {
-  const size = 16;
-  const rects = [];
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      rects.push([x, y, 1, 1, DIRT[Math.floor(noise(x, y, 3) * DIRT.length)]]);
-    }
-  }
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">${paths(rects)}</svg>`;
-}
 
 // The favicon: a thick sandstone "O", outlined in black, on a dirt tile, as
 // 16 by 16 colours, row by row. Strokes three and four pixels wide, so the

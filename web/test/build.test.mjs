@@ -79,9 +79,21 @@ test("the built forms send the body hash the Function URL requires", () => {
   assert.match(js, /subtle\.digest\(\s*["'`]SHA-256["'`]/, "the header is sent, but nothing hashes the body for it");
 });
 
-test("the logo and the dirt tile are built, and the home page shows the logo large", () => {
+test("every file the stylesheet references exists", () => {
+  const assets = resolve(dist, "assets");
+  const css = readdirSync(assets).filter((file) => file.endsWith(".css"));
+  assert.ok(css.length > 0, "no stylesheet was built");
+  for (const file of css) {
+    const refs = [...readFileSync(resolve(assets, file), "utf8").matchAll(/url\("?(\/[^")]+)"?\)/g)].map((m) => m[1]);
+    assert.ok(refs.length > 0, `${file} references nothing`);
+    for (const ref of refs) {
+      assert.ok(existsSync(resolve(dist, `.${ref}`)), `${file} references ${ref}, which was not built`);
+    }
+  }
+});
+
+test("the logo is built, and the home page shows the logo large", () => {
   assert.match(readFileSync(resolve(dist, "logo.svg"), "utf8"), /^<svg xmlns="http:\/\/www.w3.org\/2000\/svg"/);
-  assert.ok(existsSync(resolve(dist, "dirt.svg")), "dirt.svg, which the stylesheet repeats, was not built");
   const html = readFileSync(resolve(dist, "index.html"), "utf8");
   assert.doesNotMatch(html, /<!-- logo -->/, "the logo marker was left in the page");
   assert.match(html, /<img class="logo-art" src="\/logo.svg" alt="Oasis SMP"/);
