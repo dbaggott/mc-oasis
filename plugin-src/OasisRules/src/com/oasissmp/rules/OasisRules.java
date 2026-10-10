@@ -80,7 +80,9 @@ public final class OasisRules extends JavaPlugin implements Listener {
     }
 
     private void sendRules(Audience audience) {
-        rules.numbered().forEach(rule -> audience.sendMessage(Component.text(rule)));
+        rules.numbered().forEach(line -> audience.sendMessage(line.heading()
+                ? Component.text(line.text(), NamedTextColor.YELLOW)
+                : Component.text(line.text())));
     }
 
     private final class RulesCommand implements BasicCommand {

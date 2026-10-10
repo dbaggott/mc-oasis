@@ -1,11 +1,30 @@
-# The server rules, one per line, numbered in the order they're written. Lines
-# starting with # are comments.
+# The server rules, one per line, numbered in the order they're written. A line
+# in [brackets] heads the rules after it and isn't numbered. Lines starting
+# with # are comments.
 #
 # /rules shows them, and a player is shown them in chat on joining until
-# they've seen the rules as they are now. Changing a rule's wording, adding one
-# or reordering them shows everyone the rules again; changing a comment doesn't.
+# they've seen the rules as they are now. Changing a rule's wording or a
+# heading, adding one or reordering them shows everyone the rules again;
+# changing a comment doesn't.
 
-Be kind. No harassment, slurs or hate.
-No griefing or stealing. Build away from others unless invited.
-No cheats, x-ray or hacked clients.
-Keep chat clean. The filter catches most of it, but don't test it.
+[Chat and voice chat]
+Treat everyone with respect.
+No slurs or swearing.
+Don't be toxic.
+Use common sense: don't say anything you think might hurt someone.
+
+[Gameplay]
+No hacking, x-raying or any external modification that gives you an unfair advantage. If you're wondering whether a mod or texture pack is allowed, ask a staff member.
+No griefing builds.
+No stealing. That includes picking up someone's loot when they die; the only exception is putting it in a chest or shulker box for them.
+Only PvP with someone if they've consented. You can also start a war with someone; ask staff for more info.
+Don't intentionally lag the server. Redstone machines are OK, but if they cause too much lag they might be taken down, and the materials will be refunded to you.
+Try to keep the Overworld and the Nether looking nice, especially around spawn.
+Don't build too close to someone else without their permission.
+Use common sense: if it feels like breaking a rule, it probably is.
+
+[Administration]
+Admins and owners have the final say on disputes.
+Treat staff with respect.
+Staff roles: helpers moderate chat and can help with basic issues you're having. Admins moderate gameplay (and chat if needed) and can help with more complex problems if they aren't too busy. Owners are like admins, with a higher permission level for commands, and manage the server, including events.
+If you notice staff abuse, please report it to Refreshy_ (the server owner) or another staff member.
