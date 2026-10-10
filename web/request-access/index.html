@@ -11,14 +11,15 @@
     <!-- nav -->
     <main id="main" class="page">
       <h1>Request access</h1>
+      <p class="lede">One request per child.</p>
 
       <form id="request-form" class="site-form" novalidate>
         <fieldset>
           <legend>About your child</legend>
           <div class="field">
-            <label for="playerName">Their Minecraft name (needed to add them to the allowed list)</label>
+            <label for="playerName">Minecraft in-game name</label>
             <input id="playerName" name="playerName" autocomplete="off" autocapitalize="off" spellcheck="false" required />
-            <p class="hint">Their Java username, or the Xbox gamertag they sign in to Minecraft with.</p>
+            <p class="hint">Please type carefully, we need the correct name to add them to the server's allowed user list.</p>
             <p class="error" id="playerName-error" hidden></p>
           </div>
           <div class="field">
@@ -26,13 +27,14 @@
             <select id="grade" name="grade" required>
               <option value="">Choose a grade</option>
             </select>
+            <p class="hint">Note: this server is in survival mode, not creative mode!</p>
             <p class="error" id="grade-error" hidden></p>
           </div>
         </fieldset>
 
         <fieldset>
-          <legend>Where will they play?</legend>
-          <p class="hint">Tick every one they'll use.</p>
+          <legend>What do they play on?</legend>
+          <p class="hint">Check all that apply.</p>
           <div class="choices choices-grid" id="devices"></div>
           <p class="error" id="devices-error" hidden></p>
         </fieldset>
@@ -61,16 +63,16 @@
           <input id="oasis_hp" name="oasis_hp" tabindex="-1" autocomplete="off" />
         </div>
 
-        <p class="privacy">We will contact you once your kid has been added.</p>
+        <p class="privacy">We will contact you once access has been set-up.</p>
 
         <p class="error" id="form-error" role="alert" hidden></p>
         <button type="submit" class="mc-button" id="submit">Send request</button>
       </form>
 
       <div class="thanks" id="thanks" tabindex="-1" hidden>
-        <h2>Thanks, we've got your request.</h2>
-        <p>We'll email you once your child can join. You don't need to do anything else until then.</p>
-        <p><a href="/">Back to the home page</a></p>
+        <h2>We got your request, thank you for joining!</h2>
+        <p>We'll email you once access has been set-up (usually the same day or next day).</p>
+        <p><a href="/request-access/">Make another request</a></p>
       </div>
     </main>
   </body>

@@ -29,11 +29,7 @@ for (const [value, label] of Object.entries(DEVICES)) {
   devicesBox.append(choice);
 }
 
-// GRADES is keyed by value, and an object lists integer-like keys first ("1"
-// before "K"), so the order is spelled out here.
-for (const value of ["K", ...Array.from({ length: 12 }, (_, i) => String(i + 1))]) {
-  grade.add(new Option(GRADES[value], value));
-}
+for (const [value, label] of Object.entries(GRADES)) grade.add(new Option(label, value));
 
 const emails = emailList(document.getElementById("emails"), document.getElementById("add-email"), "parentEmail");
 
@@ -45,7 +41,7 @@ function collect() {
   const parentEmails = emails.values();
   const problems = [];
 
-  if (devices.length === 0) problems.push(["devices", "Tick at least one."]);
+  if (devices.length === 0) problems.push(["devices", "Check at least one."]);
   if (!name) problems.push(["playerName", "Enter your child's Minecraft name."]);
   else if (!isPlayerName(name))
     problems.push(["playerName", "That doesn't look like a Minecraft name. Check it against the one shown in the game."]);

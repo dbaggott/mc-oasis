@@ -27,7 +27,6 @@ export function editionOf(devices) {
 }
 
 export const GRADES = {
-  K: "Kindergarten",
   1: "1st grade",
   2: "2nd grade",
   3: "3rd grade",
