@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { COMMENTS_MAX, REQUEST_BYTES_MAX } from "../../shared/access-request.js";
+import { TIME_ZONE } from "../../shared/calendar.js";
 import { CONTACT_BYTES_MAX, MESSAGE_MAX } from "../../shared/contact.js";
 import { RETENTION_DAYS, TRAP_FIELD } from "../../shared/forms.js";
 import { createApp, SUBMISSIONS_PER_IP_PER_HOUR } from "../src/app.js";
@@ -19,10 +20,12 @@ const bedrock = {
   parentEmails: ["one@example.com", "two@example.com"],
 };
 
-function setup({ now = () => 1_000_000 } = {}) {
+const session = { start: "2026-11-02T23:00:00.000Z", end: "2026-11-03T00:30:00.000Z", title: "Oasis Minecraft" };
+
+function setup({ now = () => 1_000_000, schedule = async () => [session] } = {}) {
   const store = memoryStore();
   const announced = [];
-  const app = createApp({ store, notify: async (kind, item) => announced.push({ kind, item }), build, now });
+  const app = createApp({ store, notify: async (kind, item) => announced.push({ kind, item }), schedule, build, now });
   return { app, store, announced, requests: store.items.request, messages: store.items.message };
 }
 
@@ -34,6 +37,25 @@ function post(app, body, headers = {}, path = "/api/access-requests") {
     body: json,
   });
 }
+
+test("the schedule is answered with the zone its times are shown in", async () => {
+  const { app } = setup();
+  const res = await app.request("/api/schedule");
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("cache-control"), "no-store");
+  assert.deepEqual(await res.json(), { timeZone: TIME_ZONE, sessions: [session] });
+});
+
+test("a schedule that can't be read is a 502", async () => {
+  const { app } = setup({
+    schedule: async () => {
+      throw new Error("feed down");
+    },
+  });
+  const res = await app.request("/api/schedule");
+  assert.equal(res.status, 502);
+  assert.deepEqual(await res.json(), { error: "schedule unavailable" });
+});
 
 test("a request is stored, then announced, and answered ok", async () => {
   const { app, store, announced } = setup();
