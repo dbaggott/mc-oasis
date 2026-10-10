@@ -179,8 +179,11 @@ function faviconPixels() {
       let fill = DIRT[Math.floor(noise(x, y, 3) * DIRT.length)];
       if (inO(x, y)) {
         fill = t.face[Math.floor(noise(x, y, 1) * t.face.length)];
-        if (!inO(x, y - 1) || !inO(x - 1, y)) fill = t.light;
-        if (!inO(x, y + 1) || !inO(x + 1, y)) fill = t.dark;
+        // A light rim on every side rather than the logo's top-left light and
+        // bottom-right shade: at tab size a shaded edge merges into the black
+        // outline and the letter looks pushed up and to the left.
+        const edge = !inO(x, y - 1) || !inO(x - 1, y) || !inO(x, y + 1) || !inO(x + 1, y);
+        if (edge) fill = t.light;
       } else if (
         [-1, 0, 1].some((dx) => [-1, 0, 1].some((dy) => inO(x + dx, y + dy)))
       ) {
