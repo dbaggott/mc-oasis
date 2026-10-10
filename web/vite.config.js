@@ -4,7 +4,7 @@ import { defineConfig } from "vite";
 import { pages } from "./pages.mjs";
 import { scheduleHtml } from "./calendar.mjs";
 import { navHtml } from "./chrome.mjs";
-import { dirtSvg, faviconPng, faviconSvg, logoImg, logoSvg } from "./logo.mjs";
+import { faviconPng, faviconSvg, logoImg, logoSvg } from "./logo.mjs";
 import { parseRules, rulesHtml } from "./rules.mjs";
 
 const repoRoot = resolve(import.meta.dirname, "..");
@@ -23,12 +23,10 @@ if (!existsSync(resolve(import.meta.dirname, "node_modules/vite"))) {
 const entryName = (page) => page.replace(/(\/index)?\.html$/, "");
 
 // The art logo.mjs draws, as files at the site's root: the logo every page's
-// <img> shares, the dirt tile the stylesheet repeats, and the favicon in each
-// form browsers ask for. <!-- logo --> in a page becomes the large logo, and
-// every page's <head> gets the favicon links.
+// <img> shares, and the favicon in each form browsers ask for. <!-- logo --> in
+// a page becomes the large logo, and every page's <head> gets the favicon links.
 const artFiles = {
   "logo.svg": { type: "image/svg+xml", draw: () => logoSvg().svg },
-  "dirt.svg": { type: "image/svg+xml", draw: dirtSvg },
   "favicon.svg": { type: "image/svg+xml", draw: faviconSvg },
   "favicon.png": { type: "image/png", draw: () => faviconPng(32) },
   "apple-touch-icon.png": { type: "image/png", draw: () => faviconPng(180) },

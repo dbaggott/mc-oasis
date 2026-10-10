@@ -9,10 +9,11 @@
 
 /* One palette, light text on dark earth, like Minecraft's own menus. */
 :root {
-  --bg: #2b1f17;
   --bg-deep: #1e150f;
   --panel: #3a2b20;
   --panel-edge: #57432f;
+  /* The earth of the panels, letting a little of the backdrop through. */
+  --veil: color-mix(in srgb, var(--bg-deep) 88%, transparent);
   --ink: #f2ead8;
   --muted: #c9bba0;
   --gold: #ffff55;
@@ -51,21 +52,87 @@
 
 body {
   margin: 0;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background-color: var(--bg);
-  /* Dark dirt, drawn by logo.mjs and emitted by the build at /dirt.svg. */
-  background-image: url("/dirt.svg");
-  background-size: 64px 64px;
+  background-color: var(--bg-deep);
   color: var(--ink);
   font-family: var(--body);
   font-size: 1.0625rem;
   line-height: 1.6;
 }
 
-main {
-  flex: 1;
+/* The gazebo, held still behind every page and darkened toward the bottom,
+   where the text sits. A fixed layer rather than a fixed background,
+   which iOS Safari ignores, and as tall as the screen with its toolbars
+   collapsed, so the picture doesn't rescale as they collapse on scroll.
+   Anchored left of centre so the gazebo stays in view as the screen narrows. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: 100lvh;
+  z-index: -1;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-deep) 10%, transparent),
+      color-mix(in srgb, var(--bg-deep) 20%, transparent) 45%,
+      color-mix(in srgb, var(--bg-deep) 75%, transparent)
+    ),
+    var(--backdrop) 12% 40% / cover no-repeat;
+}
+
+/* The sky by the visitor's own clock, as main.js marks it from sky.js. Until
+   it does, no picture, so none is fetched only to be replaced; where scripting
+   is off, the afterglow. */
+:root {
+  --backdrop: none;
+}
+
+[data-sky="night"] {
+  --backdrop: url("./gazebo-night.webp");
+}
+
+[data-sky="indigo"] {
+  --backdrop: url("./gazebo-indigo.webp");
+}
+
+[data-sky="lavender"] {
+  --backdrop: url("./gazebo-lavender.webp");
+}
+
+[data-sky="pink"] {
+  --backdrop: url("./gazebo-pink.webp");
+}
+
+[data-sky="low-sun"] {
+  --backdrop: url("./gazebo-low-sun.webp");
+}
+
+[data-sky="golden"] {
+  --backdrop: url("./gazebo-golden.webp");
+}
+
+[data-sky="day"] {
+  --backdrop: url("./gazebo-day.webp");
+}
+
+[data-sky="afterglow"] {
+  --backdrop: url("./gazebo-afterglow.webp");
+}
+
+@media (scripting: none) {
+  :root {
+    --backdrop: url("./gazebo-afterglow.webp");
+  }
+}
+
+/* Running text sits on a panel, never on the backdrop itself. */
+.intro,
+.page {
+  background: var(--veil);
+  border: 2px solid #000000;
+  box-shadow:
+    inset 0 2px 0 var(--panel-edge),
+    0 4px 0 #000000;
 }
 
 h1,
@@ -274,12 +341,11 @@ code {
   color: var(--muted);
 }
 
-/* An inner page: one readable column. */
+/* An inner page: one readable column, on a panel. */
 .page {
-  width: 100%;
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 32px 16px 56px;
+  width: min(760px, 100% - 32px);
+  margin: 24px auto 48px;
+  padding: 28px 24px 36px;
 }
 
 .page h2 {
@@ -440,6 +506,7 @@ code {
   color: var(--ink);
   max-width: 36em;
   margin: 0 auto 32px;
+  padding: 16px 20px;
 }
 
 /* A Minecraft menu button: grey stone, a light top edge, a dark bottom one,
