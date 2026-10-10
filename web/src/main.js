@@ -18,39 +18,30 @@ toggle?.addEventListener("click", () => {
 
 // A button that copies its data-copy value: a server address on the Play page,
 // the calendar's address on the Schedule page. Where the asynchronous clipboard
-// is missing or refused, the text is selected and copied the older way: the
-// address shown beside the button if there is one, so that where this fails
-// too it stays selected for the visitor to copy themselves.
+// is missing or refused, the address beside it, shown if it was hidden, is
+// selected and copied the older way; where that fails too, it stays selected
+// for the visitor to copy themselves.
 async function copy(button) {
-  const text = button.dataset.copy;
   try {
-    await navigator.clipboard.writeText(text);
+    await navigator.clipboard.writeText(button.dataset.copy);
     return "Copied!";
   } catch {
-    const shown = button.parentElement.querySelector("code");
-    const field = shown ? null : document.body.appendChild(offscreenField(text));
+    const address = button.parentElement.querySelector("code");
+    address.closest("[hidden]")?.removeAttribute("hidden");
     const range = document.createRange();
-    range.selectNodeContents(shown ?? field);
+    range.selectNodeContents(address);
     getSelection().removeAllRanges();
     getSelection().addRange(range);
-    const copied = document.execCommand("copy");
-    field?.remove();
-    if (copied) return "Copied!";
-    return shown ? "Selected" : "Couldn't copy";
+    return document.execCommand("copy") ? "Copied!" : "Selected";
   }
-}
-
-function offscreenField(text) {
-  const field = document.createElement("pre");
-  field.textContent = text;
-  field.style.cssText = "position: fixed; left: -9999px;";
-  return field;
 }
 
 for (const button of document.querySelectorAll("[data-copy]")) {
   const label = button.textContent;
   let reset;
   button.addEventListener("click", async () => {
+    // Held at its width so a shorter "Copied!" doesn't reflow the buttons beside it.
+    button.style.minWidth = `${button.offsetWidth}px`;
     button.textContent = await copy(button);
     clearTimeout(reset);
     reset = setTimeout(() => (button.textContent = label), 1800);

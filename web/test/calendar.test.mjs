@@ -21,6 +21,7 @@ test("with an ID the page embeds the calendar and offers each way to subscribe",
   assert.match(html, /<iframe class="calendar" src="https:\/\/calendar\.google\.com\/calendar\/embed\?/);
   assert.match(html, /href="webcal:\/\//);
   assert.match(html, /data-copy="https:\/\/calendar\.google\.com\/calendar\/ical\/[^"]*">Copy calendar address</);
+  assert.match(html, /<p class="address-value address-long" hidden><code>https:\/\/calendar\.google\.com\/calendar\/ical\//);
 });
 
 test("with no ID the page says the schedule is coming, and embeds nothing", () => {

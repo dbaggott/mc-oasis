@@ -338,12 +338,27 @@ code {
   white-space: nowrap;
 }
 
+/* Too long to keep on one line on a phone; it is copied, not typed. */
+.address-long {
+  font-size: 0.9rem;
+}
+
+.address-long code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 /* The Schedule page: ways to add it, then Google's view of it. */
 .subscribe {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   margin: 24px 0 16px;
+}
+
+/* Shown only when the copy button couldn't reach the clipboard. */
+.subscribe .address-value {
+  flex-basis: 100%;
 }
 
 .calendar {
