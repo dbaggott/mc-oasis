@@ -1,7 +1,8 @@
 // The session schedule, kept in a public Google Calendar. Everything the
-// Schedule page offers is built from its ID: Google's agenda view, embedded;
-// a link that adds the calendar to a Google account; and the iCalendar feed
-// Apple Calendar, Outlook and the rest subscribe to. A subscriber's calendar
+// Schedule page offers is built from its ID: Google's view of it, embedded,
+// opening on the agenda with week and month a choice away; a link that adds
+// the calendar to a Google account; and the iCalendar feed Apple Calendar,
+// Outlook and the rest subscribe to. A subscriber's calendar
 // re-fetches the feed on its own, so a session moved here moves there.
 //
 // The ID is public by design: it is how a public calendar is shared.
@@ -20,7 +21,7 @@ export function calendarUrls(id) {
     mode: "AGENDA",
     showTitle: "0",
     showPrint: "0",
-    showTabs: "0",
+    showTabs: "1",
     showCalendars: "0",
   });
   return {
@@ -43,12 +44,8 @@ export function scheduleHtml(id = CALENDAR_ID) {
     '<p class="lede">Add the schedule to your own calendar and changes to it will show up there on their own.</p>',
     '<div class="subscribe">',
     `<a class="mc-button mc-button-small" href="${escape(url.google)}" target="_blank" rel="noopener">Add to Google Calendar</a>`,
-    `<a class="mc-button mc-button-small" href="${escape(url.webcal)}">Subscribe in Apple Calendar or Outlook</a>`,
-    "</div>",
-    '<div class="address">',
-    '<p class="address-label">Calendar address, for any other calendar app</p>',
-    `<p class="address-value address-long"><code>${escape(url.ics)}</code></p>`,
-    `<button class="mc-button mc-button-small copy" type="button" data-copy="${escape(url.ics)}">Copy</button>`,
+    `<a class="mc-button mc-button-small" href="${escape(url.webcal)}">Add to Apple Calendar or Outlook</a>`,
+    `<button class="mc-button mc-button-small" type="button" data-copy="${escape(url.ics)}">Copy calendar address</button>`,
     "</div>",
     `<iframe class="calendar" src="${escape(url.embed)}" title="Oasis SMP session schedule" loading="lazy"></iframe>`,
   ].join("");

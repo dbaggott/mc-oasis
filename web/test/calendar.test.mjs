@@ -13,13 +13,14 @@ test("every link is built from the calendar's ID", () => {
   assert.equal(embed.origin, "https://calendar.google.com");
   assert.equal(embed.searchParams.get("src"), id);
   assert.equal(embed.searchParams.get("mode"), "AGENDA");
+  assert.equal(embed.searchParams.get("showTabs"), "1");
 });
 
 test("with an ID the page embeds the calendar and offers each way to subscribe", () => {
   const html = scheduleHtml(id);
   assert.match(html, /<iframe class="calendar" src="https:\/\/calendar\.google\.com\/calendar\/embed\?/);
   assert.match(html, /href="webcal:\/\//);
-  assert.match(html, /data-copy="https:\/\/calendar\.google\.com\/calendar\/ical\//);
+  assert.match(html, /data-copy="https:\/\/calendar\.google\.com\/calendar\/ical\/[^"]*">Copy calendar address</);
 });
 
 test("with no ID the page says the schedule is coming, and embeds nothing", () => {
