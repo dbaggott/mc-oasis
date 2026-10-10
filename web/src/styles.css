@@ -348,12 +348,17 @@ code {
   overflow-wrap: anywhere;
 }
 
-/* The Schedule page: subscribe buttons, then Google's agenda view. */
+/* The Schedule page: ways to add it, then Google's view of it. */
 .subscribe {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   margin: 24px 0 16px;
+}
+
+/* Shown only when the copy button couldn't reach the clipboard. */
+.subscribe .address-value {
+  flex-basis: 100%;
 }
 
 .calendar {
