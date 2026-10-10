@@ -46,12 +46,15 @@ function noise(x, y, salt) {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
-// Lay a word out as block coordinates, one blank column between letters.
+// Lay a word out as block coordinates, one blank column between letters, and
+// note where each letter starts and how wide it is.
 function layout(word) {
   const blocks = [];
+  const letters = [];
   let x = 0;
   for (const letter of word) {
     const glyph = GLYPHS[letter];
+    letters.push({ x, width: glyph[0].length });
     glyph.forEach((row, y) => {
       [...row].forEach((cell, dx) => {
         if (cell === "#") blocks.push([x + dx, y]);
@@ -59,7 +62,7 @@ function layout(word) {
     });
     x += glyph[0].length + 1;
   }
-  return { blocks, width: x - 1, height: 7 };
+  return { blocks, letters, width: x - 1, height: 7 };
 }
 
 // Rectangles collected by colour and written as one <path> per colour, so the
@@ -75,9 +78,9 @@ function paths(rects) {
 
 // One word in texture-pixel units, each block SUB of them across, at (ox, oy).
 // Drawn in three passes so each sits under the next: outline, extruded side,
-// face.
+// face. Alongside the art, the box each letter fills, outline and side included.
 function word(text, texture, ox, oy, salt) {
-  const { blocks, width, height } = layout(text);
+  const { blocks, letters, width, height } = layout(text);
   const t = TEXTURES[texture];
   const depth = 3;
   const under = [];
@@ -106,7 +109,17 @@ function word(text, texture, ox, oy, salt) {
   }
   // Outline and side first, as one layer, so no block's outline covers its
   // neighbour's face.
-  return { svg: paths(under) + paths(face), width: width * SUB, height: height * SUB + depth };
+  return {
+    svg: paths(under) + paths(face),
+    letters: letters.map(({ x, width }) => ({
+      x: ox + x * SUB - 1,
+      y: oy - 1,
+      width: width * SUB + 2,
+      height: height * SUB + depth + 2,
+    })),
+    width: width * SUB,
+    height: height * SUB + depth,
+  };
 }
 
 let logo;
@@ -123,13 +136,31 @@ export function logoSvg() {
   const gap = 4;
   const width = top.width * big + 2 * pad;
   const height = top.height * big + gap + bottom.height + 2 * pad;
+  const bottomX = (width - bottom.width) / 2;
+  const bottomY = pad + top.height * big + gap;
+  const smp = bottom.letters;
   logo = {
     width,
     height,
+    // Each letter of "OASIS", then "SMP" as one, in the logo's own units.
+    targets: [
+      ...top.letters.map(({ x, y, width, height }) => ({
+        x: pad + x * big,
+        y: pad + y * big,
+        width: width * big,
+        height: height * big,
+      })),
+      {
+        x: bottomX + smp[0].x,
+        y: bottomY + smp[0].y,
+        width: smp.at(-1).x + smp.at(-1).width - smp[0].x,
+        height: smp[0].height,
+      },
+    ],
     svg: [
       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" shape-rendering="crispEdges">`,
       `<g transform="translate(${pad} ${pad}) scale(${big})">${top.svg}</g>`,
-      `<g transform="translate(${(width - bottom.width) / 2} ${pad + top.height * big + gap})">${bottom.svg}</g>`,
+      `<g transform="translate(${bottomX} ${bottomY})">${bottom.svg}</g>`,
       "</svg>",
     ].join(""),
   };
@@ -141,6 +172,15 @@ export function logoSvg() {
 export function logoImg(className) {
   const { width, height } = logoSvg();
   return `<img class="${className}" src="/logo.svg" alt="Oasis SMP" width="${width}" height="${height}" />`;
+}
+
+// Invisible targets over the logo, one on each letter of "OASIS" and one on
+// "SMP", in that order, sized in the logo's units so they scale with its <img>.
+// Laid on top of the <img> by the stylesheet; main.js gives them their clicks.
+export function logoTargets() {
+  const { width, height, targets } = logoSvg();
+  const rects = targets.map(({ x, y, width, height }) => `<rect x="${x}" y="${y}" width="${width}" height="${height}"/>`);
+  return `<svg class="logo-targets" viewBox="0 0 ${width} ${height}" aria-hidden="true">${rects.join("")}</svg>`;
 }
 
 // Dirt, darkened the way Minecraft darkens it behind its menus, for the

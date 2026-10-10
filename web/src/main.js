@@ -3,7 +3,7 @@
 // from any other origin.
 import "@fontsource-variable/karla";
 import "./styles.css";
-import { skyFor } from "./sky.js";
+import { otherSkies, skyFor } from "./sky.js";
 
 // On a narrow screen the links fold behind a menu button. The stylesheet hides
 // them only once this script has run and marked the page, so without it they
@@ -11,10 +11,16 @@ import { skyFor } from "./sky.js";
 document.documentElement.classList.add("js");
 
 // The stylesheet picks the backdrop from this, and loads only that one.
-document.documentElement.dataset.sky = skyFor(
-  new URLSearchParams(location.search).get("sky"),
-  new Date().getHours(),
-);
+const sky = skyFor(new URLSearchParams(location.search).get("sky"), new Date().getHours());
+document.documentElement.dataset.sky = sky;
+
+// A hidden extra on the home page's logo: each letter of "OASIS" shows one of
+// the other skies, and "SMP" the page's own again. logoTargets() in logo.mjs
+// lays the targets out in that order.
+const skies = [...otherSkies(sky), sky];
+document.querySelectorAll(".logo-targets rect").forEach((target, i) => {
+  target.addEventListener("click", () => (document.documentElement.dataset.sky = skies[i]));
+});
 
 const toggle = document.querySelector(".nav-toggle");
 toggle?.addEventListener("click", () => {

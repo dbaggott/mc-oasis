@@ -4,7 +4,7 @@ import { defineConfig } from "vite";
 import { pages } from "./pages.mjs";
 import { scheduleHtml } from "./calendar.mjs";
 import { navHtml } from "./chrome.mjs";
-import { faviconPng, faviconSvg, logoImg, logoSvg } from "./logo.mjs";
+import { faviconPng, faviconSvg, logoImg, logoSvg, logoTargets } from "./logo.mjs";
 import { parseRules, rulesHtml } from "./rules.mjs";
 
 const repoRoot = resolve(import.meta.dirname, "..");
@@ -55,7 +55,7 @@ function art() {
       }
     },
     transformIndexHtml(html) {
-      return { html: html.replace("<!-- logo -->", logoImg("logo-art")), tags: iconLinks };
+      return { html: html.replace("<!-- logo -->", logoImg("logo-art") + logoTargets()), tags: iconLinks };
     },
   };
 }

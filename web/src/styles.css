@@ -568,6 +568,17 @@ code {
   filter: drop-shadow(0 8px 0 rgba(0, 0, 0, 0.35));
 }
 
+.logo-targets {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.logo-targets rect {
+  fill: transparent;
+}
+
 /* The yellow line that sits tilted on the corner of every Minecraft title. */
 .splash {
   position: absolute;

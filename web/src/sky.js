@@ -13,3 +13,6 @@ export const SKIES = new Set(SKY_BY_HOUR);
 
 // The sky to show: the one `asked` names, if it names one, else the hour's.
 export const skyFor = (asked, hour) => (SKIES.has(asked) ? asked : SKY_BY_HOUR[hour]);
+
+// Every sky but `sky`, in the order of the day.
+export const otherSkies = (sky) => [...SKIES].filter((other) => other !== sky);
