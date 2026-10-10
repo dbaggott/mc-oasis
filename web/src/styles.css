@@ -298,7 +298,7 @@ code {
 /* A phone: the menu button and the logo on one row, the logo centred by an
    empty third column as wide as the button, and the links beneath, shown once
    the button opens them. */
-@media (max-width: 1040px) {
+@media (max-width: 1060px) {
   .nav {
     display: grid;
     grid-template-columns: 48px 1fr 48px;
