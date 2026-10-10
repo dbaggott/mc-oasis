@@ -41,7 +41,7 @@ export function scheduleHtml(id = CALENDAR_ID) {
   }
   const url = calendarUrls(id);
   return [
-    '<p class="lede">Add the schedule to your own calendar and changes to it will show up there on their own.</p>',
+    '<p class="lede">Add to your own calendar (changes sync automatically):</p>',
     '<div class="subscribe">',
     `<a class="mc-button mc-button-small" href="${escape(url.google)}" target="_blank" rel="noopener">Google Calendar</a>`,
     `<a class="mc-button mc-button-small" href="${escape(url.webcal)}">Apple Calendar or Outlook</a>`,

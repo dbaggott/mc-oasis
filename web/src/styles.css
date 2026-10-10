@@ -706,6 +706,25 @@ code {
   resize: vertical;
 }
 
+/* The browser's own caret ignores padding and sits against the border, so a
+   drawn one replaces it, inset like the text. Its stroke is --ink. */
+.field select {
+  appearance: none;
+  padding-right: 2.5em;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23f2ead8' stroke-width='2'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75em center;
+  background-size: 0.8em auto;
+}
+
+/* Forced colours drop background images, and the drawn caret with them, so the
+   browser's own caret comes back there. */
+@media (forced-colors: active) {
+  .field select {
+    appearance: auto;
+  }
+}
+
 .field .hint {
   margin: 0;
 }

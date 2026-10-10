@@ -15,7 +15,7 @@ const computer = { playerName: "Steve_42", devices: ["computer"], grade: "5", pa
 const bedrock = {
   playerName: "Cool Gamer#1234",
   devices: ["console", "mobile"],
-  grade: "K",
+  grade: "1",
   parentEmails: ["one@example.com", "two@example.com"],
 };
 
@@ -115,6 +115,7 @@ for (const [why, body] of [
   ["an empty device list", { ...bedrock, devices: [] }],
   ["an unknown device", { ...bedrock, devices: ["toaster"] }],
   ["an unknown grade", { ...computer, grade: "13" }],
+  ["kindergarten, which the server does not take", { ...computer, grade: "K" }],
   ["a numeric grade", { ...computer, grade: 5 }],
   ["no parent email", { ...computer, parentEmails: [] }],
   ["a parent email that is not one", { ...computer, parentEmails: ["not an email"] }],
@@ -208,7 +209,7 @@ test("the notification names everything needed to act on the request", () => {
   const body = requestBody({ ...bedrock, id: "r1" }, build);
   assert.match(body, /^player: {3}Cool Gamer#1234$/m);
   assert.match(body, /^devices: {2}Game console, Phone or tablet$/m);
-  assert.match(body, /^grade: {4}Kindergarten$/m);
+  assert.match(body, /^grade: {4}1st grade$/m);
   assert.match(body, /^parents: {2}one@example.com, two@example.com$/m);
   assert.match(body, /Floodgate UUID/);
 });

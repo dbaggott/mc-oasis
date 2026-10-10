@@ -147,16 +147,28 @@ export function logoImg(className) {
 // favicon's ground.
 const DIRT = ["#3b2a1e", "#34261b", "#43301f", "#2d2017", "#4a3626", "#382819"];
 
-// The favicon: a thick sandstone "O", outlined in black, on a dirt tile, as
-// 16 by 16 colours, row by row. Strokes three and four pixels wide, so the
-// letter still reads at 16 pixels, a browser tab's size.
+// The favicon: the logo's sandstone "O", outlined in black, on a dirt tile, as
+// 16 by 16 colours, row by row. Each block of the glyph becomes a cell of
+// pixels, the side columns wider than the rest so the strokes still read at 16
+// pixels, a browser tab's size.
 const ICON = 16;
+const O_COLUMNS = [3, 2, 2, 2, 3];
+const O_ROWS = [2, 2, 2, 2, 2, 2, 2];
+
+// Which of `sizes` the pixel at `offset` falls in, or -1 outside them all.
+function cellAt(sizes, offset) {
+  for (let i = 0; i < sizes.length; i++) {
+    if (offset >= 0 && offset < sizes[i]) return i;
+    offset -= sizes[i];
+  }
+  return -1;
+}
 
 function inO(x, y) {
-  const corner = (x === 2 || x === 13) && (y === 2 || y === 13);
-  const outer = x >= 2 && x <= 13 && y >= 2 && y <= 13 && !corner;
-  const hole = x >= 6 && x <= 9 && y >= 5 && y <= 10;
-  return outer && !hole;
+  const sum = (sizes) => sizes.reduce((a, b) => a + b);
+  const column = cellAt(O_COLUMNS, x - (ICON - sum(O_COLUMNS)) / 2);
+  const row = cellAt(O_ROWS, y - (ICON - sum(O_ROWS)) / 2);
+  return column >= 0 && row >= 0 && GLYPHS.O[row][column] === "#";
 }
 
 function faviconPixels() {
