@@ -50,7 +50,7 @@ function addEmailField() {
   input.autocomplete = index === 0 ? "email" : "off";
   input.maxLength = EMAIL_MAX;
   if (index === 0) input.required = true;
-  else input.setAttribute("aria-label", `Another parent's email address (${index + 1})`);
+  else input.setAttribute("aria-label", `Another contact email address (${index + 1})`);
   emails.append(input);
   addEmail.hidden = index + 1 >= PARENT_EMAILS_MAX;
   return input;
