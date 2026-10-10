@@ -13,12 +13,34 @@ document.documentElement.classList.add("js");
 // The sky the page loaded with, as mark-sky.mjs's script marked it.
 const sky = document.documentElement.dataset.sky;
 
+// The stylesheet fetches a sky's picture only once that sky is marked, and
+// until it arrives the backdrop is bare. So the picture is fetched and decoded
+// first, in the format the stylesheet would pick, read from the stylesheet's
+// own rule for that sky; a picture that fails to load still gets its sky.
+const avif = CSS.supports("background-image", 'image-set("" type("image/avif"))');
+async function loadSky(sky) {
+  const probe = document.createElement("i");
+  probe.dataset.sky = sky;
+  probe.hidden = true;
+  document.body.append(probe);
+  const url = getComputedStyle(probe).getPropertyValue(avif ? "--sky-avif" : "--sky-webp");
+  probe.remove();
+  const picture = new Image();
+  picture.src = url.match(/url\(\s*["']?([^"')]+)/)[1];
+  await picture.decode().catch(() => {});
+}
+
 // A hidden extra on the home page's logo: each letter of "OASIS" shows one of
 // the other skies, and "SMP" the page's own again. logoTargets() in logo.mjs
-// lays the targets out in that order.
+// lays the targets out in that order. Only the latest click's sky is shown.
 const skies = [...otherSkies(sky), sky];
+let wanted = sky;
 document.querySelectorAll(".logo-targets path").forEach((target, i) => {
-  target.addEventListener("click", () => (document.documentElement.dataset.sky = skies[i]));
+  target.addEventListener("click", async () => {
+    wanted = skies[i];
+    await loadSky(wanted);
+    if (wanted === skies[i]) document.documentElement.dataset.sky = wanted;
+  });
 });
 
 const toggle = document.querySelector(".nav-toggle");
