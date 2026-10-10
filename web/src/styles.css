@@ -82,46 +82,38 @@ body::before {
 
 /* The sky by the visitor's own clock, as main.js marks it from sky.js. Until
    it does, no picture, so none is fetched only to be replaced; where scripting
-   is off, the afterglow. */
+   is off, the dawn. */
 :root {
   --backdrop: none;
 }
 
 [data-sky="night"] {
-  --backdrop: url("./gazebo-night.webp");
+  --backdrop: url("./gazebo-night.avif");
 }
 
-[data-sky="indigo"] {
-  --backdrop: url("./gazebo-indigo.webp");
+[data-sky="predawn"] {
+  --backdrop: url("./gazebo-predawn.avif");
 }
 
-[data-sky="lavender"] {
-  --backdrop: url("./gazebo-lavender.webp");
+[data-sky="sunrise"] {
+  --backdrop: url("./gazebo-sunrise.avif");
 }
 
-[data-sky="pink"] {
-  --backdrop: url("./gazebo-pink.webp");
-}
-
-[data-sky="low-sun"] {
-  --backdrop: url("./gazebo-low-sun.webp");
-}
-
-[data-sky="golden"] {
-  --backdrop: url("./gazebo-golden.webp");
+[data-sky="dawn"] {
+  --backdrop: url("./gazebo-dawn.avif");
 }
 
 [data-sky="day"] {
-  --backdrop: url("./gazebo-day.webp");
+  --backdrop: url("./gazebo-day.avif");
 }
 
-[data-sky="afterglow"] {
-  --backdrop: url("./gazebo-afterglow.webp");
+[data-sky="evening"] {
+  --backdrop: url("./gazebo-evening.avif");
 }
 
 @media (scripting: none) {
   :root {
-    --backdrop: url("./gazebo-afterglow.webp");
+    --backdrop: url("./gazebo-dawn.avif");
   }
 }
 
