@@ -1,6 +1,5 @@
-// What every page shares: the navigation bar across the top and the footer.
-// vite.config.js puts them in place of <!-- nav --> and <!-- footer -->, so a
-// page carries one marker each and no copy of either.
+// The navigation bar every page shares across the top. vite.config.js puts it
+// in place of <!-- nav -->, so a page carries the marker and no copy of it.
 import { logoImg } from "./logo.mjs";
 
 // Either side of the logo, in order. The last on the right is the call to
@@ -43,14 +42,5 @@ export function navHtml(path) {
     links(RIGHT, current, "nav-right"),
     "</nav>",
     "</header>",
-  ].join("");
-}
-
-export function footerHtml() {
-  return [
-    '<footer class="site-footer">',
-    "<p>Not an official Oasis School program.</p>",
-    "<p>Not an official Minecraft service. Not approved by or associated with Mojang or Microsoft.</p>",
-    "</footer>",
   ].join("");
 }

@@ -501,18 +501,6 @@ code {
   text-shadow: 1px 1px 0 var(--outline);
 }
 
-.site-footer {
-  padding: 24px 16px;
-  color: var(--muted);
-  font-size: 0.85rem;
-  text-align: center;
-  border-top: 2px solid var(--panel-edge);
-}
-
-.site-footer p {
-  margin: 0.2em 0;
-}
-
 /* The request form, as panels like Minecraft's settings screens. */
 
 .request-form fieldset {

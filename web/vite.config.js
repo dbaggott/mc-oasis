@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import { pages } from "./pages.mjs";
-import { footerHtml, navHtml } from "./chrome.mjs";
+import { navHtml } from "./chrome.mjs";
 import { dirtSvg, logoImg, logoSvg } from "./logo.mjs";
 import { parseRules, rulesHtml } from "./rules.mjs";
 
@@ -51,13 +51,13 @@ function art() {
   };
 }
 
-// The navigation bar and footer every page shares (chrome.mjs), put in place of
-// <!-- nav --> and <!-- footer -->, with the bar marking the page it is on.
+// The navigation bar every page shares (chrome.mjs), put in place of
+// <!-- nav -->, marking the page it is on.
 function chrome() {
   return {
     name: "oasis-chrome",
     transformIndexHtml(html, ctx) {
-      return html.replace("<!-- nav -->", navHtml(ctx.path)).replace("<!-- footer -->", footerHtml());
+      return html.replace("<!-- nav -->", navHtml(ctx.path));
     },
   };
 }

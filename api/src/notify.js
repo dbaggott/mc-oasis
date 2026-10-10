@@ -6,7 +6,7 @@
 // Never throws. By the time it runs the request is stored, so a failed publish
 // costs the notification and not the request, and answering 500 would tell a
 // parent their request was lost when it was not.
-import { CONSOLE_DEVICES, DEVICES, GRADES, PLATFORMS } from "../../shared/access-request.js";
+import { CONSOLE_DEVICES, DEVICES, editionOf, GRADES } from "../../shared/access-request.js";
 
 // Never anything the parent typed: SNS refuses a subject over 99 characters or
 // holding a line break, and a refused publish is a silently missing
@@ -25,7 +25,7 @@ function hasConsole(request) {
 export function requestBody(request, build) {
   const lines = [
     `player:   ${request.playerName}`,
-    `platform: ${PLATFORMS[request.platform]}`,
+    `edition:  ${editionOf(request.devices) === "bedrock" ? "Bedrock" : "unknown (computer only)"}`,
     `devices:  ${request.devices.map((device) => DEVICES[device]).join(", ")}`,
     `console:  ${hasConsole(request) ? "yes" : "no"}`,
     `grade:    ${GRADES[request.grade]}`,
@@ -36,8 +36,14 @@ export function requestBody(request, build) {
   ];
   // The whitelist takes a Bedrock player by Floodgate UUID, not gamertag
   // (apps/mc-oasis/variables.tf in dbaggott/infrastructure).
-  if (request.platform === "bedrock") {
+  if (editionOf(request.devices) === "bedrock") {
     lines.push("", "Bedrock: whitelist by Floodgate UUID, from the gamertag's XUID.");
+  } else {
+    lines.push(
+      "",
+      "Computer only: Java or Bedrock. Check the name with Mojang (Java) and Xbox (Bedrock);",
+      "if it exists on only one, that's the edition. If both, ask the parent which.",
+    );
   }
   if (request.comments) {
     lines.push("", "they said:", request.comments);

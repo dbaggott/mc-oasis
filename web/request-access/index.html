@@ -15,28 +15,8 @@
 
       <form id="request-form" class="request-form" novalidate>
         <fieldset>
-          <legend>Which Minecraft does your child play?</legend>
-          <p class="hint">
-            This matters: Java and Bedrock players are let in differently, and the wrong one means your child can't join.
-            On a console, phone or tablet it's always Bedrock. On a computer the launcher offers both, so ask your child
-            which one they open.
-          </p>
-          <div class="choices">
-            <label class="choice">
-              <input type="radio" name="platform" value="java" required />
-              <span><strong>Java Edition</strong><small>Computer only: Windows, Mac or Linux</small></span>
-            </label>
-            <label class="choice">
-              <input type="radio" name="platform" value="bedrock" required />
-              <span><strong>Bedrock Edition</strong><small>Xbox, PlayStation, Switch, phones, tablets and Windows</small></span>
-            </label>
-          </div>
-          <p class="error" id="platform-error" hidden></p>
-        </fieldset>
-
-        <fieldset id="devices-fieldset" hidden>
           <legend>Where will they play?</legend>
-          <p class="hint">Tick every one they'll use. Consoles can't join by address yet, so we need to know about them.</p>
+          <p class="hint">Tick every one they'll use.</p>
           <div class="choices choices-grid" id="devices"></div>
           <p class="error" id="devices-error" hidden></p>
         </fieldset>
@@ -46,7 +26,7 @@
           <div class="field">
             <label for="playerName">Their Minecraft name (needed to add them to the allowed list)</label>
             <input id="playerName" name="playerName" autocomplete="off" autocapitalize="off" spellcheck="false" required />
-            <p class="hint" id="playerName-hint" hidden></p>
+            <p class="hint">Their Java username, or the Xbox gamertag they sign in to Minecraft with.</p>
             <p class="error" id="playerName-error" hidden></p>
           </div>
           <div class="field">
@@ -94,6 +74,5 @@
         <p><a href="/">Back to the home page</a></p>
       </div>
     </main>
-    <!-- footer -->
   </body>
 </html>

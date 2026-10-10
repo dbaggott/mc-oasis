@@ -1,14 +1,12 @@
-// The request-access form: shows the questions that apply to the chosen
-// edition, checks answers against the same rules the API applies, and posts
-// them to /api/access-requests.
+// The request-access form: checks answers against the same rules the API
+// applies, and posts them to /api/access-requests.
 import "./main.js";
 import {
-  BEDROCK_NAME_PATTERN,
   COMMENTS_MAX,
   DEVICES,
   EMAIL_MAX,
   GRADES,
-  JAVA_NAME_PATTERN,
+  isPlayerName,
   PARENT_EMAILS_MAX,
   TRAP_FIELD,
 } from "../../shared/access-request.js";
@@ -16,21 +14,13 @@ import {
 const form = document.getElementById("request-form");
 const thanks = document.getElementById("thanks");
 const submit = document.getElementById("submit");
-const devicesFieldset = document.getElementById("devices-fieldset");
 const devicesBox = document.getElementById("devices");
 const playerName = document.getElementById("playerName");
-const playerNameHint = document.getElementById("playerName-hint");
 const grade = document.getElementById("grade");
 const emails = document.getElementById("emails");
 const addEmail = document.getElementById("add-email");
 const comments = document.getElementById("comments");
 comments.maxLength = COMMENTS_MAX;
-
-// What a name looks like for each edition, shown once one is chosen.
-const NAME_HINTS = {
-  java: "Their Java username, as shown in the launcher: 3 to 16 letters, numbers or underscores.",
-  bedrock: "Their Xbox gamertag: the one on the Microsoft account they sign in to Minecraft with, including any #1234 at the end.",
-};
 
 for (const [value, label] of Object.entries(DEVICES)) {
   const choice = document.createElement("label");
@@ -68,20 +58,6 @@ function addEmailField() {
 addEmailField();
 addEmail.addEventListener("click", () => addEmailField().focus());
 
-function platform() {
-  return form.elements.platform.value;
-}
-
-form.elements.platform.forEach((radio) =>
-  radio.addEventListener("change", () => {
-    const chosen = platform();
-    devicesFieldset.hidden = chosen !== "bedrock";
-    playerNameHint.textContent = NAME_HINTS[chosen];
-    playerNameHint.hidden = false;
-    clearErrors();
-  }),
-);
-
 // In production the API sits behind a signed Lambda Function URL, and Lambda
 // requires the SHA-256 of a request's body in this header before it will run
 // anything. CloudFront signs the request but cannot compute the hash itself, so
@@ -107,28 +83,23 @@ function clearErrors() {
 // The same rules the API applies (shared/access-request.js), checked here so a
 // parent hears about a typo before sending rather than from a refusal.
 function collect() {
-  const chosen = platform();
   const name = playerName.value.trim();
   const devices = [...form.querySelectorAll('input[name="devices"]:checked')].map((input) => input.value);
   const parentEmails = [...emails.querySelectorAll("input")].map((input) => input.value.trim()).filter(Boolean);
   const problems = [];
 
-  if (!chosen) problems.push(["platform", "Choose Java Edition or Bedrock Edition."]);
-  if (chosen === "bedrock" && devices.length === 0) problems.push(["devices", "Tick at least one."]);
+  if (devices.length === 0) problems.push(["devices", "Tick at least one."]);
   if (!name) problems.push(["playerName", "Enter your child's Minecraft name."]);
-  else if (chosen === "java" && !JAVA_NAME_PATTERN.test(name))
-    problems.push(["playerName", "A Java username is 3 to 16 letters, numbers or underscores, with no spaces."]);
-  else if (chosen === "bedrock" && !BEDROCK_NAME_PATTERN.test(name))
-    problems.push(["playerName", "That doesn't look like a gamertag. Check it against the one shown in Minecraft."]);
+  else if (!isPlayerName(name))
+    problems.push(["playerName", "That doesn't look like a Minecraft name. Check it against the one shown in the game."]);
   if (!grade.value) problems.push(["grade", "Choose a grade."]);
   if (parentEmails.length === 0) problems.push(["parentEmails", "Enter your email address."]);
   else if (!parentEmails.every((email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)))
     problems.push(["parentEmails", "Check the email addresses: one doesn't look right."]);
 
-  const body = { platform: chosen, playerName: name, grade: grade.value, parentEmails };
+  const body = { playerName: name, devices, grade: grade.value, parentEmails };
   const note = comments.value.trim();
   if (note) body.comments = note;
-  if (chosen === "bedrock") body.devices = devices;
   const trap = form.elements[TRAP_FIELD].value;
   if (trap) body[TRAP_FIELD] = trap;
   return { body, problems };

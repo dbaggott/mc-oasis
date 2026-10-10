@@ -73,7 +73,9 @@ test("the built request form sends the body hash the Function URL requires", () 
   const assets = resolve(dist, "assets");
   const form = readdirSync(assets).find((file) => /^request-access-.*\.js$/.test(file));
   assert.ok(form, "no request-access script in dist/assets/");
-  assert.match(readFileSync(resolve(assets, form), "utf8"), /x-amz-content-sha256/);
+  const js = readFileSync(resolve(assets, form), "utf8");
+  assert.match(js, /x-amz-content-sha256/);
+  assert.match(js, /subtle\.digest\(\s*["'`]SHA-256["'`]/, "the header is sent, but nothing hashes the body for it");
 });
 
 test("the logo and the dirt tile are built, and the home page shows the logo large", () => {
@@ -94,11 +96,10 @@ const CURRENT = {
 };
 
 for (const page of pages) {
-  test(`${page} carries the shared navigation and footer, marking the right page`, () => {
+  test(`${page} carries the shared navigation, marking the right page`, () => {
     const html = readFileSync(resolve(dist, page), "utf8");
-    assert.doesNotMatch(html, /<!-- (nav|footer) -->/, "a chrome marker was left in the page");
+    assert.doesNotMatch(html, /<!-- nav -->/, "the nav marker was left in the page");
     assert.match(html, /<nav class="nav[^"]*" aria-label="Site">/);
-    assert.match(html, /<footer class="site-footer">/);
     const marked = [...html.matchAll(/href="([^"]+)" aria-current="page"/g)].map((m) => m[1]);
     assert.deepEqual(marked, CURRENT[page] ? [CURRENT[page]] : []);
   });

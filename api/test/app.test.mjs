@@ -7,9 +7,10 @@ import { memoryStore } from "../src/store.js";
 
 const build = { branch: "main", commit: "abc123", builtAt: "2026-10-09T00:00:00Z" };
 
-const java = { platform: "java", playerName: "Steve_42", grade: "5", parentEmails: ["parent@example.com"] };
+// Named for what the devices make them: a computer alone could be either
+// edition; a console means Bedrock.
+const computer = { playerName: "Steve_42", devices: ["computer"], grade: "5", parentEmails: ["parent@example.com"] };
 const bedrock = {
-  platform: "bedrock",
   playerName: "Cool Gamer#1234",
   devices: ["switch", "mobile"],
   grade: "K",
@@ -32,15 +33,14 @@ function post(app, body, headers = {}) {
   });
 }
 
-test("a Java request is stored, then announced, and answered ok", async () => {
+test("a request is stored, then announced, and answered ok", async () => {
   const { app, store, announced } = setup();
-  const res = await post(app, java);
+  const res = await post(app, computer);
   assert.equal(res.status, 200);
   assert.deepEqual(await res.json(), { ok: true });
   assert.equal(store.requests.length, 1);
   const [saved] = store.requests;
   assert.equal(saved.playerName, "Steve_42");
-  assert.equal(saved.platform, "java");
   assert.deepEqual(saved.devices, ["computer"]);
   assert.equal(saved.grade, "5");
   assert.deepEqual(saved.parentEmails, ["parent@example.com"]);
@@ -51,9 +51,9 @@ test("a Java request is stored, then announced, and answered ok", async () => {
 
 test("comments are kept, trimmed, and absent ones stored as null", async () => {
   const { app, store } = setup();
-  assert.equal((await post(app, { ...java, comments: "  Plays with her cousin Sam.  " })).status, 200);
-  assert.equal((await post(app, java)).status, 200);
-  assert.equal((await post(app, { ...java, comments: "   " })).status, 200);
+  assert.equal((await post(app, { ...computer, comments: "  Plays with her cousin Sam.  " })).status, 200);
+  assert.equal((await post(app, computer)).status, 200);
+  assert.equal((await post(app, { ...computer, comments: "   " })).status, 200);
   assert.deepEqual(
     store.requests.map((r) => r.comments),
     ["Plays with her cousin Sam.", null, null],
@@ -62,7 +62,7 @@ test("comments are kept, trimmed, and absent ones stored as null", async () => {
 
 test("comments longer than the limit are refused", async () => {
   const { app, store } = setup();
-  assert.equal((await post(app, { ...java, comments: "x".repeat(COMMENTS_MAX + 1) })).status, 400);
+  assert.equal((await post(app, { ...computer, comments: "x".repeat(COMMENTS_MAX + 1) })).status, 400);
   assert.equal(store.requests.length, 0);
 });
 
@@ -80,17 +80,9 @@ test("a gamertag in another script is accepted", async () => {
   assert.equal(store.requests[0].playerName, "ゲーマー 7");
 });
 
-// Java runs on a computer only, so devices sent with a Java request (a parent
-// who picked Bedrock, ticked a console, then switched) are not believed.
-test("devices sent with a Java request are replaced by computer", async () => {
-  const { app, store } = setup();
-  assert.equal((await post(app, { ...java, devices: ["xbox"] })).status, 200);
-  assert.deepEqual(store.requests[0].devices, ["computer"]);
-});
-
 test("parent emails are trimmed, lowercased and deduplicated", async () => {
   const { app, store } = setup();
-  const res = await post(app, { ...java, parentEmails: [" Parent@Example.com ", "parent@example.com"] });
+  const res = await post(app, { ...computer, parentEmails: [" Parent@Example.com ", "parent@example.com"] });
   assert.equal(res.status, 200);
   assert.deepEqual(store.requests[0].parentEmails, ["parent@example.com"]);
 });
@@ -100,13 +92,13 @@ test("parent emails are trimmed, lowercased and deduplicated", async () => {
 // deploy separately and a cached page may send one.
 test("a field the API does not know is dropped, not stored", async () => {
   const { app, store } = setup();
-  assert.equal((await post(app, { ...java, childName: "Alex" })).status, 200);
+  assert.equal((await post(app, { ...computer, childName: "Alex" })).status, 200);
   assert.equal("childName" in store.requests[0], false);
 });
 
 test("anything in the trap field is answered ok and neither kept nor announced", async () => {
   const { app, store, announced } = setup();
-  const res = await post(app, { ...java, [TRAP_FIELD]: "http://spam" });
+  const res = await post(app, { ...computer, [TRAP_FIELD]: "http://spam" });
   assert.equal(res.status, 200);
   assert.deepEqual(await res.json(), { ok: true });
   assert.equal(store.requests.length, 0);
@@ -114,18 +106,17 @@ test("anything in the trap field is answered ok and neither kept nor announced",
 });
 
 for (const [why, body] of [
-  ["no platform", { ...java, platform: undefined }],
-  ["an unknown platform", { ...java, platform: "pocket" }],
-  ["a Java name that is too short", { ...java, playerName: "ab" }],
-  ["a Java name with a space", { ...java, playerName: "Steve 42" }],
+  ["a name too short for Java and starting with no letter or digit", { ...computer, playerName: "_a" }],
+  ["a name longer than either edition allows", { ...computer, playerName: "a".repeat(20) }],
+  ["no devices", { ...computer, devices: undefined }],
   ["a gamertag with a line break", { ...bedrock, playerName: "Gamer\nparents:  forged" }],
-  ["a Bedrock request with no devices", { ...bedrock, devices: [] }],
+  ["an empty device list", { ...bedrock, devices: [] }],
   ["an unknown device", { ...bedrock, devices: ["toaster"] }],
-  ["an unknown grade", { ...java, grade: "13" }],
-  ["a numeric grade", { ...java, grade: 5 }],
-  ["no parent email", { ...java, parentEmails: [] }],
-  ["a parent email that is not one", { ...java, parentEmails: ["not an email"] }],
-  ["too many parent emails", { ...java, parentEmails: ["a@x.com", "b@x.com", "c@x.com", "d@x.com"] }],
+  ["an unknown grade", { ...computer, grade: "13" }],
+  ["a numeric grade", { ...computer, grade: 5 }],
+  ["no parent email", { ...computer, parentEmails: [] }],
+  ["a parent email that is not one", { ...computer, parentEmails: ["not an email"] }],
+  ["too many parent emails", { ...computer, parentEmails: ["a@x.com", "b@x.com", "c@x.com", "d@x.com"] }],
 ]) {
   test(`${why} is refused`, async () => {
     const { app, store } = setup();
@@ -146,7 +137,7 @@ test("malformed JSON is a 400, not a 500", async () => {
 
 test("a body declared over the limit is refused before it is read", async () => {
   const { app, store } = setup();
-  const res = await post(app, java, { "content-length": String(REQUEST_BYTES_MAX + 1) });
+  const res = await post(app, computer, { "content-length": String(REQUEST_BYTES_MAX + 1) });
   assert.equal(res.status, 413);
   assert.equal(store.requests.length, 0);
 });
@@ -157,29 +148,29 @@ test("one address is limited per hour; another is not, and the next hour starts 
   const from = (ip) => ({ "cloudfront-viewer-address": `${ip}:443` });
 
   for (let i = 0; i < REQUESTS_PER_IP_PER_HOUR; i++) {
-    assert.equal((await post(app, java, from("192.0.2.1"))).status, 200);
+    assert.equal((await post(app, computer, from("192.0.2.1"))).status, 200);
   }
-  assert.equal((await post(app, java, from("192.0.2.1"))).status, 429);
-  assert.equal((await post(app, java, from("192.0.2.2"))).status, 200);
+  assert.equal((await post(app, computer, from("192.0.2.1"))).status, 429);
+  assert.equal((await post(app, computer, from("192.0.2.2"))).status, 200);
 
   clock = 60 * 60 * 1000;
-  assert.equal((await post(app, java, from("192.0.2.1"))).status, 200);
+  assert.equal((await post(app, computer, from("192.0.2.1"))).status, 200);
   assert.equal(store.requests.length, REQUESTS_PER_IP_PER_HOUR + 2);
 });
 
 test("addresses in one IPv6 /64 share a limit", async () => {
   const { app } = setup();
   for (let i = 0; i < REQUESTS_PER_IP_PER_HOUR; i++) {
-    const res = await post(app, java, { "cloudfront-viewer-address": `[2001:db8:0:1::${i + 1}]:443` });
+    const res = await post(app, computer, { "cloudfront-viewer-address": `[2001:db8:0:1::${i + 1}]:443` });
     assert.equal(res.status, 200);
   }
-  const res = await post(app, java, { "cloudfront-viewer-address": "[2001:0db8:0000:0001:ffff::1]:443" });
+  const res = await post(app, computer, { "cloudfront-viewer-address": "[2001:0db8:0000:0001:ffff::1]:443" });
   assert.equal(res.status, 429);
 });
 
 test("every response is no-store", async () => {
   const { app } = setup();
-  for (const res of [await app.request("/api/"), await post(app, java), await app.request("/api/nope")]) {
+  for (const res of [await app.request("/api/"), await post(app, computer), await app.request("/api/nope")]) {
     assert.equal(res.headers.get("cache-control"), "no-store");
   }
 });
@@ -197,17 +188,23 @@ test("/api/ping answers 200 to a bodied POST", async () => {
 
 test("a console request is marked in the subject; a computer-only one is not", () => {
   const consoleRequest = { ...bedrock, id: "r1", devices: ["xbox"] };
-  const computerRequest = { ...java, id: "r2", devices: ["computer"] };
+  const computerRequest = { ...computer, id: "r2", devices: ["computer"] };
   assert.equal(requestSubject(consoleRequest), "Oasis SMP access request (console)");
   assert.equal(requestSubject(computerRequest), "Oasis SMP access request");
   assert.match(requestBody(consoleRequest, build), /^console: {2}yes$/m);
   assert.match(requestBody(computerRequest, build), /^console: {2}no$/m);
 });
 
+test("the devices settle the edition: anything but a computer is Bedrock", () => {
+  assert.match(requestBody({ ...bedrock, id: "r1" }, build), /^edition: {2}Bedrock$/m);
+  assert.match(requestBody({ ...computer, id: "r2" }, build), /^edition: {2}unknown \(computer only\)$/m);
+  assert.match(requestBody({ ...computer, id: "r2" }, build), /Check the name with Mojang \(Java\) and Xbox \(Bedrock\)/);
+  assert.match(requestBody({ ...computer, id: "r3", devices: ["computer", "mobile"] }, build), /^edition: {2}Bedrock$/m);
+});
+
 test("the notification names everything needed to act on the request", () => {
   const body = requestBody({ ...bedrock, id: "r1" }, build);
   assert.match(body, /^player: {3}Cool Gamer#1234$/m);
-  assert.match(body, /^platform: Bedrock Edition$/m);
   assert.match(body, /^devices: {2}Nintendo Switch, Phone or tablet$/m);
   assert.match(body, /^grade: {4}Kindergarten$/m);
   assert.match(body, /^parents: {2}one@example.com, two@example.com$/m);
@@ -215,7 +212,7 @@ test("the notification names everything needed to act on the request", () => {
 });
 
 test("comments come last in the notification, after every fact", () => {
-  const body = requestBody({ ...java, id: "r1", devices: ["computer"], comments: "line one\nplayer:   forged" }, build);
+  const body = requestBody({ ...computer, id: "r1", devices: ["computer"], comments: "line one\nplayer:   forged" }, build);
   assert.match(body, /^player: {3}Steve_42$/m);
   assert.ok(body.indexOf("they said:") > body.indexOf("api:"), "comments before the facts");
   assert.ok(body.endsWith("line one\nplayer:   forged"));

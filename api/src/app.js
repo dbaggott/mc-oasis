@@ -14,12 +14,11 @@ import { HTTPException } from "hono/http-exception";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import {
-  BEDROCK_NAME_PATTERN,
   COMMENTS_MAX,
   DEVICES,
   EMAIL_MAX,
   GRADES,
-  JAVA_NAME_PATTERN,
+  isPlayerName,
   PARENT_EMAILS_MAX,
   REQUEST_BYTES_MAX,
   REQUEST_RETENTION_DAYS,
@@ -35,7 +34,12 @@ const DAY = 24 * HOUR;
 // this.
 export const REQUESTS_PER_IP_PER_HOUR = 10;
 
-const common = {
+export const AccessRequestSchema = z.object({
+  playerName: z.string().trim().refine(isPlayerName),
+  devices: z
+    .array(z.enum(Object.keys(DEVICES)))
+    .min(1)
+    .transform((devices) => [...new Set(devices)]),
   grade: z.enum(Object.keys(GRADES)),
   parentEmails: z
     .array(z.string().trim().toLowerCase().max(EMAIL_MAX).pipe(z.email()))
@@ -46,24 +50,7 @@ const common = {
   // `unknown`, so that nothing put in the trap can be refused: a validation
   // error names the field, which would tell a bot which one to leave alone.
   [TRAP_FIELD]: z.unknown().optional(),
-};
-
-export const AccessRequestSchema = z.discriminatedUnion("platform", [
-  z.object({
-    platform: z.literal("java"),
-    playerName: z.string().trim().regex(JAVA_NAME_PATTERN),
-    ...common,
-  }),
-  z.object({
-    platform: z.literal("bedrock"),
-    playerName: z.string().trim().regex(BEDROCK_NAME_PATTERN),
-    devices: z
-      .array(z.enum(Object.keys(DEVICES)))
-      .min(1)
-      .transform((devices) => [...new Set(devices)]),
-    ...common,
-  }),
-]);
+});
 
 // The viewer's address, from the header CloudFront sets itself when the origin
 // request policy asks for it (modules/static-site in dbaggott/infrastructure):
@@ -157,8 +144,7 @@ export function createApp({ store, notify, build, now = Date.now }) {
         createdAt,
         expiresAt: createdAt + REQUEST_RETENTION_DAYS * DAY,
         playerName: body.playerName,
-        platform: body.platform,
-        devices: body.platform === "java" ? ["computer"] : body.devices,
+        devices: body.devices,
         grade: body.grade,
         parentEmails: body.parentEmails,
         comments: body.comments || null,

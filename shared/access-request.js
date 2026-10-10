@@ -6,14 +6,10 @@
 // it takes to set up the child's access and to reach the parent about it: no
 // names, no ages, nothing the child types themselves.
 
-export const PLATFORMS = {
-  java: "Java Edition",
-  bedrock: "Bedrock Edition",
-};
-
-// Bedrock only: Java runs on a computer and nowhere else. Anything but a
-// computer or a phone is a console, and consoles can't add a server by address,
-// so a request naming one is the signal that console joining is wanted.
+// Where the child will play. Java runs on a computer and nowhere else, so any
+// other device means Bedrock; a computer alone leaves the edition open. Anything
+// but a computer or a phone is a console, and consoles can't add a server by
+// address, so a request naming one is the signal that console joining is wanted.
 export const DEVICES = {
   computer: "Computer",
   mobile: "Phone or tablet",
@@ -24,6 +20,11 @@ export const DEVICES = {
 };
 
 export const CONSOLE_DEVICES = ["xbox", "playstation", "switch", "other"];
+
+// "bedrock" when the devices settle it, else null: a computer can run either.
+export function editionOf(devices) {
+  return devices.some((device) => device !== "computer") ? "bedrock" : null;
+}
 
 export const GRADES = {
   K: "Kindergarten",
@@ -50,6 +51,12 @@ export const JAVA_NAME_PATTERN = /^[A-Za-z0-9_]{3,16}$/;
 // malformed one costs a reply. Letters in any script, digits, spaces and
 // underscores, with the "#1234" suffix newer gamertags carry.
 export const BEDROCK_NAME_PATTERN = /^[\p{L}\p{N}][\p{L}\p{N} _]{0,15}(#[0-9]{1,4})?$/u;
+
+// The form doesn't ask which edition, so a name is accepted if it could be
+// either.
+export function isPlayerName(name) {
+  return JAVA_NAME_PATTERN.test(name) || BEDROCK_NAME_PATTERN.test(name);
+}
 
 export const PARENT_EMAILS_MAX = 3;
 export const EMAIL_MAX = 254;
