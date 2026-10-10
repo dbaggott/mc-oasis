@@ -43,9 +43,9 @@ export function scheduleHtml(id = CALENDAR_ID) {
   return [
     '<p class="lede">Add the schedule to your own calendar and changes to it will show up there on their own.</p>',
     '<div class="subscribe">',
-    `<a class="mc-button mc-button-small" href="${escape(url.google)}" target="_blank" rel="noopener">Add to Google Calendar</a>`,
-    `<a class="mc-button mc-button-small" href="${escape(url.webcal)}">Add to Apple Calendar or Outlook</a>`,
-    `<button class="mc-button mc-button-small" type="button" data-copy="${escape(url.ics)}">Copy calendar address</button>`,
+    `<a class="mc-button mc-button-small" href="${escape(url.google)}" target="_blank" rel="noopener">Google Calendar</a>`,
+    `<a class="mc-button mc-button-small" href="${escape(url.webcal)}">Apple Calendar or Outlook</a>`,
+    `<button class="mc-button mc-button-small" type="button" data-copy="${escape(url.ics)}">Copy address</button>`,
     `<p class="address-value address-long" hidden><code>${escape(url.ics)}</code></p>`,
     "</div>",
     `<iframe class="calendar" src="${escape(url.embed)}" title="Oasis SMP session schedule" loading="lazy"></iframe>`,
