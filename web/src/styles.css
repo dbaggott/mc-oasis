@@ -87,9 +87,14 @@ body::before {
   }
 }
 
-/* The sky by the visitor's own clock, as main.js marks it from sky.js. Until
-   it does, no picture, so none is fetched only to be replaced; where scripting
-   is off, the dawn. */
+/* The sky by the visitor's own clock, as mark-sky.mjs's script marks it before
+   the first paint; the dawn wherever it doesn't. Only the picture of the sky
+   that applies is fetched. */
+:root {
+  --sky-avif: url("./gazebo-dawn.avif");
+  --sky-webp: url("./gazebo-dawn.webp");
+}
+
 [data-sky="night"] {
   --sky-avif: url("./gazebo-night.avif");
   --sky-webp: url("./gazebo-night.webp");
@@ -118,13 +123,6 @@ body::before {
 [data-sky="evening"] {
   --sky-avif: url("./gazebo-evening.avif");
   --sky-webp: url("./gazebo-evening.webp");
-}
-
-@media (scripting: none) {
-  :root {
-    --sky-avif: url("./gazebo-dawn.avif");
-    --sky-webp: url("./gazebo-dawn.webp");
-  }
 }
 
 /* Running text sits on a panel, never on the backdrop itself. */

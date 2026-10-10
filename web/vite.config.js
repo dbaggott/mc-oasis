@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
@@ -5,6 +6,7 @@ import { pages } from "./pages.mjs";
 import { scheduleHtml } from "./calendar.mjs";
 import { navHtml } from "./chrome.mjs";
 import { faviconPng, faviconSvg, logoImg, logoSvg, logoTargets } from "./logo.mjs";
+import { markSkyScript } from "./mark-sky.mjs";
 import { parseRules, rulesHtml } from "./rules.mjs";
 
 const repoRoot = resolve(import.meta.dirname, "..");
@@ -22,10 +24,17 @@ if (!existsSync(resolve(import.meta.dirname, "node_modules/vite"))) {
 // "request-access/index.html" -> "request-access", "index.html" -> "index".
 const entryName = (page) => page.replace(/(\/index)?\.html$/, "");
 
-// The art logo.mjs draws, as files at the site's root: the logo every page's
-// <img> shares, and the favicon in each form browsers ask for. <!-- logo --> in
-// a page becomes the large logo, and every page's <head> gets the favicon links.
+// Every page's <head> runs this before its first paint, so it is named for its
+// contents and published under assets/ with the bundle's own files: cached for
+// good, never revalidated in the way of a page.
+const markSkyFile = `assets/mark-sky-${createHash("sha256").update(markSkyScript()).digest("hex").slice(0, 8)}.js`;
+
+// Files drawn at build time: the script that marks the sky, and at the site's
+// root the logo every page's <img> shares and the favicon in each form browsers
+// ask for. <!-- logo --> in a page becomes the large logo, and every page's
+// <head> gets that script and the favicon links.
 const artFiles = {
+  [markSkyFile]: { type: "text/javascript", draw: markSkyScript },
   "logo.svg": { type: "image/svg+xml", draw: () => logoSvg().svg },
   "favicon.svg": { type: "image/svg+xml", draw: faviconSvg },
   "favicon.png": { type: "image/png", draw: () => faviconPng(32) },
@@ -37,6 +46,8 @@ const iconLinks = [
   { rel: "icon", href: "/favicon.png", type: "image/png", sizes: "32x32" },
   { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
 ].map((attrs) => ({ tag: "link", attrs, injectTo: "head" }));
+
+const markSky = { tag: "script", attrs: { src: `/${markSkyFile}` }, injectTo: "head" };
 
 function art() {
   return {
@@ -55,7 +66,7 @@ function art() {
       }
     },
     transformIndexHtml(html) {
-      return { html: html.replace("<!-- logo -->", logoImg("logo-art") + logoTargets()), tags: iconLinks };
+      return { html: html.replace("<!-- logo -->", logoImg("logo-art") + logoTargets()), tags: [markSky, ...iconLinks] };
     },
   };
 }
