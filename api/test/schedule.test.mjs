@@ -57,6 +57,7 @@ test("a repeating event is expanded into its occurrences, at the local time eith
   assert.deepEqual(sessions[0], {
     start: "2026-10-26T22:00:00.000Z",
     end: "2026-10-26T23:30:00.000Z",
+    allDay: false,
     title: "Oasis Minecraft",
     description: null,
   });
@@ -93,14 +94,15 @@ test("an occurrence moved on its own is listed where it now stands, with its own
   ];
   const sessions = upcomingSessions(calendar(weekly(), moved, cancelled), window("2026-10-26T00:00:00Z", 11));
   assert.deepEqual(sessions, [
-    { start: "2026-10-26T22:00:00.000Z", end: "2026-10-26T23:30:00.000Z", title: "Oasis Minecraft", description: null },
+    { start: "2026-10-26T22:00:00.000Z", end: "2026-10-26T23:30:00.000Z", allDay: false, title: "Oasis Minecraft", description: null },
     {
       start: "2026-10-30T23:00:00.000Z",
       end: "2026-10-31T00:00:00.000Z",
+      allDay: false,
       title: "Oasis Minecraft (Friday this week)",
       description: 'Moved for the <a href="https://www.oasis-smp.com/">assembly</a>.',
     },
-    { start: "2026-11-05T23:00:00.000Z", end: "2026-11-06T00:30:00.000Z", title: "Oasis Minecraft", description: null },
+    { start: "2026-11-05T23:00:00.000Z", end: "2026-11-06T00:30:00.000Z", allDay: false, title: "Oasis Minecraft", description: null },
   ]);
 });
 
@@ -116,6 +118,19 @@ test("one-off events are listed alongside the repeating ones, in start order", (
   assert.deepEqual(
     sessions.map((s) => s.title),
     ["Oasis Minecraft", "Halloween build party", "Oasis Minecraft"],
+  );
+});
+
+test("an all-day event and a time given with no zone are read where the sessions happen", () => {
+  const closed = ["UID:closed@test", "DTSTART;VALUE=DATE:20261105", "DTEND;VALUE=DATE:20261106", "SUMMARY:Server closed"];
+  const floating = ["UID:floating@test", "DTSTART:20261106T150000", "DTEND:20261106T160000", "SUMMARY:Floating"];
+  const sessions = upcomingSessions(calendar(closed, floating), window("2026-11-04T00:00:00Z", 7));
+  assert.deepEqual(
+    sessions.map(({ start, end, allDay }) => ({ start, end, allDay })),
+    [
+      { start: "2026-11-05T08:00:00.000Z", end: "2026-11-06T08:00:00.000Z", allDay: true },
+      { start: "2026-11-06T23:00:00.000Z", end: "2026-11-07T00:00:00.000Z", allDay: false },
+    ],
   );
 });
 

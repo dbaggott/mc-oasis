@@ -1,6 +1,7 @@
 // The upcoming sessions, read from the calendar's public iCalendar feed. Google
 // serves the feed without CORS headers, so a browser can't read it itself.
 import ICAL from "ical.js";
+import { TIME_ZONE } from "../../shared/calendar.js";
 
 // How many sessions the Schedule page lists, and how far ahead it looks for
 // them. Past either, a visitor subscribes rather than reads.
@@ -17,26 +18,42 @@ const DAY = 24 * 60 * 60 * 1000;
 // before `until`, in start order: each repeating event expanded into its
 // occurrences, with any occurrence the calendar moved or cancelled taken as it
 // now stands.
+//
+// An all-day event, or a time given with no zone, is read in TIME_ZONE: the
+// day or the hour where the sessions happen.
 export function upcomingSessions(ics, { from, until, limit }) {
-  const vevents = new ICAL.Component(ICAL.parse(ics)).getAllSubcomponents("vevent");
-  const exceptionsOf = (uid) =>
-    vevents.filter((v) => v.hasProperty("recurrence-id") && v.getFirstPropertyValue("uid") === uid);
+  const calendar = new ICAL.Component(ICAL.parse(ics));
+  const zone = calendar.getTimeZoneByID(TIME_ZONE) ?? ICAL.Timezone.utcTimezone;
+  const instant = (time) => {
+    if (time.zone !== ICAL.Timezone.localTimezone) return time.toJSDate();
+    const zoned = time.clone();
+    zoned.isDate = false;
+    zoned.zone = zone;
+    return zoned.toJSDate();
+  };
+
+  const vevents = calendar.getAllSubcomponents("vevent");
+  const exceptions = Map.groupBy(
+    vevents.filter((v) => v.hasProperty("recurrence-id")),
+    (v) => v.getFirstPropertyValue("uid"),
+  );
 
   const sessions = [];
   for (const vevent of vevents) {
     if (vevent.hasProperty("recurrence-id")) continue;
-    const event = new ICAL.Event(vevent, { exceptions: exceptionsOf(vevent.getFirstPropertyValue("uid")) });
+    const event = new ICAL.Event(vevent, { exceptions: exceptions.get(vevent.getFirstPropertyValue("uid")) ?? [] });
     const found = sessions.length;
     for (const occurrence of occurrences(event)) {
-      if (occurrence.toJSDate() >= until || sessions.length - found === limit) break;
+      if (instant(occurrence) >= until || sessions.length - found === limit) break;
       const { item, startDate, endDate } = event.getOccurrenceDetails(occurrence);
       if (item.component.getFirstPropertyValue("status") === "CANCELLED") continue;
-      const start = startDate.toJSDate();
-      const end = endDate.toJSDate();
+      const start = instant(startDate);
+      const end = instant(endDate);
       if (end <= from || start >= until) continue;
       sessions.push({
         start: start.toISOString(),
         end: end.toISOString(),
+        allDay: startDate.isDate,
         title: item.summary,
         // HTML, as Google's editor writes it.
         description: item.description || null,

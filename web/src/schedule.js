@@ -20,6 +20,20 @@ function span(className, text) {
   return el;
 }
 
+// The calendar is the site's own, so its HTML is shown as written. Text with no
+// markup in it, from an editor other than Google's web one, keeps its line breaks.
+function description(content) {
+  const el = document.createElement("div");
+  if (/<[a-z]/i.test(content)) {
+    el.className = "session-description";
+    el.innerHTML = content;
+  } else {
+    el.className = "session-description session-description-text";
+    el.textContent = content;
+  }
+  return el;
+}
+
 function list({ sessions, timeZone }) {
   if (sessions.length === 0) {
     note("No sessions are scheduled right now. Subscribe above to hear when they are.");
@@ -37,13 +51,7 @@ function list({ sessions, timeZone }) {
     what.className = "session-what";
     what.append(span("session-time", row.time), span("session-title", row.title));
     if (row.underway) what.append(span("session-badge", "On now"));
-    if (row.description) {
-      // The calendar is the site's own, so its HTML is shown as written.
-      const description = document.createElement("div");
-      description.className = "session-description";
-      description.innerHTML = row.description;
-      what.append(description);
-    }
+    if (row.description) what.append(description(row.description));
     li.append(date, what);
     ol.append(li);
   }
@@ -56,7 +64,8 @@ function list({ sessions, timeZone }) {
 if (box && fallback) {
   note("Loading the schedule…");
   try {
-    const res = await fetch("/api/schedule");
+    // Longer than a slow cold start takes, so only a stuck request falls back to the link.
+    const res = await fetch("/api/schedule", { signal: AbortSignal.timeout(10000) });
     if (!res.ok) throw new Error(`schedule answered ${res.status}`);
     list(await res.json());
   } catch {

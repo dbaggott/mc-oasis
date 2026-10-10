@@ -508,6 +508,10 @@ code {
   margin-bottom: 0;
 }
 
+.session-description-text {
+  white-space: pre-line;
+}
+
 .session-description a {
   color: var(--accent);
 }
