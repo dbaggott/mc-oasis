@@ -8,6 +8,14 @@ import { parseRules } from "../rules.mjs";
 
 const dist = resolve(import.meta.dirname, "../dist");
 
+// Each reference is a path from the site's root, or one relative to `dir`.
+function assertBuilt(referrer, dir, refs) {
+  for (const ref of refs) {
+    const file = ref.startsWith("/") ? resolve(dist, `.${ref}`) : resolve(dir, ref);
+    assert.ok(existsSync(file), `${referrer} references ${ref}, which was not built`);
+  }
+}
+
 for (const page of pages) {
   const file = resolve(dist, page);
 
@@ -16,9 +24,7 @@ for (const page of pages) {
     const html = readFileSync(file, "utf8");
     const refs = [...html.matchAll(/(?:src|href)="(\/[^"#]+)"/g)].map((m) => m[1]);
     assert.ok(refs.length > 0, `${page} references nothing`);
-    for (const ref of refs.filter((r) => r !== "/" && !r.endsWith("/"))) {
-      assert.ok(existsSync(resolve(dist, `.${ref}`)), `${page} references ${ref}, which was not built`);
-    }
+    assertBuilt(page, dist, refs.filter((r) => r !== "/" && !r.endsWith("/")));
   });
 
   // The Content-Security-Policy (modules/static-site in dbaggott/infrastructure)
@@ -79,16 +85,14 @@ test("the built forms send the body hash the Function URL requires", () => {
   assert.match(js, /subtle\.digest\(\s*["'`]SHA-256["'`]/, "the header is sent, but nothing hashes the body for it");
 });
 
-test("every file the stylesheet references exists", () => {
+test("every file the stylesheets reference exists", () => {
   const assets = resolve(dist, "assets");
-  const css = readdirSync(assets).filter((file) => file.endsWith(".css"));
-  assert.ok(css.length > 0, "no stylesheet was built");
-  for (const file of css) {
-    const refs = [...readFileSync(resolve(assets, file), "utf8").matchAll(/url\("?(\/[^")]+)"?\)/g)].map((m) => m[1]);
-    assert.ok(refs.length > 0, `${file} references nothing`);
-    for (const ref of refs) {
-      assert.ok(existsSync(resolve(dist, `.${ref}`)), `${file} references ${ref}, which was not built`);
-    }
+  const sheets = readdirSync(assets).filter((file) => file.endsWith(".css"));
+  assert.ok(sheets.length > 0, "no stylesheet was built");
+  for (const sheet of sheets) {
+    const css = readFileSync(resolve(assets, sheet), "utf8");
+    const refs = [...css.matchAll(/url\(\s*["']?([^"')]+?)["']?\s*\)/g)].map((m) => m[1]);
+    assertBuilt(sheet, assets, refs.filter((r) => !r.startsWith("data:")));
   }
 });
 

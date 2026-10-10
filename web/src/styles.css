@@ -13,7 +13,7 @@
   --panel: #3a2b20;
   --panel-edge: #57432f;
   /* The earth of the panels, letting a little of the backdrop through. */
-  --veil: color-mix(in srgb, var(--bg-deep) 82%, transparent);
+  --veil: color-mix(in srgb, var(--bg-deep) 88%, transparent);
   --ink: #f2ead8;
   --muted: #c9bba0;
   --gold: #ffff55;
@@ -61,12 +61,14 @@ body {
 
 /* The gazebo at sunset, held still behind every page and darkened toward the
    bottom, where the text sits. A fixed layer rather than a fixed background,
-   which iOS Safari ignores. Anchored left of centre so the gazebo stays in
-   view as the screen narrows. */
+   which iOS Safari ignores, and as tall as the screen with its toolbars
+   collapsed, so the picture doesn't rescale as they collapse on scroll.
+   Anchored left of centre so the gazebo stays in view as the screen narrows. */
 body::before {
   content: "";
   position: fixed;
-  inset: 0;
+  inset: 0 0 auto;
+  height: 100lvh;
   z-index: -1;
   background:
     linear-gradient(
@@ -75,7 +77,7 @@ body::before {
       color-mix(in srgb, var(--bg-deep) 20%, transparent) 45%,
       color-mix(in srgb, var(--bg-deep) 75%, transparent)
     ),
-    url("/gazebo-sunset.webp") 12% 40% / cover no-repeat;
+    url("./gazebo-sunset.webp") 12% 40% / cover no-repeat;
 }
 
 /* Running text sits on a panel, never on the backdrop itself. */
