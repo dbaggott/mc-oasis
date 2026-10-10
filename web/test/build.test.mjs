@@ -4,6 +4,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { test } from "node:test";
 import { pages } from "../pages.mjs";
+import { logoSvg } from "../logo.mjs";
 import { parseRules } from "../rules.mjs";
 
 const dist = resolve(import.meta.dirname, "../dist");
@@ -162,4 +163,11 @@ test("the favicon is built in every form, and every page links it", () => {
       assert.ok(html.includes(`href="${href}"`), `${page} does not link ${href}`);
     }
   }
+});
+
+test("the home page's logo carries its targets", () => {
+  const html = readFileSync(resolve(dist, "index.html"), "utf8");
+  const targets = html.match(/<svg class="logo-targets"[^]*?<\/svg>/);
+  assert.ok(targets, "no .logo-targets on the home page");
+  assert.equal(targets[0].match(/<path /g).length, logoSvg().targets.length);
 });

@@ -18,7 +18,7 @@ document.documentElement.dataset.sky = sky;
 // the other skies, and "SMP" the page's own again. logoTargets() in logo.mjs
 // lays the targets out in that order.
 const skies = [...otherSkies(sky), sky];
-document.querySelectorAll(".logo-targets rect").forEach((target, i) => {
+document.querySelectorAll(".logo-targets path").forEach((target, i) => {
   target.addEventListener("click", () => (document.documentElement.dataset.sky = skies[i]));
 });
 

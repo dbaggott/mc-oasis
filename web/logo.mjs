@@ -46,23 +46,21 @@ function noise(x, y, salt) {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
-// Lay a word out as block coordinates, one blank column between letters, and
-// note where each letter starts and how wide it is.
+// Lay a word out as block coordinates, one blank column between letters, each
+// block marked with the index of the letter it belongs to.
 function layout(word) {
   const blocks = [];
-  const letters = [];
   let x = 0;
-  for (const letter of word) {
+  [...word].forEach((letter, i) => {
     const glyph = GLYPHS[letter];
-    letters.push({ x, width: glyph[0].length });
     glyph.forEach((row, y) => {
       [...row].forEach((cell, dx) => {
-        if (cell === "#") blocks.push([x + dx, y]);
+        if (cell === "#") blocks.push([x + dx, y, i]);
       });
     });
     x += glyph[0].length + 1;
-  }
-  return { blocks, letters, width: x - 1, height: 7 };
+  });
+  return { blocks, letterCount: word.length, width: x - 1, height: 7 };
 }
 
 // Rectangles collected by colour and written as one <path> per colour, so the
@@ -78,16 +76,20 @@ function paths(rects) {
 
 // One word in texture-pixel units, each block SUB of them across, at (ox, oy).
 // Drawn in three passes so each sits under the next: outline, extruded side,
-// face. Alongside the art, the box each letter fills, outline and side included.
+// face. Alongside the art, each letter's outline rectangles: together they
+// cover exactly the letter, its black border included.
 function word(text, texture, ox, oy, salt) {
-  const { blocks, letters, width, height } = layout(text);
+  const { blocks, letterCount, width, height } = layout(text);
   const t = TEXTURES[texture];
   const depth = 3;
   const under = [];
   const face = [];
+  const letters = Array.from({ length: letterCount }, () => []);
 
-  for (const [bx, by] of blocks) {
-    under.push([ox + bx * SUB - 1, oy + by * SUB - 1, SUB + 2, SUB + depth + 2, OUTLINE]);
+  for (const [bx, by, letter] of blocks) {
+    const outline = [ox + bx * SUB - 1, oy + by * SUB - 1, SUB + 2, SUB + depth + 2];
+    under.push([...outline, OUTLINE]);
+    letters[letter].push(outline);
   }
   for (const [bx, by] of blocks) {
     under.push([ox + bx * SUB, oy + by * SUB + SUB, SUB, depth, t.side]);
@@ -111,12 +113,7 @@ function word(text, texture, ox, oy, salt) {
   // neighbour's face.
   return {
     svg: paths(under) + paths(face),
-    letters: letters.map(({ x, width }) => ({
-      x: ox + x * SUB - 1,
-      y: oy - 1,
-      width: width * SUB + 2,
-      height: height * SUB + depth + 2,
-    })),
+    letters,
     width: width * SUB,
     height: height * SUB + depth,
   };
@@ -136,31 +133,21 @@ export function logoSvg() {
   const gap = 4;
   const width = top.width * big + 2 * pad;
   const height = top.height * big + gap + bottom.height + 2 * pad;
-  const bottomX = (width - bottom.width) / 2;
-  const bottomY = pad + top.height * big + gap;
-  const smp = bottom.letters;
+  const topPlace = `translate(${pad} ${pad}) scale(${big})`;
+  const bottomPlace = `translate(${(width - bottom.width) / 2} ${pad + top.height * big + gap})`;
   logo = {
     width,
     height,
-    // Each letter of "OASIS", then "SMP" as one, in the logo's own units.
+    // Each letter of "OASIS", then "SMP" as one: the rectangles it covers, in
+    // its word's units, and where that word is placed in the logo.
     targets: [
-      ...top.letters.map(({ x, y, width, height }) => ({
-        x: pad + x * big,
-        y: pad + y * big,
-        width: width * big,
-        height: height * big,
-      })),
-      {
-        x: bottomX + smp[0].x,
-        y: bottomY + smp[0].y,
-        width: smp.at(-1).x + smp.at(-1).width - smp[0].x,
-        height: smp[0].height,
-      },
+      ...top.letters.map((rects) => ({ place: topPlace, rects })),
+      { place: bottomPlace, rects: bottom.letters.flat() },
     ],
     svg: [
       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" shape-rendering="crispEdges">`,
-      `<g transform="translate(${pad} ${pad}) scale(${big})">${top.svg}</g>`,
-      `<g transform="translate(${bottomX} ${bottomY})">${bottom.svg}</g>`,
+      `<g transform="${topPlace}">${top.svg}</g>`,
+      `<g transform="${bottomPlace}">${bottom.svg}</g>`,
       "</svg>",
     ].join(""),
   };
@@ -175,12 +162,15 @@ export function logoImg(className) {
 }
 
 // Invisible targets over the logo, one on each letter of "OASIS" and one on
-// "SMP", in that order, sized in the logo's units so they scale with its <img>.
-// Laid on top of the <img> by the stylesheet; main.js gives them their clicks.
+// "SMP", in that order, each the letter's own shape so a click in a letter's
+// hole or between letters misses. Drawn in the logo's units so they scale with
+// its <img>; laid on top of it by the stylesheet; main.js gives them their clicks.
 export function logoTargets() {
   const { width, height, targets } = logoSvg();
-  const rects = targets.map(({ x, y, width, height }) => `<rect x="${x}" y="${y}" width="${width}" height="${height}"/>`);
-  return `<svg class="logo-targets" viewBox="0 0 ${width} ${height}" aria-hidden="true">${rects.join("")}</svg>`;
+  const shapes = targets.map(
+    ({ place, rects }) => `<path transform="${place}" d="${rects.map(([x, y, w, h]) => `M${x} ${y}h${w}v${h}h${-w}z`).join("")}"/>`,
+  );
+  return `<svg class="logo-targets" viewBox="0 0 ${width} ${height}" aria-hidden="true">${shapes.join("")}</svg>`;
 }
 
 // Dirt, darkened the way Minecraft darkens it behind its menus, for the
