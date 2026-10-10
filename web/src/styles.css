@@ -59,8 +59,8 @@ body {
   line-height: 1.6;
 }
 
-/* The gazebo at sunset, held still behind every page and darkened toward the
-   bottom, where the text sits. A fixed layer rather than a fixed background,
+/* The gazebo, held still behind every page and darkened toward the bottom,
+   where the text sits. A fixed layer rather than a fixed background,
    which iOS Safari ignores, and as tall as the screen with its toolbars
    collapsed, so the picture doesn't rescale as they collapse on scroll.
    Anchored left of centre so the gazebo stays in view as the screen narrows. */
@@ -77,7 +77,35 @@ body::before {
       color-mix(in srgb, var(--bg-deep) 20%, transparent) 45%,
       color-mix(in srgb, var(--bg-deep) 75%, transparent)
     ),
-    url("./gazebo-sunset.webp") 12% 40% / cover no-repeat;
+    var(--backdrop) 12% 40% / cover no-repeat;
+}
+
+/* By the visitor's own clock, as main.js marks it; at sunset where no script
+   runs to mark it. */
+:root {
+  --backdrop: none;
+}
+
+[data-time="dawn"] {
+  --backdrop: url("./gazebo-dawn.webp");
+}
+
+[data-time="day"] {
+  --backdrop: url("./gazebo-day.webp");
+}
+
+[data-time="sunset"] {
+  --backdrop: url("./gazebo-sunset.webp");
+}
+
+[data-time="night"] {
+  --backdrop: url("./gazebo-night.webp");
+}
+
+@media (scripting: none) {
+  :root {
+    --backdrop: url("./gazebo-sunset.webp");
+  }
 }
 
 /* Running text sits on a panel, never on the backdrop itself. */
