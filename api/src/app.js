@@ -3,6 +3,7 @@
 //
 //   GET  /api/                  what is running: the build identity
 //   ANY  /api/ping              200, having read and discarded any body
+//   GET  /api/schedule          the upcoming sessions
 //   POST /api/access-requests   a parent asking for their child to be let in
 //   POST /api/contact           a message from the contact page
 //
@@ -15,6 +16,7 @@ import { HTTPException } from "hono/http-exception";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { COMMENTS_MAX, DEVICES, GRADES, isPlayerName, REQUEST_BYTES_MAX } from "../../shared/access-request.js";
+import { TIME_ZONE } from "../../shared/calendar.js";
 import { CONTACT_BYTES_MAX, MESSAGE_MAX } from "../../shared/contact.js";
 import { EMAIL_MAX, EMAILS_MAX, RETENTION_DAYS, TRAP_FIELD } from "../../shared/forms.js";
 
@@ -92,7 +94,7 @@ function clientKey(c) {
   return createHash("sha256").update(clientIp(c)).digest("hex");
 }
 
-export function createApp({ store, notify, build, now = Date.now }) {
+export function createApp({ store, notify, schedule, build, now = Date.now }) {
   const app = new Hono();
 
   app.use("*", async (c, next) => {
@@ -118,6 +120,17 @@ export function createApp({ store, notify, build, now = Date.now }) {
       }
     }
     return c.json({ ok: true });
+  });
+
+  app.get("/api/schedule", async (c) => {
+    let sessions;
+    try {
+      sessions = await schedule();
+    } catch (err) {
+      console.error("schedule unavailable:", err?.name || "error");
+      return c.json({ error: "schedule unavailable" }, 502);
+    }
+    return c.json({ timeZone: TIME_ZONE, sessions });
   });
 
   // A form's route: refuse an oversized body before reading it, validate,

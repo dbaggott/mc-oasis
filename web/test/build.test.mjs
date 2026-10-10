@@ -145,7 +145,7 @@ test("the Monocraft license is published beside the site", () => {
 test("the schedule page carries the schedule, or says it is coming", () => {
   const html = readFileSync(resolve(dist, "schedule/index.html"), "utf8");
   assert.doesNotMatch(html, /<!-- schedule -->/, "the schedule marker was left in the page");
-  assert.match(html, /<iframe class="calendar"|The session schedule is coming soon/);
+  assert.match(html, /<div class="sessions">|The session schedule is coming soon/);
 });
 
 test("the favicon is built in every form, and every page links it", () => {

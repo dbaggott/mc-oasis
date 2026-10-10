@@ -10,8 +10,10 @@
 //   FEEDBACK_TOPIC_ARN   where to announce requests; unset skips announcing
 //   BUILD_BRANCH, BUILD_COMMIT, BUILD_TIME   set by the image build
 import { serve } from "@hono/node-server";
+import { CALENDAR_ID, feedAddress } from "../../shared/calendar.js";
 import { createApp } from "./app.js";
 import { createNotifier } from "./notify.js";
+import { feedFetcher, scheduleReader } from "./schedule.js";
 import { dynamoStore, memoryStore } from "./store.js";
 
 const env = process.env;
@@ -33,7 +35,8 @@ const build = {
 
 const store = env.STORAGE === "aws" ? await dynamoStore({ table: env.TABLE }) : memoryStore();
 const notify = createNotifier(env.FEEDBACK_TOPIC_ARN, build);
-const app = createApp({ store, notify, build });
+const schedule = scheduleReader({ fetchFeed: feedFetcher(`https://${feedAddress(CALENDAR_ID)}`) });
+const app = createApp({ store, notify, schedule, build });
 
 serve({ fetch: app.fetch, port: Number(env.PORT) || 8787 }, (info) => {
   console.log(`mc-oasis api on http://localhost:${info.port} (storage: ${env.STORAGE === "aws" ? "aws" : "memory"})`);
