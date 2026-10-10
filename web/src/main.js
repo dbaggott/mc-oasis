@@ -16,18 +16,24 @@ const sky = document.documentElement.dataset.sky;
 // The stylesheet fetches a sky's picture only once that sky is marked, and
 // until it arrives the backdrop is bare. So the picture is fetched and decoded
 // first, in the format the stylesheet would pick, read from the stylesheet's
-// own rule for that sky; a picture that fails to load still gets its sky.
+// own rule for that sky; a picture that fails to load still gets its sky. Each
+// sky's picture is loaded once and held, so going back to it is immediate.
 const avif = CSS.supports("background-image", 'image-set("" type("image/avif"))');
-async function loadSky(sky) {
-  const probe = document.createElement("i");
-  probe.dataset.sky = sky;
-  probe.hidden = true;
-  document.body.append(probe);
-  const url = getComputedStyle(probe).getPropertyValue(avif ? "--sky-avif" : "--sky-webp");
-  probe.remove();
-  const picture = new Image();
-  picture.src = url.match(/url\(\s*["']?([^"')]+)/)[1];
-  await picture.decode().catch(() => {});
+const loaded = new Map();
+function loadSky(sky) {
+  if (!loaded.has(sky)) {
+    const probe = document.createElement("i");
+    probe.dataset.sky = sky;
+    probe.hidden = true;
+    document.body.append(probe);
+    const url = getComputedStyle(probe).getPropertyValue(avif ? "--sky-avif" : "--sky-webp");
+    probe.remove();
+    const picture = new Image();
+    picture.src = url.match(/url\(\s*["']?([^"')]+)/)?.[1] ?? "";
+    const held = () => picture;
+    loaded.set(sky, picture.decode().then(held, held));
+  }
+  return loaded.get(sky);
 }
 
 // A hidden extra on the home page's logo: each letter of "OASIS" shows one of
