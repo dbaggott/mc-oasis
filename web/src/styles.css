@@ -192,11 +192,12 @@ code {
   padding: 18px 16px 8px;
 }
 
-/* Three columns, the outer two always equal, so the logo sits at the exact
-   centre however wide the links on either side are. Sized to its content, the
-   bar makes both outer columns as wide as the wider side's links, and the
-   narrower side's tiles stretch to fill theirs, so the row of tiles is as
-   balanced as the logo. */
+/* Three columns, the outer two equal, so the logo sits at the exact centre.
+   Sized to its content, the bar makes both outer columns as wide as the wider
+   side's links, and the narrower side's tiles stretch to fill theirs, so the
+   row of tiles is as balanced as the logo. That holds only while the window
+   fits the whole bar: below the phone breakpoint's width the columns squeeze
+   unevenly, so longer labels need that breakpoint raised to match. */
 .nav {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -297,7 +298,7 @@ code {
 /* A phone: the menu button and the logo on one row, the logo centred by an
    empty third column as wide as the button, and the links beneath, shown once
    the button opens them. */
-@media (max-width: 960px) {
+@media (max-width: 1040px) {
   .nav {
     display: grid;
     grid-template-columns: 48px 1fr 48px;
