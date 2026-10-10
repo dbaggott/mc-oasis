@@ -4,7 +4,7 @@ import { defineConfig } from "vite";
 import { pages } from "./pages.mjs";
 import { scheduleHtml } from "./calendar.mjs";
 import { navHtml } from "./chrome.mjs";
-import { dirtSvg, logoImg, logoSvg } from "./logo.mjs";
+import { dirtSvg, faviconPng, faviconSvg, logoImg, logoSvg } from "./logo.mjs";
 import { parseRules, rulesHtml } from "./rules.mjs";
 
 const repoRoot = resolve(import.meta.dirname, "..");
@@ -23,31 +23,41 @@ if (!existsSync(resolve(import.meta.dirname, "node_modules/vite"))) {
 const entryName = (page) => page.replace(/(\/index)?\.html$/, "");
 
 // The art logo.mjs draws, as files at the site's root: the logo every page's
-// <img> shares, and the dirt tile the stylesheet repeats. <!-- logo --> in a
-// page becomes the large logo.
+// <img> shares, the dirt tile the stylesheet repeats, and the favicon in each
+// form browsers ask for. <!-- logo --> in a page becomes the large logo, and
+// every page's <head> gets the favicon links.
 const artFiles = {
-  "logo.svg": () => logoSvg().svg,
-  "dirt.svg": dirtSvg,
+  "logo.svg": { type: "image/svg+xml", draw: () => logoSvg().svg },
+  "dirt.svg": { type: "image/svg+xml", draw: dirtSvg },
+  "favicon.svg": { type: "image/svg+xml", draw: faviconSvg },
+  "favicon.png": { type: "image/png", draw: () => faviconPng(32) },
+  "apple-touch-icon.png": { type: "image/png", draw: () => faviconPng(180) },
 };
+
+const iconLinks = [
+  { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+  { rel: "icon", href: "/favicon.png", type: "image/png", sizes: "32x32" },
+  { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+].map((attrs) => ({ tag: "link", attrs, injectTo: "head" }));
 
 function art() {
   return {
     name: "oasis-art",
     configureServer(server) {
-      for (const [file, draw] of Object.entries(artFiles)) {
+      for (const [file, { type, draw }] of Object.entries(artFiles)) {
         server.middlewares.use(`/${file}`, (req, res) => {
-          res.setHeader("Content-Type", "image/svg+xml");
+          res.setHeader("Content-Type", type);
           res.end(draw());
         });
       }
     },
     generateBundle() {
-      for (const [file, draw] of Object.entries(artFiles)) {
+      for (const [file, { draw }] of Object.entries(artFiles)) {
         this.emitFile({ type: "asset", fileName: file, source: draw() });
       }
     },
     transformIndexHtml(html) {
-      return html.replace("<!-- logo -->", logoImg("logo-art"));
+      return { html: html.replace("<!-- logo -->", logoImg("logo-art")), tags: iconLinks };
     },
   };
 }

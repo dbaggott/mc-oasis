@@ -129,3 +129,19 @@ test("the schedule page carries the schedule, or says it is coming", () => {
   assert.doesNotMatch(html, /<!-- schedule -->/, "the schedule marker was left in the page");
   assert.match(html, /<iframe class="calendar"|The session schedule is coming soon/);
 });
+
+test("the favicon is built in every form, and every page links it", () => {
+  const png = (file) => readFileSync(resolve(dist, file)).subarray(0, 24);
+  for (const [file, size] of [["favicon.png", 32], ["apple-touch-icon.png", 180]]) {
+    const head = png(file);
+    assert.equal(head.toString("latin1", 1, 4), "PNG", `${file} is not a PNG`);
+    assert.equal(head.readUInt32BE(16), size, `${file} is not ${size} wide`);
+  }
+  assert.match(readFileSync(resolve(dist, "favicon.svg"), "utf8"), /^<svg /);
+  for (const page of pages) {
+    const html = readFileSync(resolve(dist, page), "utf8");
+    for (const href of ["/favicon.svg", "/favicon.png", "/apple-touch-icon.png"]) {
+      assert.ok(html.includes(`href="${href}"`), `${page} does not link ${href}`);
+    }
+  }
+});
