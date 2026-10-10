@@ -5,7 +5,7 @@
 // re-fetches the feed on its own, so a session moved here moves there.
 //
 // The ID is public by design: it is how a public calendar is shared.
-export const CALENDAR_ID = "";
+export const CALENDAR_ID = "8c457a44e95e8c60e3d8688ae0dbc9470c26a9c5ec50784f73be297433cf55eb@group.calendar.google.com";
 
 const TIME_ZONE = "America/Los_Angeles";
 
