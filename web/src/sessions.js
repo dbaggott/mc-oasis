@@ -11,9 +11,9 @@ export function sessionRows(sessions, timeZone, now = new Date()) {
   return sessions.map(({ start, end, title, description }) => {
     const from = new Date(start);
     const to = new Date(end);
-    const [{ value: m }, , { value: d }, , { value: y }] = isoDate.formatToParts(from);
+    const parts = Object.fromEntries(isoDate.formatToParts(from).map(({ type, value }) => [type, value]));
     return {
-      date: `${y}-${m}-${d}`,
+      date: `${parts.year}-${parts.month}-${parts.day}`,
       weekday: weekday.format(from),
       day: day.format(from),
       month: month.format(from),
@@ -25,3 +25,10 @@ export function sessionRows(sessions, timeZone, now = new Date()) {
   });
 }
 
+
+// The zone's everyday name, "Pacific Time" say.
+export function zoneName(timeZone) {
+  return new Intl.DateTimeFormat("en-US", { timeZone, timeZoneName: "longGeneric" })
+    .formatToParts(new Date())
+    .find((part) => part.type === "timeZoneName").value;
+}

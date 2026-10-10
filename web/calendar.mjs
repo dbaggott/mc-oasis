@@ -2,7 +2,7 @@
 // that adds the calendar to a Google account, the iCalendar feed Apple
 // Calendar, Outlook and the rest subscribe to, and the upcoming sessions, which
 // src/schedule.js fetches from the API. A subscriber's calendar re-fetches the
-// feed on its own, so a session moved there moves here too.
+// feed on its own, so a session moved in the calendar moves there too.
 import { CALENDAR_ID, feedAddress, TIME_ZONE } from "../shared/calendar.js";
 
 const escape = (text) => text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);

@@ -1,7 +1,7 @@
 // The Schedule page: lists the upcoming sessions from /api/schedule in place of
 // the link to Google's view of the calendar, which stays if they can't be read.
 import "./main.js";
-import { sessionRows } from "./sessions.js";
+import { sessionRows, zoneName } from "./sessions.js";
 
 const box = document.querySelector(".sessions");
 const fallback = box?.firstElementChild;
@@ -49,7 +49,7 @@ function list({ sessions, timeZone }) {
   }
   const zone = document.createElement("p");
   zone.className = "sessions-note";
-  zone.textContent = "Times are Pacific.";
+  zone.textContent = `Times are ${zoneName(timeZone)}.`;
   box.replaceChildren(ol, zone);
 }
 

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { sessionRows } from "../src/sessions.js";
+import { sessionRows, zoneName } from "../src/sessions.js";
 
 const zone = "America/Los_Angeles";
 
@@ -36,4 +36,8 @@ test("a session is under way from its start until its end", () => {
   assert.equal(underway("2026-11-03T00:29:59Z"), true);
   assert.equal(underway("2026-11-03T00:30:00Z"), false);
   assert.equal(sessionRows([session], zone)[0].description, "<b>d</b>");
+});
+
+test("the zone is named as people say it", () => {
+  assert.equal(zoneName(zone), "Pacific Time");
 });
