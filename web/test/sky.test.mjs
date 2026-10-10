@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { test } from "node:test";
+import { runInNewContext } from "node:vm";
 import { SKIES, SKY_BY_HOUR, skyFor } from "../src/sky.js";
 import { logoSvg } from "../logo.mjs";
 
@@ -49,4 +50,31 @@ test("a logo target covers its letter but not the hole in it", () => {
   const covers = (px, py) => o.rects.some(([x, y, w, h]) => px >= x && px < x + w && py >= y && py < y + h);
   assert.ok(covers(2, 14), "the O's left stroke");
   assert.ok(!covers(10, 14), "the O's hole");
+});
+
+// The head script as built, the one every page references.
+const markSkyScript = () => {
+  const dist = resolve(import.meta.dirname, "../dist");
+  const [, src] = readFileSync(resolve(dist, "index.html"), "utf8").match(/<script src="(\/assets\/mark-sky-[^"]+)"/);
+  return readFileSync(resolve(dist, `.${src}`), "utf8");
+};
+
+// The head script run as a browser would, at `hour` on a page whose query is `search`.
+function markedSky(search, hour) {
+  const documentElement = { dataset: {} };
+  const Clock = class extends Date {
+    getHours() {
+      return hour;
+    }
+  };
+  runInNewContext(markSkyScript(), { document: { documentElement }, location: { search }, URLSearchParams, Date: Clock });
+  return documentElement.dataset.sky;
+}
+
+test("the head script marks the sky sky.js picks", () => {
+  for (const search of ["", "?sky=noon", ...[...SKIES].map((sky) => `?sky=${sky}`)]) {
+    for (let hour = 0; hour < 24; hour++) {
+      assert.equal(markedSky(search, hour), skyFor(new URLSearchParams(search).get("sky"), hour), `${search} at ${hour}`);
+    }
+  }
 });

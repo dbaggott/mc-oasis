@@ -3,16 +3,15 @@
 // from any other origin.
 import "@fontsource-variable/karla";
 import "./styles.css";
-import { otherSkies, skyFor } from "./sky.js";
+import { otherSkies } from "./sky.js";
 
 // On a narrow screen the links fold behind a menu button. The stylesheet hides
 // them only once this script has run and marked the page, so without it they
 // stay in sight.
 document.documentElement.classList.add("js");
 
-// The stylesheet picks the backdrop from this, and loads only that one.
-const sky = skyFor(new URLSearchParams(location.search).get("sky"), new Date().getHours());
-document.documentElement.dataset.sky = sky;
+// The sky the page loaded with, as mark-sky.mjs's script marked it.
+const sky = document.documentElement.dataset.sky;
 
 // A hidden extra on the home page's logo: each letter of "OASIS" shows one of
 // the other skies, and "SMP" the page's own again. logoTargets() in logo.mjs
