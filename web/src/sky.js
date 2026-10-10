@@ -9,4 +9,6 @@ export const SKY_BY_HOUR = [
   "night",
 ];
 
+export const SKIES = new Set(SKY_BY_HOUR);
+
 export const skyAt = (hour) => SKY_BY_HOUR[hour];

@@ -10,10 +10,10 @@
 /* One palette, light text on dark earth, like Minecraft's own menus. */
 :root {
   --bg-deep: #1e150f;
-  --panel: #3a2b20;
+  /* The earth of the panels and tiles, letting the backdrop through. */
+  --panel: color-mix(in srgb, #3a2b20 85%, transparent);
   --panel-edge: #57432f;
-  /* The earth of the panels, letting a little of the backdrop through. */
-  --veil: color-mix(in srgb, var(--bg-deep) 88%, transparent);
+  --veil: color-mix(in srgb, var(--bg-deep) 60%, transparent);
   --ink: #f2ead8;
   --muted: #c9bba0;
   --gold: #ffff55;
@@ -34,8 +34,9 @@
   --button-hover-dark: #3d4170;
   --button-ink: #ffffff;
   --button-ink-shadow: #3f3f3f;
-  --tile: #1f1712;
-  --tile-hover: #2b2018;
+  --tile: color-mix(in srgb, #1f1712 62%, transparent);
+  --tile-hover: color-mix(in srgb, #2b2018 78%, transparent);
+  --frost: blur(4px);
   --tile-light: #4a3a2c;
   --input: #000000;
   --input-edge: #a0a0a0;
@@ -59,8 +60,7 @@ body {
   line-height: 1.6;
 }
 
-/* The gazebo, held still behind every page and darkened toward the bottom,
-   where the text sits. A fixed layer rather than a fixed background,
+/* The gazebo, held still behind every page. A fixed layer rather than a fixed background,
    which iOS Safari ignores, and as tall as the screen with its toolbars
    collapsed, so the picture doesn't rescale as they collapse on scroll.
    Anchored left of centre so the gazebo stays in view as the screen narrows. */
@@ -70,14 +70,7 @@ body::before {
   inset: 0 0 auto;
   height: 100lvh;
   z-index: -1;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--bg-deep) 10%, transparent),
-      color-mix(in srgb, var(--bg-deep) 20%, transparent) 45%,
-      color-mix(in srgb, var(--bg-deep) 75%, transparent)
-    ),
-    var(--backdrop) 12% 40% / cover no-repeat;
+  background: var(--backdrop) 12% 40% / cover no-repeat;
 }
 
 /* The sky by the visitor's own clock, as main.js marks it from sky.js. Until
@@ -88,32 +81,67 @@ body::before {
 }
 
 [data-sky="night"] {
-  --backdrop: url("./gazebo-night.avif");
+  --backdrop: url("./gazebo-night.webp");
 }
 
 [data-sky="predawn"] {
-  --backdrop: url("./gazebo-predawn.avif");
+  --backdrop: url("./gazebo-predawn.webp");
 }
 
 [data-sky="sunrise"] {
-  --backdrop: url("./gazebo-sunrise.avif");
+  --backdrop: url("./gazebo-sunrise.webp");
 }
 
 [data-sky="dawn"] {
-  --backdrop: url("./gazebo-dawn.avif");
+  --backdrop: url("./gazebo-dawn.webp");
 }
 
 [data-sky="day"] {
-  --backdrop: url("./gazebo-day.avif");
+  --backdrop: url("./gazebo-day.webp");
 }
 
 [data-sky="evening"] {
-  --backdrop: url("./gazebo-evening.avif");
+  --backdrop: url("./gazebo-evening.webp");
 }
 
 @media (scripting: none) {
   :root {
+    --backdrop: url("./gazebo-dawn.webp");
+  }
+}
+
+/* AVIF, whose 10-bit gradients don't band, wherever the browser can take it:
+   every browser that understands image-set()'s type() also decodes AVIF. The
+   WebP above is for the rest, chiefly iPads too old to leave iOS 15. */
+@supports (background-image: image-set("" type("image/avif"))) {
+  [data-sky="night"] {
+    --backdrop: url("./gazebo-night.avif");
+  }
+
+  [data-sky="predawn"] {
+    --backdrop: url("./gazebo-predawn.avif");
+  }
+
+  [data-sky="sunrise"] {
+    --backdrop: url("./gazebo-sunrise.avif");
+  }
+
+  [data-sky="dawn"] {
     --backdrop: url("./gazebo-dawn.avif");
+  }
+
+  [data-sky="day"] {
+    --backdrop: url("./gazebo-day.avif");
+  }
+
+  [data-sky="evening"] {
+    --backdrop: url("./gazebo-evening.avif");
+  }
+
+  @media (scripting: none) {
+    :root {
+      --backdrop: url("./gazebo-dawn.avif");
+    }
   }
 }
 
@@ -121,6 +149,8 @@ body::before {
 .intro,
 .page {
   background: var(--veil);
+  -webkit-backdrop-filter: var(--frost);
+  backdrop-filter: var(--frost);
   border: 2px solid #000000;
   box-shadow:
     inset 0 2px 0 var(--panel-edge),
@@ -221,6 +251,8 @@ code {
   color: var(--ink);
   text-decoration: none;
   background: var(--tile);
+  -webkit-backdrop-filter: var(--frost);
+  backdrop-filter: var(--frost);
   border: 2px solid #000000;
   box-shadow:
     inset 0 2px 0 var(--tile-light),
@@ -265,6 +297,8 @@ code {
 .nav-toggle {
   display: none;
   background: var(--tile);
+  -webkit-backdrop-filter: var(--frost);
+  backdrop-filter: var(--frost);
   border: 2px solid #000000;
   box-shadow:
     inset 0 2px 0 var(--tile-light),
