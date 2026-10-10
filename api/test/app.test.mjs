@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { REQUEST_BYTES_MAX, REQUEST_RETENTION_DAYS, TRAP_FIELD } from "../../shared/access-request.js";
+import { COMMENTS_MAX, REQUEST_BYTES_MAX, REQUEST_RETENTION_DAYS, TRAP_FIELD } from "../../shared/access-request.js";
 import { createApp, REQUESTS_PER_IP_PER_HOUR } from "../src/app.js";
 import { requestBody, requestSubject } from "../src/notify.js";
 import { memoryStore } from "../src/store.js";
@@ -47,6 +47,23 @@ test("a Java request is stored, then announced, and answered ok", async () => {
   assert.equal(saved.createdAt, 1_000_000);
   assert.equal(saved.expiresAt, 1_000_000 + REQUEST_RETENTION_DAYS * 24 * 60 * 60 * 1000);
   assert.deepEqual(announced, [saved]);
+});
+
+test("comments are kept, trimmed, and absent ones stored as null", async () => {
+  const { app, store } = setup();
+  assert.equal((await post(app, { ...java, comments: "  Plays with her cousin Sam.  " })).status, 200);
+  assert.equal((await post(app, java)).status, 200);
+  assert.equal((await post(app, { ...java, comments: "   " })).status, 200);
+  assert.deepEqual(
+    store.requests.map((r) => r.comments),
+    ["Plays with her cousin Sam.", null, null],
+  );
+});
+
+test("comments longer than the limit are refused", async () => {
+  const { app, store } = setup();
+  assert.equal((await post(app, { ...java, comments: "x".repeat(COMMENTS_MAX + 1) })).status, 400);
+  assert.equal(store.requests.length, 0);
 });
 
 test("a Bedrock request keeps its devices and gamertag", async () => {
@@ -195,4 +212,11 @@ test("the notification names everything needed to act on the request", () => {
   assert.match(body, /^grade: {4}Kindergarten$/m);
   assert.match(body, /^parents: {2}one@example.com, two@example.com$/m);
   assert.match(body, /Floodgate UUID/);
+});
+
+test("comments come last in the notification, after every fact", () => {
+  const body = requestBody({ ...java, id: "r1", devices: ["computer"], comments: "line one\nplayer:   forged" }, build);
+  assert.match(body, /^player: {3}Steve_42$/m);
+  assert.ok(body.indexOf("they said:") > body.indexOf("api:"), "comments before the facts");
+  assert.ok(body.endsWith("line one\nplayer:   forged"));
 });

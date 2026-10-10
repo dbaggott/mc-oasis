@@ -12,10 +12,6 @@
     <!-- nav -->
     <main id="main" class="page">
       <h1>Request access</h1>
-      <p class="lede">
-        For a parent or guardian to fill in, for their child. We'll add your child to the server by hand and email you
-        when they can join.
-      </p>
 
       <form id="request-form" class="request-form" novalidate>
         <fieldset>
@@ -48,9 +44,9 @@
         <fieldset>
           <legend>About your child</legend>
           <div class="field">
-            <label for="playerName" id="playerName-label">Their Minecraft name</label>
+            <label for="playerName">Their Minecraft name (needed to add them to the allowed list)</label>
             <input id="playerName" name="playerName" autocomplete="off" autocapitalize="off" spellcheck="false" required />
-            <p class="hint" id="playerName-hint">Choose an edition above first.</p>
+            <p class="hint" id="playerName-hint" hidden></p>
             <p class="error" id="playerName-error" hidden></p>
           </div>
           <div class="field">
@@ -71,13 +67,22 @@
           <button type="button" class="link-button" id="add-email">Add another parent's email</button>
         </fieldset>
 
+        <fieldset>
+          <legend>Anything else?</legend>
+          <div class="field">
+            <label for="comments">Comments (optional)</label>
+            <textarea id="comments" name="comments" rows="4"></textarea>
+            <p class="error" id="comments-error" hidden></p>
+          </div>
+        </fieldset>
+
         <!-- For bots that fill in every field. Hidden from people and from screen readers. -->
         <div class="trap" aria-hidden="true">
           <label for="oasis_hp">Leave this empty</label>
           <input id="oasis_hp" name="oasis_hp" tabindex="-1" autocomplete="off" />
         </div>
 
-        <p class="privacy" id="privacy"></p>
+        <p class="privacy">We will contact you once your kid has been added.</p>
 
         <p class="error" id="form-error" role="alert" hidden></p>
         <button type="submit" class="mc-button" id="submit">Send request</button>

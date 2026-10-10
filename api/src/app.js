@@ -15,6 +15,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import {
   BEDROCK_NAME_PATTERN,
+  COMMENTS_MAX,
   DEVICES,
   EMAIL_MAX,
   GRADES,
@@ -41,6 +42,7 @@ const common = {
     .min(1)
     .max(PARENT_EMAILS_MAX)
     .transform((emails) => [...new Set(emails)]),
+  comments: z.string().trim().max(COMMENTS_MAX).optional(),
   // `unknown`, so that nothing put in the trap can be refused: a validation
   // error names the field, which would tell a bot which one to leave alone.
   [TRAP_FIELD]: z.unknown().optional(),
@@ -159,6 +161,7 @@ export function createApp({ store, notify, build, now = Date.now }) {
         devices: body.platform === "java" ? ["computer"] : body.devices,
         grade: body.grade,
         parentEmails: body.parentEmails,
+        comments: body.comments || null,
       };
 
       // Stored before it is announced, so a notification never names a request

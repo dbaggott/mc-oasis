@@ -595,7 +595,8 @@ code {
 
 /* Text inputs like Minecraft's: black, with a grey border. */
 .field input,
-.field select {
+.field select,
+.field textarea {
   font: inherit;
   color: var(--ink);
   background: var(--input);
@@ -603,6 +604,10 @@ code {
   padding: 0.6em 0.75em;
   width: 100%;
   min-height: 44px;
+}
+
+.field textarea {
+  resize: vertical;
 }
 
 .field .hint {

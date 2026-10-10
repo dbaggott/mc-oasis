@@ -4,12 +4,12 @@
 import "./main.js";
 import {
   BEDROCK_NAME_PATTERN,
+  COMMENTS_MAX,
   DEVICES,
   EMAIL_MAX,
   GRADES,
   JAVA_NAME_PATTERN,
   PARENT_EMAILS_MAX,
-  REQUEST_RETENTION_DAYS,
   TRAP_FIELD,
 } from "../../shared/access-request.js";
 
@@ -19,21 +19,17 @@ const submit = document.getElementById("submit");
 const devicesFieldset = document.getElementById("devices-fieldset");
 const devicesBox = document.getElementById("devices");
 const playerName = document.getElementById("playerName");
-const playerNameLabel = document.getElementById("playerName-label");
 const playerNameHint = document.getElementById("playerName-hint");
 const grade = document.getElementById("grade");
 const emails = document.getElementById("emails");
 const addEmail = document.getElementById("add-email");
+const comments = document.getElementById("comments");
+comments.maxLength = COMMENTS_MAX;
 
-const NAME_PROMPTS = {
-  java: {
-    label: "Their Java username",
-    hint: "The name shown in the launcher: 3 to 16 letters, numbers or underscores.",
-  },
-  bedrock: {
-    label: "Their Xbox gamertag",
-    hint: "The gamertag on the Microsoft account they sign in to Minecraft with, including any #1234 at the end.",
-  },
+// What a name looks like for each edition, shown once one is chosen.
+const NAME_HINTS = {
+  java: "Their Java username, as shown in the launcher: 3 to 16 letters, numbers or underscores.",
+  bedrock: "Their Xbox gamertag: the one on the Microsoft account they sign in to Minecraft with, including any #1234 at the end.",
 };
 
 for (const [value, label] of Object.entries(DEVICES)) {
@@ -54,11 +50,6 @@ for (const [value, label] of Object.entries(DEVICES)) {
 for (const value of ["K", ...Array.from({ length: 12 }, (_, i) => String(i + 1))]) {
   grade.add(new Option(GRADES[value], value));
 }
-
-document.getElementById("privacy").textContent =
-  "We use these answers only to let your child in and to write to you about it. " +
-  `We keep each request for ${REQUEST_RETENTION_DAYS} days, and we're sent an email copy of it when it arrives. ` +
-  "This site sets no cookies and runs no tracking.";
 
 function addEmailField() {
   const index = emails.querySelectorAll("input").length;
@@ -85,8 +76,8 @@ form.elements.platform.forEach((radio) =>
   radio.addEventListener("change", () => {
     const chosen = platform();
     devicesFieldset.hidden = chosen !== "bedrock";
-    playerNameLabel.textContent = NAME_PROMPTS[chosen].label;
-    playerNameHint.textContent = NAME_PROMPTS[chosen].hint;
+    playerNameHint.textContent = NAME_HINTS[chosen];
+    playerNameHint.hidden = false;
     clearErrors();
   }),
 );
@@ -135,6 +126,8 @@ function collect() {
     problems.push(["parentEmails", "Check the email addresses: one doesn't look right."]);
 
   const body = { platform: chosen, playerName: name, grade: grade.value, parentEmails };
+  const note = comments.value.trim();
+  if (note) body.comments = note;
   if (chosen === "bedrock") body.devices = devices;
   const trap = form.elements[TRAP_FIELD].value;
   if (trap) body[TRAP_FIELD] = trap;

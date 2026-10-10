@@ -54,6 +54,9 @@ export const BEDROCK_NAME_PATTERN = /^[\p{L}\p{N}][\p{L}\p{N} _]{0,15}(#[0-9]{1,
 export const PARENT_EMAILS_MAX = 3;
 export const EMAIL_MAX = 254;
 
+// The optional free-text box: anything the parent wants to add.
+export const COMMENTS_MAX = 1_000;
+
 // The honeypot. The page hides a field by this name, and anything in it came
 // from something filling the form blind; the route drops that request while
 // answering as if it had kept it. Named so that no browser or password manager
@@ -61,10 +64,10 @@ export const EMAIL_MAX = 254;
 export const TRAP_FIELD = "oasis_hp";
 
 // The largest body the route reads, in bytes of JSON, checked from
-// Content-Length before parsing.
-export const REQUEST_BYTES_MAX = 4_000;
+// Content-Length before parsing. Room for a full comments box in any script,
+// at up to four bytes a character, alongside every other field.
+export const REQUEST_BYTES_MAX = 8_000;
 
 // Requests are deleted this long after they arrive. Long enough to act on one;
-// short enough that nothing about a child is kept indefinitely. The page tells
-// parents this, so it reads the same constant.
+// short enough that nothing about a child is kept indefinitely.
 export const REQUEST_RETENTION_DAYS = 90;

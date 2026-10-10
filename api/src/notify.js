@@ -20,7 +20,8 @@ function hasConsole(request) {
   return request.devices.some((device) => CONSOLE_DEVICES.includes(device));
 }
 
-// Plain text for a mail client, one fact per line.
+// Plain text for a mail client, one fact per line, then the parent's comments
+// last, so free text with line breaks in it cannot push a fact out of place.
 export function requestBody(request, build) {
   const lines = [
     `player:   ${request.playerName}`,
@@ -37,6 +38,9 @@ export function requestBody(request, build) {
   // (apps/mc-oasis/variables.tf in dbaggott/infrastructure).
   if (request.platform === "bedrock") {
     lines.push("", "Bedrock: whitelist by Floodgate UUID, from the gamertag's XUID.");
+  }
+  if (request.comments) {
+    lines.push("", "they said:", request.comments);
   }
   return lines.join("\n");
 }
