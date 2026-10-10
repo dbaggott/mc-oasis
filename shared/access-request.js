@@ -6,20 +6,20 @@
 // it takes to set up the child's access and to reach the parent about it: no
 // names, no ages, nothing the child types themselves.
 
-// Where the child will play. Java runs on a computer and nowhere else, so any
-// other device means Bedrock; a computer alone leaves the edition open. Anything
-// but a computer or a phone is a console, and consoles can't add a server by
-// address, so a request naming one is the signal that console joining is wanted.
+// Where the child will play. Java runs on a computer and nowhere else, so a
+// phone, tablet or console means Bedrock; a computer alone leaves the edition
+// open. Consoles can't add a server by address, so a request naming one is the
+// signal that console joining is wanted; which console doesn't change that.
 export const DEVICES = {
   computer: "Computer",
   mobile: "Phone or tablet",
-  xbox: "Xbox",
-  playstation: "PlayStation",
-  switch: "Nintendo Switch",
-  other: "Something else",
+  console: "Game console",
 };
 
-export const CONSOLE_DEVICES = ["xbox", "playstation", "switch", "other"];
+// What a device covers, where its name alone might leave a parent unsure.
+export const DEVICE_HINTS = {
+  console: "Xbox, PlayStation, Switch",
+};
 
 // "bedrock" when the devices settle it, else null: a computer can run either.
 export function editionOf(devices) {

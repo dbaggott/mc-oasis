@@ -14,7 +14,7 @@ const build = { branch: "main", commit: "abc123", builtAt: "2026-10-09T00:00:00Z
 const computer = { playerName: "Steve_42", devices: ["computer"], grade: "5", parentEmails: ["parent@example.com"] };
 const bedrock = {
   playerName: "Cool Gamer#1234",
-  devices: ["switch", "mobile"],
+  devices: ["console", "mobile"],
   grade: "K",
   parentEmails: ["one@example.com", "two@example.com"],
 };
@@ -73,7 +73,7 @@ test("a Bedrock request keeps its devices and gamertag", async () => {
   assert.equal((await post(app, bedrock)).status, 200);
   const [saved] = store.items.request;
   assert.equal(saved.playerName, "Cool Gamer#1234");
-  assert.deepEqual(saved.devices, ["switch", "mobile"]);
+  assert.deepEqual(saved.devices, ["console", "mobile"]);
 });
 
 test("a gamertag in another script is accepted", async () => {
@@ -189,7 +189,7 @@ test("/api/ping answers 200 to a bodied POST", async () => {
 });
 
 test("a console request is marked in the subject; a computer-only one is not", () => {
-  const consoleRequest = { ...bedrock, id: "r1", devices: ["xbox"] };
+  const consoleRequest = { ...bedrock, id: "r1", devices: ["console"] };
   const computerRequest = { ...computer, id: "r2", devices: ["computer"] };
   assert.equal(requestSubject(consoleRequest), "Oasis SMP access request (console)");
   assert.equal(requestSubject(computerRequest), "Oasis SMP access request");
@@ -207,7 +207,7 @@ test("the devices settle the edition: anything but a computer is Bedrock", () =>
 test("the notification names everything needed to act on the request", () => {
   const body = requestBody({ ...bedrock, id: "r1" }, build);
   assert.match(body, /^player: {3}Cool Gamer#1234$/m);
-  assert.match(body, /^devices: {2}Nintendo Switch, Phone or tablet$/m);
+  assert.match(body, /^devices: {2}Game console, Phone or tablet$/m);
   assert.match(body, /^grade: {4}Kindergarten$/m);
   assert.match(body, /^parents: {2}one@example.com, two@example.com$/m);
   assert.match(body, /Floodgate UUID/);

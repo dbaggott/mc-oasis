@@ -1,7 +1,7 @@
 // The request-access form: checks answers against the same rules the API
 // applies, and posts them to /api/access-requests.
 import "./main.js";
-import { COMMENTS_MAX, DEVICES, GRADES, isPlayerName } from "../../shared/access-request.js";
+import { COMMENTS_MAX, DEVICE_HINTS, DEVICES, GRADES, isPlayerName } from "../../shared/access-request.js";
 import { emailList, emailProblem, sendForm } from "./forms.js";
 
 const form = document.getElementById("request-form");
@@ -20,6 +20,11 @@ for (const [value, label] of Object.entries(DEVICES)) {
   input.value = value;
   const text = document.createElement("span");
   text.textContent = label;
+  if (DEVICE_HINTS[value]) {
+    const hint = document.createElement("small");
+    hint.textContent = DEVICE_HINTS[value];
+    text.append(hint);
+  }
   choice.append(input, text);
   devicesBox.append(choice);
 }

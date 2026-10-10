@@ -6,7 +6,7 @@
 // Never throws. By the time it runs the submission is stored, so a failed
 // publish costs the notification and not the submission, and answering 500
 // would tell a parent their request was lost when it was not.
-import { CONSOLE_DEVICES, DEVICES, editionOf, GRADES } from "../../shared/access-request.js";
+import { DEVICES, editionOf, GRADES } from "../../shared/access-request.js";
 
 // Never anything the parent typed: SNS refuses a subject over 99 characters or
 // holding a line break, and a refused publish is a silently missing
@@ -17,7 +17,7 @@ export function requestSubject(request) {
 }
 
 function hasConsole(request) {
-  return request.devices.some((device) => CONSOLE_DEVICES.includes(device));
+  return request.devices.includes("console");
 }
 
 // Plain text for a mail client, one fact per line, then the parent's comments
