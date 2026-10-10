@@ -13,7 +13,7 @@
   /* The earth of the panels, letting the backdrop through. */
   --panel: color-mix(in srgb, #3a2b20 78%, transparent);
   --panel-edge: #57432f;
-  --veil: color-mix(in srgb, var(--bg-deep) 78%, transparent);
+  --veil: color-mix(in srgb, var(--bg-deep) 84%, transparent);
   --ink: #f2ead8;
   --muted: #c9bba0;
   --gold: #ffff55;
