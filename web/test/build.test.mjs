@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 import { test } from "node:test";
 import { pages } from "../pages.mjs";
 import { logoSvg } from "../logo.mjs";
+import { BLOCKS_FILE, PICTURES } from "../src/creeper.js";
 import { parseRules } from "../rules.mjs";
 
 const dist = resolve(import.meta.dirname, "../dist");
@@ -163,6 +164,24 @@ test("the favicon is built in every form, and every page links it", () => {
       assert.ok(html.includes(`href="${href}"`), `${page} does not link ${href}`);
     }
   }
+});
+
+// creeper.js fetches these from script, where the reference check above can't see them.
+test("every file the creeper fetches is built", () => {
+  assertBuilt("creeper.js", dist, [...PICTURES, BLOCKS_FILE]);
+});
+
+// The creeper walks from behind the M's centre block, between the M and the P.
+test("the logo's blocks are built, with the M and P the creeper walks among", () => {
+  const { blocks, ground } = JSON.parse(readFileSync(resolve(dist, `.${BLOCKS_FILE}`), "utf8"));
+  const smp = blocks.filter(({ word }) => word === 1);
+  assert.deepEqual(
+    blocks.filter(({ creeperStart }) => creeperStart).map(({ letter, letterColumn, row }) => [letter, letterColumn, row]),
+    [["M", 2, 2]],
+    "the creeper doesn't start behind the M's centre block",
+  );
+  assert.ok(smp.some(({ letter }) => letter === "P"), "no P");
+  assert.equal(Math.max(...smp.map(({ face: [, y, , h] }) => y + h)), ground, "SMP doesn't stand on the ground");
 });
 
 test("the home page's logo carries its targets", () => {

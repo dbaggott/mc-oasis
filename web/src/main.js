@@ -3,6 +3,7 @@
 // from any other origin.
 import "@fontsource-variable/karla";
 import "./styles.css";
+import { releaseCreeper } from "./creeper.js";
 import { otherSkies } from "./sky.js";
 
 // On a narrow screen the links fold behind a menu button. The stylesheet hides
@@ -41,12 +42,26 @@ function loadSky(sky) {
 // lays the targets out in that order. Only the latest click's sky is shown.
 const skies = [...otherSkies(sky), sky];
 let wanted = sky;
-document.querySelectorAll(".logo-targets path").forEach((target, i) => {
+document.querySelectorAll('.logo-targets [data-egg="sky"]').forEach((target, i) => {
   target.addEventListener("click", async () => {
     wanted = skies[i];
     await loadSky(wanted);
     if (wanted === skies[i]) document.documentElement.dataset.sky = wanted;
   });
+});
+
+// Another: the centre of the M in "SMP" lets out a creeper, which walks out
+// from behind the letters and blows up. One creeper at a time.
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+let creeperOut = false;
+document.querySelector('.logo-targets [data-egg="creeper"]')?.addEventListener("click", async (event) => {
+  if (creeperOut) return;
+  creeperOut = true;
+  try {
+    await releaseCreeper(event.currentTarget, { walk: !reducedMotion.matches });
+  } finally {
+    creeperOut = false;
+  }
 });
 
 const toggle = document.querySelector(".nav-toggle");

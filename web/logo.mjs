@@ -47,7 +47,8 @@ function noise(x, y, salt) {
 }
 
 // Lay a word out as block coordinates, one blank column between letters, each
-// block marked with the index of the letter it belongs to.
+// block marked with the letter it belongs to (its index and its character) and
+// its column within that letter's glyph.
 function layout(word) {
   const blocks = [];
   let x = 0;
@@ -55,12 +56,12 @@ function layout(word) {
     const glyph = GLYPHS[letter];
     glyph.forEach((row, y) => {
       [...row].forEach((cell, dx) => {
-        if (cell === "#") blocks.push([x + dx, y, i]);
+        if (cell === "#") blocks.push({ x: x + dx, y, index: i, letter, column: dx });
       });
     });
     x += glyph[0].length + 1;
   });
-  return { blocks, letterCount: word.length, width: x - 1, height: 7 };
+  return { blocks, width: x - 1, height: 7 };
 }
 
 // Rectangles collected by colour and written as one <path> per colour, so the
@@ -76,30 +77,30 @@ function paths(rects) {
 
 // One word in texture-pixel units, each block SUB of them across, at (ox, oy).
 // Drawn in three passes so each sits under the next: outline, extruded side,
-// face. Alongside the art, each letter's outline rectangles: together they
-// cover exactly the letter, its black border included.
+// face. Alongside the art, its blocks, each with the rectangle of each pass it
+// is drawn in: together a letter's outlines cover exactly the letter, its black
+// border included.
 function word(text, texture, ox, oy, salt) {
-  const { blocks, letterCount, width, height } = layout(text);
+  const { blocks, width, height } = layout(text);
   const t = TEXTURES[texture];
   const depth = 3;
   const under = [];
   const face = [];
-  const letters = Array.from({ length: letterCount }, () => []);
+  const outlined = blocks.map((block) => ({
+    ...block,
+    outline: [ox + block.x * SUB - 1, oy + block.y * SUB - 1, SUB + 2, SUB + depth + 2],
+    side: [ox + block.x * SUB, oy + block.y * SUB + SUB, SUB, depth],
+    face: [ox + block.x * SUB, oy + block.y * SUB, SUB, SUB],
+  }));
 
-  for (const [bx, by, letter] of blocks) {
-    const outline = [ox + bx * SUB - 1, oy + by * SUB - 1, SUB + 2, SUB + depth + 2];
-    under.push([...outline, OUTLINE]);
-    letters[letter].push(outline);
-  }
-  for (const [bx, by] of blocks) {
-    under.push([ox + bx * SUB, oy + by * SUB + SUB, SUB, depth, t.side]);
-  }
+  for (const { outline } of outlined) under.push([...outline, OUTLINE]);
+  for (const { side } of outlined) under.push([...side, t.side]);
   // The bevel runs along the letter's own edges, not each block's, so a letter
   // reads as one carved piece: lit where it faces up or left, shaded where it
   // faces down or right.
-  const filled = new Set(blocks.map(([x, y]) => `${x},${y}`));
+  const filled = new Set(blocks.map(({ x, y }) => `${x},${y}`));
   const open = (x, y) => !filled.has(`${x},${y}`);
-  for (const [bx, by] of blocks) {
+  for (const { x: bx, y: by } of blocks) {
     for (let sy = 0; sy < SUB; sy++) {
       for (let sx = 0; sx < SUB; sx++) {
         let fill = t.face[Math.floor(noise(bx * SUB + sx, by * SUB + sy, salt) * t.face.length)];
@@ -113,7 +114,9 @@ function word(text, texture, ox, oy, salt) {
   // neighbour's face.
   return {
     svg: paths(under) + paths(face),
-    letters,
+    blocks: outlined,
+    texture,
+    rows: height,
     width: width * SUB,
     height: height * SUB + depth,
   };
@@ -133,16 +136,29 @@ export function logoSvg() {
   const gap = 4;
   const width = top.width * big + 2 * pad;
   const height = top.height * big + gap + bottom.height + 2 * pad;
-  const topPlace = `translate(${pad} ${pad}) scale(${big})`;
-  const bottomPlace = `translate(${(width - bottom.width) / 2} ${pad + top.height * big + gap})`;
+  // Where each word is placed in the logo, and at what scale.
+  top.place = { x: pad, y: pad, scale: big };
+  bottom.place = { x: (width - bottom.width) / 2, y: pad + top.height * big + gap, scale: 1 };
+  const transform = ({ x, y, scale }) => `translate(${x} ${y})${scale === 1 ? "" : ` scale(${scale})`}`;
+  const topPlace = transform(top.place);
+  const bottomPlace = transform(bottom.place);
+  const letters = ({ blocks }) => Object.values(Object.groupBy(blocks, ({ index }) => index)).map((group) => group.map((block) => block.outline));
+  // The block in the middle of the M, where its two strokes meet.
+  const mCentre = bottom.blocks.find(({ letter, column, y }) => letter === "M" && column === 2 && y === 2);
+  if (!mCentre) throw new Error("The logo's M has no centre block for the creeper to come out of.");
   logo = {
     width,
     height,
-    // Each letter of "OASIS", then "SMP" as one: the rectangles it covers, in
-    // its word's units, and where that word is placed in the logo.
+    words: [top, bottom],
+    mCentre,
+    // What each target does when clicked, the rectangles it covers, in its
+    // word's units, and where that word is placed in the logo: each letter of
+    // "OASIS" and "SMP" as one change the sky, and the M's centre block, over
+    // "SMP", lets out the creeper.
     targets: [
-      ...top.letters.map((rects) => ({ place: topPlace, rects })),
-      { place: bottomPlace, rects: bottom.letters.flat() },
+      ...letters(top).map((rects) => ({ egg: "sky", place: topPlace, rects })),
+      { egg: "sky", place: bottomPlace, rects: letters(bottom).flat() },
+      { egg: "creeper", place: bottomPlace, rects: [mCentre.outline] },
     ],
     svg: [
       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" shape-rendering="crispEdges">`,
@@ -161,16 +177,47 @@ export function logoImg(className) {
   return `<img class="${className}" src="/logo.svg" alt="Oasis SMP" width="${width}" height="${height}" />`;
 }
 
-// Invisible targets over the logo, one on each letter of "OASIS" and one on
-// "SMP", in that order, each the letter's own shape so a click in a letter's
-// hole or between letters misses. Drawn in the logo's units so they scale with
-// its <img>; laid on top of it by the stylesheet; main.js gives them their clicks.
+// Invisible targets over the logo, in logoSvg's order, each marked with what
+// it does and shaped like what it covers, so a click in a letter's hole or
+// between letters misses. Later targets lie over earlier ones. Drawn in the
+// logo's units so they scale with its <img>; laid on top of it by the
+// stylesheet; main.js gives them their clicks.
 export function logoTargets() {
   const { width, height, targets } = logoSvg();
   const shapes = targets.map(
-    ({ place, rects }) => `<path transform="${place}" d="${rects.map(([x, y, w, h]) => `M${x} ${y}h${w}v${h}h${-w}z`).join("")}"/>`,
+    ({ egg, place, rects }) =>
+      `<path data-egg="${egg}" transform="${place}" d="${rects.map(([x, y, w, h]) => `M${x} ${y}h${w}v${h}h${-w}z`).join("")}"/>`,
   );
   return `<svg class="logo-targets" viewBox="0 0 ${width} ${height}" aria-hidden="true">${shapes.join("")}</svg>`;
+}
+
+// The logo as blocks, served at /logo-blocks.json for src/creeper.js to draw
+// the logo from a block at a time, so the creeper can blow blocks away: which
+// block the creeper starts behind (the one whose target lets it out), each
+// block's word, the block it is made of, its place in its word's grid, and,
+// in the logo's units, the rectangle of each pass it is drawn in; the colours
+// of the outline and the sides; and the line along the foot of "SMP", where
+// the ground is.
+export function logoBlocks() {
+  const { width, height, words, mCentre } = logoSvg();
+  const blocks = words.flatMap(({ blocks, texture, place }, word) => {
+    const placed = ([x, y, w, h]) => [place.x + x * place.scale, place.y + y * place.scale, w * place.scale, h * place.scale];
+    return blocks.map((block) => ({
+      ...(block === mCentre && { creeperStart: true }),
+      word,
+      block: texture,
+      column: block.x,
+      row: block.y,
+      letter: block.letter,
+      letterColumn: block.column,
+      outline: placed(block.outline),
+      side: placed(block.side),
+      face: placed(block.face),
+    }));
+  });
+  const bottom = words.at(-1);
+  const colours = { outline: OUTLINE, ...Object.fromEntries(words.map(({ texture }) => [texture, TEXTURES[texture].side])) };
+  return { width, height, ground: bottom.place.y + bottom.rows * SUB, colours, blocks };
 }
 
 // Dirt, darkened the way Minecraft darkens it behind its menus, for the

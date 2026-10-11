@@ -551,6 +551,8 @@ code {
   margin: 0 auto;
   padding: 48px 16px 40px;
   text-align: center;
+  /* So the creeper's explosion never widens the page. */
+  overflow-x: clip;
 }
 
 .logo {
@@ -563,6 +565,10 @@ code {
   display: block;
   width: 100%;
   height: auto;
+}
+
+.logo-art,
+.logo-blocks {
   filter: drop-shadow(0 8px 0 rgba(0, 0, 0, 0.35));
 }
 
@@ -578,6 +584,71 @@ code {
 .logo-targets path {
   fill: transparent;
   pointer-events: fill;
+}
+
+/* The logo redrawn as its blocks, and the scenes behind and in front of its
+   letters that the creeper its M lets out walks through (creeper.js). */
+.logo-built .logo-art {
+  visibility: hidden;
+}
+
+.creeper-scene,
+.logo-blocks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.creeper-scene,
+.creeper,
+.creeper-part {
+  transform-style: preserve-3d;
+}
+
+.logo-piece,
+.creeper,
+.creeper-part,
+.creeper-face,
+.explosion-particle {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.logo-face {
+  background-image: url("/logo.svg");
+  background-repeat: no-repeat;
+}
+
+.creeper-face {
+  transform-origin: 0 0;
+  backface-visibility: hidden;
+  background-image: url("/minecraft/creeper.png");
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+
+/* The face's lighting, then the fuse's white over it, in the game's order. */
+.creeper-face::before,
+.creeper-face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.creeper-face::before {
+  background: #000000;
+  opacity: var(--shade, 0);
+}
+
+.creeper-face::after {
+  background: #ffffff;
+  opacity: var(--white, 0);
+}
+
+.explosion-particle {
+  background-size: 100% 100%;
+  image-rendering: pixelated;
 }
 
 /* The yellow line that sits tilted on the corner of every Minecraft title. */
