@@ -63,8 +63,7 @@ document.querySelector('.logo-targets [data-egg="creeper"]')?.addEventListener("
   }
 });
 
-// Each element is placed over the logo in percentages of its box, so a resize
-// mid-explosion keeps everything where it was on the logo.
+// Places an element over the logo in percentages of the logo's box.
 function placeOnLogo(element, logo, { left, top, width, height }) {
   const box = logo.getBoundingClientRect();
   const percent = (value, of) => `${(value / of) * 100}%`;
@@ -87,11 +86,15 @@ async function releaseCreeper(target) {
   const creeper = new Image();
   creeper.className = "creeper";
   creeper.alt = "";
+  const loaded = new Promise((resolve) => {
+    creeper.onload = () => resolve(true);
+    creeper.onerror = () => resolve(false);
+  });
   creeper.src = "/creeper.svg";
-  await creeper.decode();
+  if (!(await loaded)) return;
   const width = creeper.naturalWidth * unit;
   const height = creeper.naturalHeight * unit;
-  // Standing on the block it came out of.
+  // Standing in front of the block it came out of, its feet at the block's foot.
   placeOnLogo(creeper, logo, {
     left: block.left + block.width / 2 - width / 2,
     top: block.bottom - height,

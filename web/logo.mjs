@@ -134,17 +134,17 @@ let logo;
 // never varies.
 export function logoSvg() {
   if (logo) return logo;
-  const big = OASIS_SCALE;
   const top = word("OASIS", "sandstone", 0, 0, 1);
   const bottom = word("SMP", "prismarine", 0, 0, 2);
   const pad = 2;
   const gap = 4;
-  const width = top.width * big + 2 * pad;
-  const height = top.height * big + gap + bottom.height + 2 * pad;
-  const topPlace = `translate(${pad} ${pad}) scale(${big})`;
-  const bottomPlace = `translate(${(width - bottom.width) / 2} ${pad + top.height * big + gap})`;
+  const width = top.width * OASIS_SCALE + 2 * pad;
+  const height = top.height * OASIS_SCALE + gap + bottom.height + 2 * pad;
+  const topPlace = `translate(${pad} ${pad}) scale(${OASIS_SCALE})`;
+  const bottomPlace = `translate(${(width - bottom.width) / 2} ${pad + top.height * OASIS_SCALE + gap})`;
   // The block in the middle of the M, where its two strokes meet.
   const mCentre = bottom.blocks.find(({ letter, column, y }) => letter === "M" && column === 2 && y === 2);
+  if (!mCentre) throw new Error("The logo's M has no centre block for the creeper to come out of.");
   logo = {
     width,
     height,
@@ -189,7 +189,8 @@ export function logoTargets() {
 }
 
 // The creeper that comes out of the logo's M, one character per texture pixel:
-// '#' its mottled skin, 'f' its face, 's' the shadow its head casts on its body.
+// '#' its mottled skin, 'f' its face, 's' the shadow its head casts on its body,
+// 'o' the outline, which fills the gap between its legs.
 const CREEPER = [
   "########",
   "########",
@@ -208,11 +209,11 @@ const CREEPER = [
   "########",
   "########",
   "########",
-  "###..###",
-  "###..###",
-  "###..###",
-  "###..###",
-  "###..###",
+  "###oo###",
+  "###oo###",
+  "###oo###",
+  "###oo###",
+  "###oo###",
 ];
 
 const CREEPER_SKIN = ["#5dae4b", "#4f9e3f", "#6cc059", "#418a35", "#7fcf69", "#a8dd96"];
@@ -229,8 +230,7 @@ export function creeperSvg() {
   const skin = [];
   CREEPER.forEach((row, y) => {
     [...row].forEach((cell, x) => {
-      if (cell === ".") return;
-      const palette = { "#": CREEPER_SKIN, f: CREEPER_FACE, s: CREEPER_SHADE }[cell];
+      const palette = { "#": CREEPER_SKIN, f: CREEPER_FACE, s: CREEPER_SHADE, o: [OUTLINE] }[cell];
       outline.push([x, y, 3, 3, OUTLINE]);
       skin.push([x + 1, y + 1, 1, 1, palette[Math.floor(noise(x, y, 4) * palette.length)]]);
     });
