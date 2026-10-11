@@ -5,7 +5,7 @@ import { defineConfig } from "vite";
 import { pages } from "./pages.mjs";
 import { scheduleHtml } from "./calendar.mjs";
 import { navHtml } from "./chrome.mjs";
-import { faviconPng, faviconSvg, logoImg, logoSvg, logoTargets } from "./logo.mjs";
+import { faviconPng, faviconSvg, logoBlocks, logoImg, logoSvg, logoTargets } from "./logo.mjs";
 import { markSkyScript } from "./mark-sky.mjs";
 import { parseRules, rulesHtml } from "./rules.mjs";
 
@@ -30,12 +30,13 @@ const entryName = (page) => page.replace(/(\/index)?\.html$/, "");
 const markSkyFile = `assets/mark-sky-${createHash("sha256").update(markSkyScript()).digest("hex").slice(0, 8)}.js`;
 
 // Files drawn at build time: the script that marks the sky, and at the site's
-// root the logo every page's <img> shares and the favicon in each form browsers
-// ask for. <!-- logo --> in a page becomes the large logo, and every page's
-// <head> gets that script and the favicon links.
+// root the logo every page's <img> shares, the logo as blocks for the creeper,
+// and the favicon in each form browsers ask for. <!-- logo --> in a page becomes
+// the large logo, and every page's <head> gets that script and the favicon links.
 const artFiles = {
   [markSkyFile]: { type: "text/javascript", draw: markSkyScript },
   "logo.svg": { type: "image/svg+xml", draw: () => logoSvg().svg },
+  "logo-blocks.json": { type: "application/json", draw: () => JSON.stringify(logoBlocks()) },
   "favicon.svg": { type: "image/svg+xml", draw: faviconSvg },
   "favicon.png": { type: "image/png", draw: () => faviconPng(32) },
   "apple-touch-icon.png": { type: "image/png", draw: () => faviconPng(180) },

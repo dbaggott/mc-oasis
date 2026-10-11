@@ -551,6 +551,8 @@ code {
   margin: 0 auto;
   padding: 48px 16px 40px;
   text-align: center;
+  /* So the creeper's explosion never widens the page. */
+  overflow-x: clip;
 }
 
 .logo {
@@ -563,6 +565,10 @@ code {
   display: block;
   width: 100%;
   height: auto;
+}
+
+.logo-art,
+.logo-blocks {
   filter: drop-shadow(0 8px 0 rgba(0, 0, 0, 0.35));
 }
 
@@ -580,13 +586,26 @@ code {
   pointer-events: fill;
 }
 
-/* The creeper the logo's M lets out (creeper.js), in the logo's own 3D space
-   so that the letters hide it until it walks out in front of them. */
-.creeper-stage {
+/* The logo redrawn as its blocks, and the scenes behind and in front of its
+   letters that the creeper its M lets out walks through (creeper.js). */
+.logo-built .logo-art {
+  visibility: hidden;
+}
+
+.creeper-scene,
+.logo-blocks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.creeper-scene,
+.creeper,
+.creeper-part {
   transform-style: preserve-3d;
 }
 
-.creeper-world,
+.logo-piece,
 .creeper,
 .creeper-part,
 .creeper-face,
@@ -594,17 +613,11 @@ code {
   position: absolute;
   left: 0;
   top: 0;
-  pointer-events: none;
 }
 
-.creeper-world {
-  inset: 0;
-}
-
-.creeper-world,
-.creeper,
-.creeper-part {
-  transform-style: preserve-3d;
+.logo-face {
+  background-image: url("/logo.svg");
+  background-repeat: no-repeat;
 }
 
 .creeper-face {
