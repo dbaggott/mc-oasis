@@ -99,9 +99,8 @@ test("every file the stylesheets reference exists", () => {
   }
 });
 
-test("the logo and its creeper are built, and the home page shows the logo large", () => {
+test("the logo is built, and the home page shows the logo large", () => {
   assert.match(readFileSync(resolve(dist, "logo.svg"), "utf8"), /^<svg xmlns="http:\/\/www.w3.org\/2000\/svg"/);
-  assert.match(readFileSync(resolve(dist, "creeper.svg"), "utf8"), /^<svg xmlns="http:\/\/www.w3.org\/2000\/svg"/);
   const html = readFileSync(resolve(dist, "index.html"), "utf8");
   assert.doesNotMatch(html, /<!-- logo -->/, "the logo marker was left in the page");
   assert.match(html, /<img class="logo-art" src="\/logo.svg" alt="Oasis SMP"/);
@@ -164,6 +163,12 @@ test("the favicon is built in every form, and every page links it", () => {
       assert.ok(html.includes(`href="${href}"`), `${page} does not link ${href}`);
     }
   }
+});
+
+// creeper.js names these, from script, where the reference check above can't see them.
+test("the creeper's skin and explosion frames are built", () => {
+  const files = ["creeper.png", ...Array.from({ length: 16 }, (_, frame) => `explosion_${frame}.png`)];
+  assertBuilt("creeper.js", dist, files.map((file) => `/minecraft/${file}`));
 });
 
 test("the home page's logo carries its targets", () => {

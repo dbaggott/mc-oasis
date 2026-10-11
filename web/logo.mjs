@@ -1,5 +1,4 @@
-// The site's pixel art, drawn at build time: the logo, the favicon, and the
-// creeper hidden in the logo.
+// The site's pixel art, drawn at build time: the logo and the favicon.
 //
 // The Oasis SMP logo is drawn as an SVG of blocks, in the manner of
 // Minecraft's edition logos: chunky pixel letters, each pixel a textured block
@@ -124,24 +123,22 @@ function word(text, texture, ox, oy, salt) {
   };
 }
 
-// "OASIS" is drawn at this many times the scale of "SMP".
-const OASIS_SCALE = 1.5;
-
 let logo;
 
 // The whole logo as a standalone SVG file, served at /logo.svg for every page's
 // <img> to share, rather than inlined into each page. Drawn once per process: it
-// never varies.
+// never varies. "OASIS" is drawn at 1.5 times the scale of "SMP".
 export function logoSvg() {
   if (logo) return logo;
+  const big = 1.5;
   const top = word("OASIS", "sandstone", 0, 0, 1);
   const bottom = word("SMP", "prismarine", 0, 0, 2);
   const pad = 2;
   const gap = 4;
-  const width = top.width * OASIS_SCALE + 2 * pad;
-  const height = top.height * OASIS_SCALE + gap + bottom.height + 2 * pad;
-  const topPlace = `translate(${pad} ${pad}) scale(${OASIS_SCALE})`;
-  const bottomPlace = `translate(${(width - bottom.width) / 2} ${pad + top.height * OASIS_SCALE + gap})`;
+  const width = top.width * big + 2 * pad;
+  const height = top.height * big + gap + bottom.height + 2 * pad;
+  const topPlace = `translate(${pad} ${pad}) scale(${big})`;
+  const bottomPlace = `translate(${(width - bottom.width) / 2} ${pad + top.height * big + gap})`;
   // The block in the middle of the M, where its two strokes meet.
   const mCentre = bottom.blocks.find(({ letter, column, y }) => letter === "M" && column === 2 && y === 2);
   if (!mCentre) throw new Error("The logo's M has no centre block for the creeper to come out of.");
@@ -186,60 +183,6 @@ export function logoTargets() {
       `<path data-egg="${egg}" transform="${place}" d="${rects.map(([x, y, w, h]) => `M${x} ${y}h${w}v${h}h${-w}z`).join("")}"/>`,
   );
   return `<svg class="logo-targets" viewBox="0 0 ${width} ${height}" aria-hidden="true">${shapes.join("")}</svg>`;
-}
-
-// The creeper that comes out of the logo's M, one character per texture pixel:
-// '#' its mottled skin, 'f' its face, 's' the shadow its head casts on its body,
-// 'o' the outline, which fills the gap between its legs.
-const CREEPER = [
-  "########",
-  "########",
-  "#ff##ff#",
-  "#ff##ff#",
-  "###ff###",
-  "##ffff##",
-  "##ffff##",
-  "##f##f##",
-  "ssssssss",
-  "########",
-  "########",
-  "########",
-  "########",
-  "########",
-  "########",
-  "########",
-  "########",
-  "###oo###",
-  "###oo###",
-  "###oo###",
-  "###oo###",
-  "###oo###",
-];
-
-const CREEPER_SKIN = ["#5dae4b", "#4f9e3f", "#6cc059", "#418a35", "#7fcf69", "#a8dd96"];
-const CREEPER_FACE = ["#0e160c", "#16210f", "#1f2d1a"];
-const CREEPER_SHADE = ["#36732b", "#2f6626"];
-
-// The creeper as a standalone SVG, served at /creeper.svg. Its width and height
-// are its size in the logo's units: its texture pixels at the scale of
-// "OASIS", so it is drawn in the same blocks as the letters.
-export function creeperSvg() {
-  const width = CREEPER[0].length + 2;
-  const height = CREEPER.length + 2;
-  const outline = [];
-  const skin = [];
-  CREEPER.forEach((row, y) => {
-    [...row].forEach((cell, x) => {
-      const palette = { "#": CREEPER_SKIN, f: CREEPER_FACE, s: CREEPER_SHADE, o: [OUTLINE] }[cell];
-      outline.push([x, y, 3, 3, OUTLINE]);
-      skin.push([x + 1, y + 1, 1, 1, palette[Math.floor(noise(x, y, 4) * palette.length)]]);
-    });
-  });
-  return [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width * OASIS_SCALE}" height="${height * OASIS_SCALE}" shape-rendering="crispEdges">`,
-    paths(outline) + paths(skin),
-    "</svg>",
-  ].join("");
 }
 
 // Dirt, darkened the way Minecraft darkens it behind its menus, for the
