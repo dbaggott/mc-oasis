@@ -1,4 +1,5 @@
-// The site's pixel art, drawn at build time: the logo and the favicon.
+// The site's pixel art, drawn at build time: the logo, the favicon, and the
+// creeper hidden in the logo.
 //
 // The Oasis SMP logo is drawn as an SVG of blocks, in the manner of
 // Minecraft's edition logos: chunky pixel letters, each pixel a textured block
@@ -47,7 +48,8 @@ function noise(x, y, salt) {
 }
 
 // Lay a word out as block coordinates, one blank column between letters, each
-// block marked with the index of the letter it belongs to.
+// block marked with the letter it belongs to (its index and its character) and
+// its column within that letter's glyph.
 function layout(word) {
   const blocks = [];
   let x = 0;
@@ -55,7 +57,7 @@ function layout(word) {
     const glyph = GLYPHS[letter];
     glyph.forEach((row, y) => {
       [...row].forEach((cell, dx) => {
-        if (cell === "#") blocks.push([x + dx, y, i]);
+        if (cell === "#") blocks.push({ x: x + dx, y, index: i, letter, column: dx });
       });
     });
     x += glyph[0].length + 1;
@@ -76,7 +78,7 @@ function paths(rects) {
 
 // One word in texture-pixel units, each block SUB of them across, at (ox, oy).
 // Drawn in three passes so each sits under the next: outline, extruded side,
-// face. Alongside the art, each letter's outline rectangles: together they
+// face. Alongside the art, each block's outline rectangle: together a letter's
 // cover exactly the letter, its black border included.
 function word(text, texture, ox, oy, salt) {
   const { blocks, letterCount, width, height } = layout(text);
@@ -84,22 +86,24 @@ function word(text, texture, ox, oy, salt) {
   const depth = 3;
   const under = [];
   const face = [];
-  const letters = Array.from({ length: letterCount }, () => []);
+  const outlined = blocks.map((block) => ({
+    ...block,
+    outline: [ox + block.x * SUB - 1, oy + block.y * SUB - 1, SUB + 2, SUB + depth + 2],
+  }));
+  const letters = Array.from({ length: letterCount }, (_, i) =>
+    outlined.filter((block) => block.index === i).map((block) => block.outline),
+  );
 
-  for (const [bx, by, letter] of blocks) {
-    const outline = [ox + bx * SUB - 1, oy + by * SUB - 1, SUB + 2, SUB + depth + 2];
-    under.push([...outline, OUTLINE]);
-    letters[letter].push(outline);
-  }
-  for (const [bx, by] of blocks) {
+  for (const { outline } of outlined) under.push([...outline, OUTLINE]);
+  for (const { x: bx, y: by } of blocks) {
     under.push([ox + bx * SUB, oy + by * SUB + SUB, SUB, depth, t.side]);
   }
   // The bevel runs along the letter's own edges, not each block's, so a letter
   // reads as one carved piece: lit where it faces up or left, shaded where it
   // faces down or right.
-  const filled = new Set(blocks.map(([x, y]) => `${x},${y}`));
+  const filled = new Set(blocks.map(({ x, y }) => `${x},${y}`));
   const open = (x, y) => !filled.has(`${x},${y}`);
-  for (const [bx, by] of blocks) {
+  for (const { x: bx, y: by } of blocks) {
     for (let sy = 0; sy < SUB; sy++) {
       for (let sx = 0; sx < SUB; sx++) {
         let fill = t.face[Math.floor(noise(bx * SUB + sx, by * SUB + sy, salt) * t.face.length)];
@@ -113,20 +117,24 @@ function word(text, texture, ox, oy, salt) {
   // neighbour's face.
   return {
     svg: paths(under) + paths(face),
+    blocks: outlined,
     letters,
     width: width * SUB,
     height: height * SUB + depth,
   };
 }
 
+// "OASIS" is drawn at this many times the scale of "SMP".
+const OASIS_SCALE = 1.5;
+
 let logo;
 
 // The whole logo as a standalone SVG file, served at /logo.svg for every page's
 // <img> to share, rather than inlined into each page. Drawn once per process: it
-// never varies. "OASIS" is drawn at 1.5 times the scale of "SMP".
+// never varies.
 export function logoSvg() {
   if (logo) return logo;
-  const big = 1.5;
+  const big = OASIS_SCALE;
   const top = word("OASIS", "sandstone", 0, 0, 1);
   const bottom = word("SMP", "prismarine", 0, 0, 2);
   const pad = 2;
@@ -135,14 +143,19 @@ export function logoSvg() {
   const height = top.height * big + gap + bottom.height + 2 * pad;
   const topPlace = `translate(${pad} ${pad}) scale(${big})`;
   const bottomPlace = `translate(${(width - bottom.width) / 2} ${pad + top.height * big + gap})`;
+  // The block in the middle of the M, where its two strokes meet.
+  const mCentre = bottom.blocks.find(({ letter, column, y }) => letter === "M" && column === 2 && y === 2);
   logo = {
     width,
     height,
-    // Each letter of "OASIS", then "SMP" as one: the rectangles it covers, in
-    // its word's units, and where that word is placed in the logo.
+    // What each target does when clicked, the rectangles it covers, in its
+    // word's units, and where that word is placed in the logo: each letter of
+    // "OASIS" and "SMP" as one change the sky, and the M's centre block, over
+    // "SMP", lets out the creeper.
     targets: [
-      ...top.letters.map((rects) => ({ place: topPlace, rects })),
-      { place: bottomPlace, rects: bottom.letters.flat() },
+      ...top.letters.map((rects) => ({ egg: "sky", place: topPlace, rects })),
+      { egg: "sky", place: bottomPlace, rects: bottom.letters.flat() },
+      { egg: "creeper", place: bottomPlace, rects: [mCentre.outline] },
     ],
     svg: [
       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" shape-rendering="crispEdges">`,
@@ -161,16 +174,72 @@ export function logoImg(className) {
   return `<img class="${className}" src="/logo.svg" alt="Oasis SMP" width="${width}" height="${height}" />`;
 }
 
-// Invisible targets over the logo, one on each letter of "OASIS" and one on
-// "SMP", in that order, each the letter's own shape so a click in a letter's
-// hole or between letters misses. Drawn in the logo's units so they scale with
-// its <img>; laid on top of it by the stylesheet; main.js gives them their clicks.
+// Invisible targets over the logo, in logoSvg's order, each marked with what
+// it does and shaped like what it covers, so a click in a letter's hole or
+// between letters misses. Later targets lie over earlier ones. Drawn in the
+// logo's units so they scale with its <img>; laid on top of it by the
+// stylesheet; main.js gives them their clicks.
 export function logoTargets() {
   const { width, height, targets } = logoSvg();
   const shapes = targets.map(
-    ({ place, rects }) => `<path transform="${place}" d="${rects.map(([x, y, w, h]) => `M${x} ${y}h${w}v${h}h${-w}z`).join("")}"/>`,
+    ({ egg, place, rects }) =>
+      `<path data-egg="${egg}" transform="${place}" d="${rects.map(([x, y, w, h]) => `M${x} ${y}h${w}v${h}h${-w}z`).join("")}"/>`,
   );
   return `<svg class="logo-targets" viewBox="0 0 ${width} ${height}" aria-hidden="true">${shapes.join("")}</svg>`;
+}
+
+// The creeper that comes out of the logo's M, one character per texture pixel:
+// '#' its mottled skin, 'f' its face, 's' the shadow its head casts on its body.
+const CREEPER = [
+  "########",
+  "########",
+  "#ff##ff#",
+  "#ff##ff#",
+  "###ff###",
+  "##ffff##",
+  "##ffff##",
+  "##f##f##",
+  "ssssssss",
+  "########",
+  "########",
+  "########",
+  "########",
+  "########",
+  "########",
+  "########",
+  "########",
+  "###..###",
+  "###..###",
+  "###..###",
+  "###..###",
+  "###..###",
+];
+
+const CREEPER_SKIN = ["#5dae4b", "#4f9e3f", "#6cc059", "#418a35", "#7fcf69", "#a8dd96"];
+const CREEPER_FACE = ["#0e160c", "#16210f", "#1f2d1a"];
+const CREEPER_SHADE = ["#36732b", "#2f6626"];
+
+// The creeper as a standalone SVG, served at /creeper.svg. Its width and height
+// are its size in the logo's units: its texture pixels at the scale of
+// "OASIS", so it is drawn in the same blocks as the letters.
+export function creeperSvg() {
+  const width = CREEPER[0].length + 2;
+  const height = CREEPER.length + 2;
+  const outline = [];
+  const skin = [];
+  CREEPER.forEach((row, y) => {
+    [...row].forEach((cell, x) => {
+      if (cell === ".") return;
+      const palette = { "#": CREEPER_SKIN, f: CREEPER_FACE, s: CREEPER_SHADE }[cell];
+      outline.push([x, y, 3, 3, OUTLINE]);
+      skin.push([x + 1, y + 1, 1, 1, palette[Math.floor(noise(x, y, 4) * palette.length)]]);
+    });
+  });
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width * OASIS_SCALE}" height="${height * OASIS_SCALE}" shape-rendering="crispEdges">`,
+    paths(outline) + paths(skin),
+    "</svg>",
+  ].join("");
 }
 
 // Dirt, darkened the way Minecraft darkens it behind its menus, for the

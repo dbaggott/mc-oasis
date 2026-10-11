@@ -41,13 +41,147 @@ function loadSky(sky) {
 // lays the targets out in that order. Only the latest click's sky is shown.
 const skies = [...otherSkies(sky), sky];
 let wanted = sky;
-document.querySelectorAll(".logo-targets path").forEach((target, i) => {
+document.querySelectorAll('.logo-targets [data-egg="sky"]').forEach((target, i) => {
   target.addEventListener("click", async () => {
     wanted = skies[i];
     await loadSky(wanted);
     if (wanted === skies[i]) document.documentElement.dataset.sky = wanted;
   });
 });
+
+// Another: the centre of the M in "SMP" lets out a creeper, which climbs out
+// of it, hisses, and blows up. One creeper at a time.
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+let creeperOut = false;
+document.querySelector('.logo-targets [data-egg="creeper"]')?.addEventListener("click", async (event) => {
+  if (creeperOut) return;
+  creeperOut = true;
+  try {
+    await releaseCreeper(event.currentTarget);
+  } finally {
+    creeperOut = false;
+  }
+});
+
+// Each element is placed over the logo in percentages of its box, so a resize
+// mid-explosion keeps everything where it was on the logo.
+function placeOnLogo(element, logo, { left, top, width, height }) {
+  const box = logo.getBoundingClientRect();
+  const percent = (value, of) => `${(value / of) * 100}%`;
+  element.setAttribute("aria-hidden", "true");
+  element.style.left = percent(left - box.left, box.width);
+  element.style.top = percent(top - box.top, box.height);
+  element.style.width = percent(width, box.width);
+  if (height !== undefined) element.style.height = percent(height, box.height);
+  logo.append(element);
+}
+
+async function releaseCreeper(target) {
+  const logo = target.closest(".logo");
+  const targets = target.ownerSVGElement;
+  // Screen pixels per logo unit, the units the creeper's art is sized in.
+  const unit = targets.getBoundingClientRect().width / targets.viewBox.baseVal.width;
+  const block = target.getBoundingClientRect();
+  const still = reducedMotion.matches;
+
+  const creeper = new Image();
+  creeper.className = "creeper";
+  creeper.alt = "";
+  creeper.src = "/creeper.svg";
+  await creeper.decode();
+  const width = creeper.naturalWidth * unit;
+  const height = creeper.naturalHeight * unit;
+  // Standing on the block it came out of.
+  placeOnLogo(creeper, logo, {
+    left: block.left + block.width / 2 - width / 2,
+    top: block.bottom - height,
+    width,
+  });
+
+  await creeper.animate(
+    still
+      ? [{ opacity: 0 }, { opacity: 1 }]
+      : [
+          { transform: `translateY(${-block.height / 2}px) scale(0.1)`, opacity: 0 },
+          { transform: "none", opacity: 1 },
+        ],
+    { duration: 500, easing: "cubic-bezier(0.3, 1.5, 0.6, 1)" },
+  ).finished;
+
+  // The fuse: flashing white and swelling, as a creeper does before it blows,
+  // each step held until the next. It ends on a flash, held to the end.
+  const steps = 8;
+  const fuse = Array.from({ length: steps }, (_, i) => ({
+    offset: i / steps,
+    easing: "steps(1, end)",
+    filter: i % 2 ? "brightness(2.6) saturate(0)" : "none",
+    transform: still ? "none" : `scale(${1 + 0.04 * i}, ${1 + 0.025 * i})`,
+  }));
+  fuse.push({ ...fuse.at(-1), offset: 1 });
+  await creeper.animate(fuse, { duration: 1500, delay: 300, fill: "forwards" }).finished;
+
+  const centre = creeper.getBoundingClientRect();
+  const cx = centre.left + centre.width / 2;
+  const cy = centre.top + centre.height / 2;
+  creeper.remove();
+
+  const blast = height * 1.6;
+  const flash = document.createElement("i");
+  flash.className = "creeper-flash";
+  placeOnLogo(flash, logo, { left: cx - blast / 2, top: cy - blast / 2, width: blast, height: blast });
+
+  const bursts = [
+    flash.animate(
+      still
+        ? [{ opacity: 0.9 }, { opacity: 0 }]
+        : [
+            { transform: "scale(0.2)", opacity: 1 },
+            { transform: "scale(1)", opacity: 0 },
+          ],
+      { duration: 350, easing: "ease-out", fill: "forwards" },
+    ),
+  ];
+
+  // Smoke: grey and white puffs of the logo's own pixel size, thrown outward.
+  for (let i = 0; i < 28; i++) {
+    const size = (4 + Math.random() * 6) * unit;
+    const angle = Math.random() * 2 * Math.PI;
+    const reach = blast * (0.25 + Math.random() * 0.5);
+    const dx = Math.cos(angle) * reach;
+    const dy = Math.sin(angle) * reach;
+    const puff = document.createElement("i");
+    puff.className = "creeper-smoke";
+    puff.style.backgroundColor = `hsl(0 0% ${45 + Math.round(Math.random() * 55)}%)`;
+    if (still) {
+      placeOnLogo(puff, logo, { left: cx + dx - size / 2, top: cy + dy - size / 2, width: size, height: size });
+      bursts.push(puff.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 900, fill: "forwards" }));
+    } else {
+      placeOnLogo(puff, logo, { left: cx - size / 2, top: cy - size / 2, width: size, height: size });
+      bursts.push(
+        puff.animate(
+          [
+            { transform: "translate(0, 0) scale(0.5)", opacity: 1 },
+            { transform: `translate(${dx}px, ${dy}px) scale(1.4)`, opacity: 0 },
+          ],
+          { duration: 600 + Math.random() * 600, easing: "cubic-bezier(0.1, 0.8, 0.3, 1)", fill: "forwards" },
+        ),
+      );
+    }
+  }
+
+  if (!still) {
+    const jolt = unit * 2;
+    bursts.push(
+      logo.animate(
+        [0, 1, -1, 1, -1, 0].map((k, i) => ({ transform: `translate(${k * jolt}px, ${(i % 2 ? -1 : 1) * k * jolt}px)` })),
+        { duration: 400, easing: "linear" },
+      ),
+    );
+  }
+
+  await Promise.all(bursts.map((animation) => animation.finished));
+  logo.querySelectorAll(".creeper-flash, .creeper-smoke").forEach((element) => element.remove());
+}
 
 const toggle = document.querySelector(".nav-toggle");
 toggle?.addEventListener("click", () => {

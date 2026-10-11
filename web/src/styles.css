@@ -580,6 +580,31 @@ code {
   pointer-events: fill;
 }
 
+/* The creeper the logo's M lets out, and its explosion: placed over the logo
+   by main.js, and never in the way of a click. */
+.creeper,
+.creeper-flash,
+.creeper-smoke {
+  position: absolute;
+  pointer-events: none;
+}
+
+.creeper {
+  height: auto;
+  image-rendering: pixelated;
+  transform-origin: 50% 100%;
+}
+
+.creeper-flash {
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0%, rgba(255, 244, 214, 0.85) 35%, rgba(255, 244, 214, 0) 70%);
+}
+
+.creeper-smoke {
+  display: block;
+  box-shadow: inset -2px -2px 0 rgba(0, 0, 0, 0.18);
+}
+
 /* The yellow line that sits tilted on the corner of every Minecraft title. */
 .splash {
   position: absolute;
