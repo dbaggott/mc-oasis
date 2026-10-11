@@ -199,8 +199,7 @@ export function logoTargets() {
 // of the outline and the sides; and the line along the foot of "SMP", where
 // the ground is.
 export function logoBlocks() {
-  const { width, height, words } = logoSvg();
-  const { mCentre } = logo;
+  const { width, height, words, mCentre } = logoSvg();
   const blocks = words.flatMap(({ blocks, texture, place }, word) => {
     const placed = ([x, y, w, h]) => [place.x + x * place.scale, place.y + y * place.scale, w * place.scale, h * place.scale];
     return blocks.map((block) => ({
