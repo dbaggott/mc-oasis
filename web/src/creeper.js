@@ -137,8 +137,8 @@ export const spriteIndex = (age, lifetime, count) => Math.trunc((age * (count - 
 // ServerExplosion.calculateExplodedPositions: every place the blast reaches with
 // power to spare, keyed by what is there. Rays go out toward each point on the
 // surface of a 16-point cube, losing power with each 0.3-block step and more for
-// what each step is inside. `resistanceAt` gives what a point is inside and its
-// blast resistance.
+// each step inside a block. `resistanceAt` gives what a point is inside and its
+// blast resistance, null for air (ExplosionDamageCalculator).
 export function blastedPlaces(center, radius, resistanceAt, random = Math.random) {
   const places = new Map();
   for (let xx = 0; xx < 16; xx++) {
@@ -150,7 +150,7 @@ export function blastedPlaces(center, radius, resistanceAt, random = Math.random
         let [x, y, z] = center;
         while (power > 0) {
           const { key, place, resistance } = resistanceAt(x, y, z);
-          power -= (resistance + 0.3) * 0.3;
+          if (resistance !== null) power -= (resistance + 0.3) * 0.3;
           if (power > 0) places.set(key, place);
           x += dx * 0.3;
           y += dy * 0.3;
@@ -498,12 +498,17 @@ function buildLogo(logo, data) {
     piece.style.width = u(w + seam);
     piece.style.height = u(h + seam);
   };
+  const byPlace = new Map(blocks.map((block) => [`${block.word}:${block.column}:${block.row}`, block]));
+  const rightOf = new Set(blocks.filter(({ word, column, row }) => byPlace.has(`${word}:${column + 1}:${row}`)));
   for (const block of blocks) {
     const outline = element("logo-piece", passes[0]);
     place(outline, block.outline);
     outline.style.backgroundColor = colours.outline;
+    // A side reaches into its right-hand neighbour's only, so that it never
+    // covers the outline beyond the letter.
     const side = element("logo-piece", passes[1]);
-    place(side, block.side, SEAM);
+    const [x, y, w, h] = block.side;
+    place(side, [x, y, w + (rightOf.has(block) ? SEAM : 0), h]);
     side.style.backgroundColor = colours[block.block];
     const face = element("logo-piece logo-face", passes[2]);
     place(face, block.face, SEAM);
@@ -523,6 +528,20 @@ function buildLogo(logo, data) {
     };
   });
   const standing = new Set(blocks);
+  // The blocks by each whole-block cell they reach into, for resistanceAt.
+  const cells = new Map();
+  for (const solid of solids) {
+    const [x0, y0, z0] = solid.min.map(Math.floor);
+    const [x1, y1, z1] = solid.max.map((c) => Math.ceil(c) - 1);
+    for (let x = x0; x <= x1; x++) {
+      for (let y = y0; y <= y1; y++) {
+        for (let z = z0; z <= z1; z++) {
+          const key = [x, y, z].join();
+          cells.set(key, [...(cells.get(key) ?? []), solid]);
+        }
+      }
+    }
+  }
 
   return {
     // Where a point in the world is drawn, in the logo's units.
@@ -531,7 +550,7 @@ function buildLogo(logo, data) {
     sceneFor: (z) => (z < 0 ? behind : front),
     // What is at a point: one of the logo's blocks, the ground, or air.
     resistanceAt(x, y, z) {
-      const solid = solids.find(
+      const solid = (cells.get([x, y, z].map(Math.floor).join()) ?? []).find(
         ({ block, min, max }) => standing.has(block) && x >= min[0] && x < max[0] && y >= min[1] && y < max[1] && z >= min[2] && z < max[2],
       );
       if (solid) return { key: solid.block, place: solid.block, resistance: BLAST_RESISTANCE[solid.block.block] };
@@ -539,7 +558,7 @@ function buildLogo(logo, data) {
       const key = cell.join();
       if (cell[1] < -1) return { key, place: "dirt", resistance: BLAST_RESISTANCE.dirt };
       if (cell[1] < 0) return { key, place: "grass_block", resistance: BLAST_RESISTANCE.grass_block };
-      return { key, place: "air", resistance: 0 };
+      return { key, place: "air", resistance: null };
     },
     breakBlocks(places) {
       for (const block of places.filter((place) => standing.has(place))) {
@@ -555,7 +574,7 @@ function buildLogo(logo, data) {
 // The creeper's route: from behind the M's centre block, through the gap
 // between the M and the P, to stand at the P's foot.
 function routeFor(level) {
-  const centre = level.solidOf(({ word, letter, letterColumn, row }) => word === 1 && letter === "M" && letterColumn === 2 && row === 2);
+  const centre = level.solidOf(({ creeperStart }) => creeperStart);
   const m = level.solidsOf("M");
   const p = level.solidsOf("P");
   const mRight = Math.max(...m.map(({ max }) => max[0]));
@@ -575,11 +594,18 @@ function routeFor(level) {
 // standing at the P, and makes no flash, swell or smoke on its way out.
 export async function releaseCreeper(target, { walk }) {
   const logo = target.closest(".logo");
-  const [data, loaded] = await Promise.all([
-    built.has(logo) ? null : fetch(BLOCKS_FILE).then((response) => (response.ok ? response.json() : null), () => null),
-    Promise.all(PICTURES.map(load)),
+  const effects = walk;
+  // The explosion's sprites have the length of the walk and fuse to arrive.
+  if (effects) PICTURES.filter((picture) => picture !== SKIN).forEach(load);
+  const [data, skin] = await Promise.all([
+    built.has(logo)
+      ? null
+      : fetch(BLOCKS_FILE)
+          .then((response) => (response.ok ? response.json() : null))
+          .catch(() => null),
+    load(SKIN),
   ]);
-  if (!loaded[0] || (!built.has(logo) && !data)) return;
+  if (!skin || (!built.has(logo) && !data)) return;
   if (!built.has(logo)) built.set(logo, buildLogo(logo, data));
   const level = built.get(logo);
   const { toLogo, sceneFor } = level;
@@ -605,7 +631,7 @@ export async function releaseCreeper(target, { walk }) {
     }
   }
 
-  const world = creeperWorld({ ...level, player: PLAYER, route: routeFor(level) }, { walk, effects: walk });
+  const world = creeperWorld({ ...level, player: PLAYER, route: routeFor(level) }, { walk, effects });
   const drawnParticles = new Map();
 
   function drawCreeper(t) {

@@ -63,16 +63,16 @@ function wallAt(distance, block) {
       return { key: "wall", place: "wall", resistance: BLAST_RESISTANCE[block] };
     }
     if (y < 0) return { key: cell.join(), place: "grass_block", resistance: BLAST_RESISTANCE.grass_block };
-    return { key: cell.join(), place: "air", resistance: 0 };
+    return { key: cell.join(), place: "air", resistance: null };
   };
 }
 
-test("at its average power, a creeper's blast breaks sandstone 2 blocks off, but prismarine only half a block off", () => {
+test("at its average power, a creeper's blast breaks sandstone 3 blocks off, but prismarine only 1 block off", () => {
   const average = () => 0.5;
   const center = [0, 0.5, 0.5];
-  assert.ok(blastedPlaces(center, 3, wallAt(2, "sandstone"), average).has("wall"));
-  assert.ok(!blastedPlaces(center, 3, wallAt(1, "prismarine"), average).has("wall"));
-  assert.ok(blastedPlaces(center, 3, wallAt(0.5, "prismarine"), average).has("wall"));
+  assert.ok(blastedPlaces(center, 3, wallAt(3, "sandstone"), average).has("wall"));
+  assert.ok(blastedPlaces(center, 3, wallAt(1, "prismarine"), average).has("wall"));
+  assert.ok(!blastedPlaces(center, 3, wallAt(1.5, "prismarine"), average).has("wall"));
 });
 
 test("an explosion's particles start as their classes make them", () => {

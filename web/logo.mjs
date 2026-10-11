@@ -150,6 +150,7 @@ export function logoSvg() {
     width,
     height,
     words: [top, bottom],
+    mCentre,
     // What each target does when clicked, the rectangles it covers, in its
     // word's units, and where that word is placed in the logo: each letter of
     // "OASIS" and "SMP" as one change the sky, and the M's centre block, over
@@ -191,16 +192,19 @@ export function logoTargets() {
 }
 
 // The logo as blocks, served at /logo-blocks.json for src/creeper.js to draw
-// the logo from a block at a time, so the creeper can blow blocks away: each
+// the logo from a block at a time, so the creeper can blow blocks away: which
+// block the creeper starts behind (the one whose target lets it out), each
 // block's word, the block it is made of, its place in its word's grid, and,
 // in the logo's units, the rectangle of each pass it is drawn in; the colours
 // of the outline and the sides; and the line along the foot of "SMP", where
 // the ground is.
 export function logoBlocks() {
   const { width, height, words } = logoSvg();
+  const { mCentre } = logo;
   const blocks = words.flatMap(({ blocks, texture, place }, word) => {
     const placed = ([x, y, w, h]) => [place.x + x * place.scale, place.y + y * place.scale, w * place.scale, h * place.scale];
     return blocks.map((block) => ({
+      ...(block === mCentre && { creeperStart: true }),
       word,
       block: texture,
       column: block.x,

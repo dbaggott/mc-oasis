@@ -175,7 +175,11 @@ test("every file the creeper fetches is built", () => {
 test("the logo's blocks are built, with the M and P the creeper walks among", () => {
   const { blocks, ground } = JSON.parse(readFileSync(resolve(dist, `.${BLOCKS_FILE}`), "utf8"));
   const smp = blocks.filter(({ word }) => word === 1);
-  assert.ok(smp.some(({ letter, letterColumn, row }) => letter === "M" && letterColumn === 2 && row === 2), "no M centre block");
+  assert.deepEqual(
+    blocks.filter(({ creeperStart }) => creeperStart).map(({ letter, letterColumn, row }) => [letter, letterColumn, row]),
+    [["M", 2, 2]],
+    "the creeper doesn't start behind the M's centre block",
+  );
   assert.ok(smp.some(({ letter }) => letter === "P"), "no P");
   assert.equal(Math.max(...smp.map(({ face: [, y, , h] }) => y + h)), ground, "SMP doesn't stand on the ground");
 });
