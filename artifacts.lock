@@ -35,9 +35,9 @@ plugin  ViaVersion     5.12.0           c4d512fa9760fa41d17abaedde12aa1f4c9bde92
 plugin  ViaBackwards   5.12.0           f902f7da7eb99e8bfaf461f80283c4e2750b7d9727e6b508ea4bb9163f55b1db  https://cdn.modrinth.com/data/NpvuJQoq/versions/SxGhdsPK/ViaBackwards-5.12.0.jar
 plugin  LuckPerms      v5.5.71-bukkit   49cecb66fa1fd22a133039a490e9c1e5095a238e7cd66eb9d2a16fe6c897550d  https://cdn.modrinth.com/data/Vebnzrzj/versions/b0mk8uS6/LuckPerms-Bukkit-5.5.71.jar
 plugin  ClickVillagers  paper-1.6.3      6cacfaa07f113e6ad5230d7efba5963dfb6a45d018196a186fa81d251bbab686  https://cdn.modrinth.com/data/BITzwT7B/versions/iMS3EoIW/ClickVillagers-paper-1.6.3.jar
-plugin  GrimAC         2.3.74-abb95b6   d33eed30bfd5c6eb54176b197c9c51018ba0916d7b056e0530ab183ac1a3d590  https://cdn.modrinth.com/data/LJNGWSvH/versions/YJEwvStg/grimac-bukkit-2.3.74-abb95b6.jar
+plugin  GrimAC         2.3.74-f929c20   c32cf6739ad01241978fd3e51656ba5439bf4d44183160934e66a90b28ae5ded  https://cdn.modrinth.com/data/LJNGWSvH/versions/9pOtJx2c/grimac-bukkit-2.3.74-f929c20.jar
 plugin  voicechat      bukkit-2.6.24    af3d4e2ad318d3065959248c1370ae32a619752cb4d2a4fec2f7a79b10067769  https://cdn.modrinth.com/data/9eGKb6K1/versions/EJth3OAr/voicechat-bukkit-2.6.24.jar
-plugin  WorldEdit      7.4.6-beta-02    166365c44bad4cd916200b288cf391d3770e3197d1eca84ff74f3914d933e289  https://cdn.modrinth.com/data/1u6JkXh5/versions/J1eeOh6C/worldedit-bukkit-7.4.6-beta-02.jar
+plugin  WorldEdit      7.4.6            e0ce67d870ad1fef8a40dd9d7926360caf3bb44722438545d6b20b55f82a0c91  https://cdn.modrinth.com/data/1u6JkXh5/versions/YFnqiUlL/worldedit-bukkit-7.4.6.jar
 plugin  WorldGuard     7.0.19           396df065f1cf38bab9878a0f53a776d5a085ebbf3c41813938b73f95d4eaca03  https://cdn.modrinth.com/data/DKY9btbd/versions/TtfwTyi6/worldguard-bukkit-7.0.19.jar
 plugin  TradeCycle     2.1.0            4ee533db5ef8241f58ebe8eff8befc02043142ea5879e26989fbf279fe0822d0  https://cdn.modrinth.com/data/GpyBM69F/versions/oYCeMLy6/TradeCycle-2.1.0.jar
 plugin  TAB            6.2.0            f94331947134242efa478b9b9bf04b29e37861721dee58c32b7ea57779aa735e  https://cdn.modrinth.com/data/gG7VFbG0/versions/UDraViyI/TAB%20v6.2.0.jar
