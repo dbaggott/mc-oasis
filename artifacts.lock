@@ -28,7 +28,7 @@
 
 server  paper          26.3-178      5dd0c8fb20a96eb7c98f3c4b1c890e99ef6db56fd689a2cf06975a3471fda757  https://fill-data.papermc.io/v1/objects/5dd0c8fb20a96eb7c98f3c4b1c890e99ef6db56fd689a2cf06975a3471fda757/paper-26.3-178.jar
 
-plugin  Geyser-Spigot  pr.6712-3095  826a6b5301a9876c90971a7f95a9998f3ae4c059f9826744baa0ac088b2d4d51  https://download.geysermc.org/v2/projects/geyserpreview/versions/pr.6712/builds/3095/downloads/spigot
+plugin  Geyser-Spigot  2.12.0-1258   585eb449dbdaef09691433f84d29a5c557c3a27effc40c6d50b245725dc91b41  https://download.geysermc.org/v2/projects/geyser/versions/2.12.0/builds/1258/downloads/spigot
 plugin  floodgate      2.2.5-141     21570aff9ce17d6983928e8552777760e1ede5050026b04c686b0ae112e6fd7e  https://download.geysermc.org/v2/projects/floodgate/versions/2.2.5/builds/141/downloads/spigot
 plugin  Chunky         1.5.3         530d2c7430a96a39957391b7088be144daa3108f7665896d1c23aa8dd4af32f3  https://cdn.modrinth.com/data/fALzjamp/versions/MdY6JATr/Chunky-Bukkit-1.5.3.jar
 plugin  ViaVersion     5.12.0           c4d512fa9760fa41d17abaedde12aa1f4c9bde920d0a992fe0fc016962f126be  https://cdn.modrinth.com/data/P1OZGk5p/versions/FaishMnD/ViaVersion-5.12.0.jar
