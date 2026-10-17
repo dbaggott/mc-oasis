@@ -1,0 +1,9 @@
+name: OasisEgg
+version: 1.0.0
+main: com.oasissmp.egg.OasisEgg
+api-version: '26.3'
+description: Tells staff where the dragon egg is with /egg
+permissions:
+  oasisegg.locate:
+    description: Find the dragon egg with /egg
+    default: false

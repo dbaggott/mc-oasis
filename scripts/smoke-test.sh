@@ -386,6 +386,38 @@ if [[ "$reply" != *"1. ${first_rule}"* ]]; then
 fi
 echo "/rules registered"
 
+# OasisEgg's /egg finds an egg placed as a block and one in a shulker box in a
+# chest, in a chunk held loaded, and, once the chunk is let go, finds them where
+# they were when it unloaded. Positive coordinates: rcon-cli reads a leading
+# `-` as a flag.
+reply="$(rcon egg)"
+if [[ "$reply" != *"No dragon egg found."* ]]; then
+  echo "error: /egg found an egg in a new world: '${reply}'" >&2
+  exit 1
+fi
+rcon forceload add 4000 4000 >/dev/null
+rcon setblock 4000 100 4000 minecraft:stone >/dev/null
+rcon setblock 4000 101 4000 minecraft:dragon_egg >/dev/null
+rcon setblock 4002 100 4000 minecraft:chest >/dev/null
+rcon 'item replace block 4002 100 4000 container.0 with minecraft:shulker_box[minecraft:container=[{slot:0,item:{id:"minecraft:dragon_egg",count:1}}]]' >/dev/null
+placed='placed as a block at 4000 101 4000 in minecraft:overworld'
+boxed='in a shulker box in a chest at 4002 100 4000 in minecraft:overworld'
+reply="$(rcon egg)"
+if [[ "$reply" != *"2 dragon eggs:"*"$placed"*"$boxed"* ]]; then
+  echo "error: /egg didn't find the eggs in a loaded chunk: '${reply}'" >&2
+  exit 1
+fi
+rcon forceload remove 4000 4000 >/dev/null
+deadline=$((SECONDS + 60))
+until reply="$(rcon egg)" && [[ "$reply" == *"$placed, as of "*", when its chunk unloaded"*"$boxed, as of "* ]]; do
+  if ((SECONDS >= deadline)); then
+    echo "error: /egg didn't report the eggs where they were within 60s of their chunk being let go: '${reply}'" >&2
+    exit 1
+  fi
+  sleep 2
+done
+echo "/egg finds eggs in loaded and unloaded chunks"
+
 # The world borders, by width; `worldborder get` doesn't report the center.
 # Every `worldborder set` line has to parse, so a reworded one fails here
 # instead of going unchecked.
