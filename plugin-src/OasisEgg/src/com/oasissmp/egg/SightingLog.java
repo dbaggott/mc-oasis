@@ -8,20 +8,28 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Where dragon eggs were when the {@link Source} holding them last went out
  * of reach: a player leaving, or a chunk's blocks or entities unloading.
  * Nothing in an unloaded source moves, so its sightings stay true until it
- * loads again. Saved to a file on every change, one {@link Sighting#line()}
- * per line. A line that doesn't read as one is set aside in
- * {@link #unreadable()} and gone from the file at the next save.
+ * loads again. It also keeps the {@link #lastKnown() newest sighting} it was
+ * ever given, which outlives its source's entries being cleared, so a
+ * destroyed egg leaves a trace.
+ *
+ * <p>Saved to a file on every change, one {@link Sighting#line()} per line,
+ * the last known one prefixed {@value #LAST_KNOWN}. A line that doesn't read
+ * is set aside in {@link #unreadable()} and gone from the file at the next save.
  */
 final class SightingLog {
+
+    static final String LAST_KNOWN = "last\t";
 
     private final Path file;
     private final Map<Source, List<Sighting>> bySource = new LinkedHashMap<>();
     private final List<String> unreadable = new ArrayList<>();
+    private Sighting lastKnown;
 
     private SightingLog(Path file) {
         this.file = file;
@@ -35,10 +43,14 @@ final class SightingLog {
                     continue;
                 }
                 try {
-                    Sighting sighting = Sighting.parse(line);
-                    log.bySource.computeIfAbsent(sighting.source(), source -> new ArrayList<>())
-                            .add(sighting);
-                } catch (IllegalArgumentException e) {
+                    if (line.startsWith(LAST_KNOWN)) {
+                        log.lastKnown = Sighting.parse(line.substring(LAST_KNOWN.length()));
+                    } else {
+                        Sighting sighting = Sighting.parse(line);
+                        log.bySource.computeIfAbsent(sighting.source(), source -> new ArrayList<>())
+                                .add(sighting);
+                    }
+                } catch (RuntimeException e) {
                     log.unreadable.add(line);
                 }
             }
@@ -57,8 +69,17 @@ final class SightingLog {
             }
         } else {
             bySource.put(source, List.copyOf(sightings));
+            for (Sighting sighting : sightings) {
+                if (lastKnown == null || !sighting.time().isBefore(lastKnown.time())) {
+                    lastKnown = sighting;
+                }
+            }
         }
         save();
+    }
+
+    Optional<Sighting> lastKnown() {
+        return Optional.ofNullable(lastKnown);
     }
 
     List<String> unreadable() {
@@ -73,7 +94,11 @@ final class SightingLog {
     private void save() throws IOException {
         Files.createDirectories(file.getParent());
         Path written = file.resolveSibling(file.getFileName() + ".new");
-        Files.write(written, all().stream().map(Sighting::line).toList());
+        List<String> lines = new ArrayList<>(all().stream().map(Sighting::line).toList());
+        if (lastKnown != null) {
+            lines.add(LAST_KNOWN + lastKnown.line());
+        }
+        Files.write(written, lines);
         Files.move(written, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
     }
 }

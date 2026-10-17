@@ -89,7 +89,7 @@ public final class OasisEgg extends JavaPlugin implements Listener {
     private int locate(CommandSourceStack source) {
         Map<Source, List<Sighting>> loaded = finder.inLoaded();
         List<Sighting> live = loaded.values().stream().flatMap(List::stream).toList();
-        List<String> lines = Report.lines(live, log.all(), loaded::containsKey);
+        List<String> lines = Report.lines(live, log.all(), loaded::containsKey, log.lastKnown());
         // Messages go to it as an Audience: CommandSender's own sendMessage
         // overloads reach for BungeeCord's chat classes, which aren't here.
         Audience sender = source.getSender();
