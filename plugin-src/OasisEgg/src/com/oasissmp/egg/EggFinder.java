@@ -6,10 +6,12 @@ import io.papermc.paper.datacomponent.item.ItemContainerContents;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import org.bukkit.Chunk;
 import org.bukkit.ChunkSnapshot;
 import org.bukkit.Keyed;
@@ -26,6 +28,7 @@ import org.bukkit.entity.Item;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.BlockInventoryHolder;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.EquipmentSlot;
@@ -41,6 +44,12 @@ import org.bukkit.inventory.ItemStack;
 final class EggFinder {
 
     private static final BlockData EGG = Material.DRAGON_EGG.createBlockData();
+
+    // Windows whose slots belong to no block or entity, only to the player
+    // using them. Any other window is a container searched where it is.
+    private static final Set<InventoryType> WORKING_WINDOWS = EnumSet.of(
+            InventoryType.CRAFTING, InventoryType.WORKBENCH, InventoryType.ANVIL, InventoryType.SMITHING,
+            InventoryType.GRINDSTONE, InventoryType.STONECUTTER, InventoryType.ENCHANTING, InventoryType.MERCHANT);
 
     private final Server server;
 
@@ -143,11 +152,8 @@ final class EggFinder {
         found.inInventory(player.getInventory(), "in " + name + " inventory", at);
         found.inItem(player.getItemOnCursor(), "on " + name + " cursor", at);
         found.inInventory(player.getEnderChest(), "in " + name + " ender chest", at);
-        // The crafting grid and the like: slots belonging to no block or entity.
-        // A container's window is that container, which is searched as a block.
         Inventory window = player.getOpenInventory().getTopInventory();
-        InventoryHolder windowHolder = window.getHolder(false);
-        if (windowHolder == null || windowHolder == player) {
+        if (WORKING_WINDOWS.contains(window.getType())) {
             found.inInventory(window, "in the " + words(window.getType().name()) + " window "
                     + player.getName() + " has open", at);
         }

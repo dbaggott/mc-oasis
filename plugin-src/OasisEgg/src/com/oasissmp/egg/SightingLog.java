@@ -14,12 +14,14 @@ import java.util.Map;
  * of reach: a player leaving, or a chunk's blocks or entities unloading.
  * Nothing in an unloaded source moves, so its sightings stay true until it
  * loads again. Saved to a file on every change, one {@link Sighting#line()}
- * per line.
+ * per line. A line that doesn't read as one is set aside in
+ * {@link #unreadable()} and gone from the file at the next save.
  */
 final class SightingLog {
 
     private final Path file;
     private final Map<Source, List<Sighting>> bySource = new LinkedHashMap<>();
+    private final List<String> unreadable = new ArrayList<>();
 
     private SightingLog(Path file) {
         this.file = file;
@@ -29,10 +31,15 @@ final class SightingLog {
         SightingLog log = new SightingLog(file);
         if (Files.exists(file)) {
             for (String line : Files.readAllLines(file)) {
-                if (!line.isEmpty()) {
+                if (line.isEmpty()) {
+                    continue;
+                }
+                try {
                     Sighting sighting = Sighting.parse(line);
                     log.bySource.computeIfAbsent(sighting.source(), source -> new ArrayList<>())
                             .add(sighting);
+                } catch (IllegalArgumentException e) {
+                    log.unreadable.add(line);
                 }
             }
         }
@@ -52,6 +59,10 @@ final class SightingLog {
             bySource.put(source, List.copyOf(sightings));
         }
         save();
+    }
+
+    List<String> unreadable() {
+        return List.copyOf(unreadable);
     }
 
     List<Sighting> all() {

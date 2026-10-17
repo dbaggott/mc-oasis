@@ -9,8 +9,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Checks that sightings and their sources read back as written, and that the
- * log keeps each source's latest sightings across a reload.
+ * Checks that sightings and their sources read back as written, that the
+ * log keeps each source's latest sightings across a reload, and that a
+ * damaged line is set aside rather than stopping the rest loading.
  */
 public final class SightingLogTest {
 
@@ -55,6 +56,12 @@ public final class SightingLogTest {
         } catch (IllegalArgumentException expected) {
             // A sighting kept under the wrong source would outlive the egg moving.
         }
+
+        Files.write(file, List.of(moved.line(), "player not-a-uuid", nested.line().replace("\t2\t", "\tmany\t")));
+        SightingLog damaged = SightingLog.load(file);
+        check(failures, damaged.all().equals(List.of(moved)) && damaged.unreadable().size() == 2,
+                "a damaged file didn't keep its good lines and set the rest aside: "
+                        + damaged.all() + " " + damaged.unreadable());
 
         if (!failures.isEmpty()) {
             failures.forEach(System.err::println);

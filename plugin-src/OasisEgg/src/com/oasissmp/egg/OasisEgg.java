@@ -7,13 +7,12 @@ import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Map;
 import net.kyori.adventure.audience.Audience;
-import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.Chunk;
-import org.bukkit.World;
-import org.bukkit.entity.Player;
+import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.command.RemoteConsoleCommandSender;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -43,11 +42,14 @@ public final class OasisEgg extends JavaPlugin implements Listener {
         } catch (IOException e) {
             throw new UncheckedIOException("Couldn't read the egg sightings", e);
         }
+        log.unreadable().forEach(line -> getLogger().warning(
+                "Dropping an unreadable line from the egg sightings; /egg may miss an egg: " + line));
         getServer().getPluginManager().registerEvents(this, this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(Commands.literal("egg")
-                        // Players need the permission even to see the command.
-                        .requires(source -> !(source.getSender() instanceof Player)
+                        // The console and RCON have it without the permission, which ops don't get by default.
+                        .requires(source -> source.getSender() instanceof ConsoleCommandSender
+                                || source.getSender() instanceof RemoteConsoleCommandSender
                                 || source.getSender().hasPermission(PERMISSION))
                         .executes(context -> locate(context.getSource()))
                         .build(), "Find the dragon egg"));
@@ -85,30 +87,14 @@ public final class OasisEgg extends JavaPlugin implements Listener {
     }
 
     private int locate(CommandSourceStack source) {
-        List<Sighting> live = finder.inLoaded().values().stream().flatMap(List::stream).toList();
-        List<String> lines = Report.lines(live, log.all(), this::isLoaded);
+        Map<Source, List<Sighting>> loaded = finder.inLoaded();
+        List<Sighting> live = loaded.values().stream().flatMap(List::stream).toList();
+        List<String> lines = Report.lines(live, log.all(), loaded::containsKey);
         // Messages go to it as an Audience: CommandSender's own sendMessage
         // overloads reach for BungeeCord's chat classes, which aren't here.
         Audience sender = source.getSender();
         sender.sendMessage(Component.text(lines.getFirst(), NamedTextColor.GOLD));
         lines.subList(1, lines.size()).forEach(line -> sender.sendMessage(Component.text(line)));
         return Command.SINGLE_SUCCESS;
-    }
-
-    private boolean isLoaded(Source source) {
-        return switch (source) {
-            case Source.Player player -> getServer().getPlayer(player.id()) != null;
-            case Source.Blocks blocks -> loadedChunk(blocks.world(), blocks.chunkX(), blocks.chunkZ()) != null;
-            case Source.Entities entities -> {
-                Chunk chunk = loadedChunk(entities.world(), entities.chunkX(), entities.chunkZ());
-                yield chunk != null && chunk.isEntitiesLoaded();
-            }
-        };
-    }
-
-    // Null when it isn't loaded: getChunkAt would load it.
-    private Chunk loadedChunk(String worldKey, int chunkX, int chunkZ) {
-        World world = getServer().getWorld(Key.key(worldKey));
-        return world != null && world.isChunkLoaded(chunkX, chunkZ) ? world.getChunkAt(chunkX, chunkZ) : null;
     }
 }
