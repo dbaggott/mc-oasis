@@ -26,19 +26,19 @@
 #
 # Changing a line is a version bump: update version, sha256 and url together.
 
-server  paper          26.3-178      5dd0c8fb20a96eb7c98f3c4b1c890e99ef6db56fd689a2cf06975a3471fda757  https://fill-data.papermc.io/v1/objects/5dd0c8fb20a96eb7c98f3c4b1c890e99ef6db56fd689a2cf06975a3471fda757/paper-26.3-178.jar
+server  paper          26.3-205      a0a58f532f08054ea92eb916d3edb6ed3c86429d77175317304f6e995cce9968  https://fill-data.papermc.io/v1/objects/a0a58f532f08054ea92eb916d3edb6ed3c86429d77175317304f6e995cce9968/paper-26.3-205.jar
 
-plugin  Geyser-Spigot  2.12.0-1258   585eb449dbdaef09691433f84d29a5c557c3a27effc40c6d50b245725dc91b41  https://download.geysermc.org/v2/projects/geyser/versions/2.12.0/builds/1258/downloads/spigot
+plugin  Geyser-Spigot  2.12.0-1264   7299353d42dd7587ed65341b0064f09a925eb910d04a18b2990cfb6ba979626c  https://download.geysermc.org/v2/projects/geyser/versions/2.12.0/builds/1264/downloads/spigot
 plugin  floodgate      2.2.5-141     21570aff9ce17d6983928e8552777760e1ede5050026b04c686b0ae112e6fd7e  https://download.geysermc.org/v2/projects/floodgate/versions/2.2.5/builds/141/downloads/spigot
 plugin  Chunky         1.5.3         530d2c7430a96a39957391b7088be144daa3108f7665896d1c23aa8dd4af32f3  https://cdn.modrinth.com/data/fALzjamp/versions/MdY6JATr/Chunky-Bukkit-1.5.3.jar
-plugin  ViaVersion     5.12.0           c4d512fa9760fa41d17abaedde12aa1f4c9bde920d0a992fe0fc016962f126be  https://cdn.modrinth.com/data/P1OZGk5p/versions/FaishMnD/ViaVersion-5.12.0.jar
-plugin  ViaBackwards   5.12.0           f902f7da7eb99e8bfaf461f80283c4e2750b7d9727e6b508ea4bb9163f55b1db  https://cdn.modrinth.com/data/NpvuJQoq/versions/SxGhdsPK/ViaBackwards-5.12.0.jar
+plugin  ViaVersion     5.12.1           551265afd892e78bb869162e08b4fdd151c518e245fce60af36b0603ad695d76  https://cdn.modrinth.com/data/P1OZGk5p/versions/5WgnasGG/ViaVersion-5.12.1.jar
+plugin  ViaBackwards   5.12.1           dd72f7a459cbf1ea7862781dac92ed0ba738aa3cb3b7955e716ba379889d612a  https://cdn.modrinth.com/data/NpvuJQoq/versions/dWw67APC/ViaBackwards-5.12.1.jar
 plugin  LuckPerms      v5.5.71-bukkit   49cecb66fa1fd22a133039a490e9c1e5095a238e7cd66eb9d2a16fe6c897550d  https://cdn.modrinth.com/data/Vebnzrzj/versions/b0mk8uS6/LuckPerms-Bukkit-5.5.71.jar
 plugin  ClickVillagers  paper-1.6.3      6cacfaa07f113e6ad5230d7efba5963dfb6a45d018196a186fa81d251bbab686  https://cdn.modrinth.com/data/BITzwT7B/versions/iMS3EoIW/ClickVillagers-paper-1.6.3.jar
-plugin  GrimAC         2.3.74-f929c20   c32cf6739ad01241978fd3e51656ba5439bf4d44183160934e66a90b28ae5ded  https://cdn.modrinth.com/data/LJNGWSvH/versions/9pOtJx2c/grimac-bukkit-2.3.74-f929c20.jar
+plugin  GrimAC         2.3.74-43850df   505a77aaaae255d51603b459d1f1af382c1f998204802086de7a8d70fc8ee211  https://cdn.modrinth.com/data/LJNGWSvH/versions/ZgpTyoHe/grimac-bukkit-2.3.74-43850df.jar
 plugin  voicechat      bukkit-2.6.24    af3d4e2ad318d3065959248c1370ae32a619752cb4d2a4fec2f7a79b10067769  https://cdn.modrinth.com/data/9eGKb6K1/versions/EJth3OAr/voicechat-bukkit-2.6.24.jar
 plugin  WorldEdit      7.4.6            e0ce67d870ad1fef8a40dd9d7926360caf3bb44722438545d6b20b55f82a0c91  https://cdn.modrinth.com/data/1u6JkXh5/versions/YFnqiUlL/worldedit-bukkit-7.4.6.jar
-plugin  WorldGuard     7.0.19           396df065f1cf38bab9878a0f53a776d5a085ebbf3c41813938b73f95d4eaca03  https://cdn.modrinth.com/data/DKY9btbd/versions/TtfwTyi6/worldguard-bukkit-7.0.19.jar
+plugin  WorldGuard     7.0.20           8768a49bcbecbb7a413ad134ee72d9871cdf967b7d938e6b96bb0ca72bb1467b  https://cdn.modrinth.com/data/DKY9btbd/versions/9YdeGXiK/worldguard-bukkit-7.0.20.jar
 plugin  TradeCycle     2.1.0            4ee533db5ef8241f58ebe8eff8befc02043142ea5879e26989fbf279fe0822d0  https://cdn.modrinth.com/data/GpyBM69F/versions/oYCeMLy6/TradeCycle-2.1.0.jar
 plugin  TAB            6.2.0            f94331947134242efa478b9b9bf04b29e37861721dee58c32b7ea57779aa735e  https://cdn.modrinth.com/data/gG7VFbG0/versions/UDraViyI/TAB%20v6.2.0.jar
 plugin  LibertyBans    1.1.4            57303df011ff49747856af4ed818546f19b5dd84b8c627a6666431d0df962634  https://cdn.modrinth.com/data/PgXAUxLZ/versions/7WLjonzv/LibertyBans_Release-1.1.4.jar
@@ -59,7 +59,7 @@ datapack  50-bacap                          1.21.1            ce391fe46846d7fb35
 datapack  51-bacaped                        2.9.4             1e703448f72f83cdc37855efee887dc95fb4f7207e4d4d7fc07ac61aadb75fab  https://cdn.modrinth.com/data/Qx9yFN48/versions/5UgV7jwJ/BACAP_Enhanced_Discoveries_2.9.4.zip
 datapack  60-players-drop-heads             1.1.0             4899f5a04760c5787e5e9d944518d25100794de6ac8ec6c2f3e15e02a6d2770f  https://cdn.modrinth.com/data/NU7qMnLN/versions/twuiZTiF/players-drop-heads-1.1.0-mc26.3.zip
 
-library  paper-api                        26.3.build.178-stable  532abaf42d4de254df506eb2b6f897b208adf53eeaf696024bf81481dcab213c  https://repo.papermc.io/repository/maven-public/io/papermc/paper/paper-api/26.3.build.178-stable/paper-api-26.3.build.178-stable.jar
+library  paper-api                        26.3.build.205-stable  2c4ced387dd3786a7f811923eedce574349e036446f91d10669578a3827aa252  https://repo.papermc.io/repository/maven-public/io/papermc/paper/paper-api/26.3.build.205-stable/paper-api-26.3.build.205-stable.jar
 library  brigadier                        1.3.11                 9d09cf4819de83dfcd38bcb212d5f2227131791cef3abbfca3321d6fb2b9a64d  https://libraries.minecraft.net/com/mojang/brigadier/1.3.11/brigadier-1.3.11.jar
 library  adventure-api                    5.2.0                  7e52fe7190be3e87b3b3f71712cfa12315fcd27109f302a7b440c12f01fae827  https://repo1.maven.org/maven2/net/kyori/adventure-api/5.2.0/adventure-api-5.2.0.jar
 library  adventure-key                    5.2.0                  0184d173200e2eef8fbc791f622d1d58fd459f8930c616b5a4fe79e83eda6c55  https://repo1.maven.org/maven2/net/kyori/adventure-key/5.2.0/adventure-key-5.2.0.jar
