@@ -6,12 +6,14 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
  * Checks that sightings and their sources read back as written, that the
- * log keeps each source's latest sightings across a reload, and that a
- * damaged line is set aside rather than stopping the rest loading.
+ * log keeps each source's latest sightings and the last known one across a
+ * reload, and that a damaged line is set aside rather than stopping the rest
+ * loading.
  */
 public final class SightingLogTest {
 
@@ -57,9 +59,18 @@ public final class SightingLogTest {
             // A sighting kept under the wrong source would outlive the egg moving.
         }
 
-        Files.write(file, List.of(moved.line(), "player not-a-uuid", nested.line().replace("\t2\t", "\tmany\t")));
+        check(failures, SightingLog.load(file).lastKnown().equals(Optional.of(moved)),
+                "the newest sighting isn't the last known one: " + SightingLog.load(file).lastKnown());
+        log.replace(player, List.of());
+        check(failures, SightingLog.load(file).all().isEmpty()
+                        && SightingLog.load(file).lastKnown().equals(Optional.of(moved)),
+                "clearing the egg's source lost the last known sighting: " + SightingLog.load(file).lastKnown());
+
+        Files.write(file, List.of(moved.line(), "player not-a-uuid",
+                nested.line().replace("\t2\t", "\tmany\t"),
+                held.line().replace("\t" + TIME.getEpochSecond() + "\t", "\t" + Long.MAX_VALUE + "\t")));
         SightingLog damaged = SightingLog.load(file);
-        check(failures, damaged.all().equals(List.of(moved)) && damaged.unreadable().size() == 2,
+        check(failures, damaged.all().equals(List.of(moved)) && damaged.unreadable().size() == 3,
                 "a damaged file didn't keep its good lines and set the rest aside: "
                         + damaged.all() + " " + damaged.unreadable());
 
