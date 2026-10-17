@@ -1,5 +1,6 @@
 # Punishes players by account only: targeting an IP address is the owners'.
 # Sees Grim's cheat alerts from joining, and what the chat filter blocks.
+# Finds the dragon egg with /egg.
 name: admin
 permissions:
 - grim.alerts
@@ -40,6 +41,7 @@ permissions:
 - libertybans.warn.undo.target.uuid
 - minecraft.command.gamemode
 - minecraft.command.teleport
+- oasisegg.locate
 - oasisfilter.notify
 - weight.9
 parents:
