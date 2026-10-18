@@ -98,7 +98,6 @@ block fuuuuck
 block sh1t
 block bullshit
 block shitty
-block wtf
 block stfu
 block you ass
 block dumbass
@@ -106,6 +105,11 @@ block asshole
 block bastard
 block dickhead
 block wanker
+
+# Abbreviations let through
+pass wtf
+pass lmfao
+pass omfg
 
 # Sexual words
 block porn
