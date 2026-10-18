@@ -67,7 +67,8 @@ jar, and the formats in each `datapacks/*/pack.mcmeta` to the new version's data
 The `library` lines are what `plugin-src/` compiles against, so they follow what the server runs: `paper-api`
 the Paper build, the `adventure-*` libraries the Adventure version, `guava` and `brigadier` the versions that
 `paper-api`'s POM names, `jetbrains-annotations` the version `adventure-api`'s POM names, `luckperms-api` the LuckPerms
-plugin's major and minor version, and `voicechat-api` the Simple Voice Chat plugin. Changing the Java version
+plugin's major and minor version, `voicechat-api` the Simple Voice Chat plugin, `libertybans-api` the LibertyBans
+plugin, and `omnibus` the version `libertybans-api`'s parent POM names. Changing the Java version
 means changing the JDK image and `--release` in the `Dockerfile`'s `repo-plugins` stage too.
 
 Worldgen datapacks (terrain and structures) shape the world only as it is first generated, and removing one
