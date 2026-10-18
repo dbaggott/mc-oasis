@@ -16,4 +16,3 @@ slurs
 harm
 profanity
 sexual
-mild
