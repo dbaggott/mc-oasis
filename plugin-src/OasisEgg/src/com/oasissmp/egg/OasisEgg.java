@@ -93,8 +93,9 @@ public final class OasisEgg extends JavaPlugin implements Listener {
         // Messages go to it as an Audience: CommandSender's own sendMessage
         // overloads reach for BungeeCord's chat classes, which aren't here.
         Audience sender = source.getSender();
-        sender.sendMessage(Component.text(lines.getFirst(), NamedTextColor.GOLD));
-        lines.subList(1, lines.size()).forEach(line -> sender.sendMessage(Component.text(line)));
+        sender.sendMessage(Component.text(lines.getFirst(), NamedTextColor.BLACK));
+        lines.subList(1, lines.size()).forEach(line ->
+                sender.sendMessage(Component.text(line, NamedTextColor.DARK_PURPLE)));
         return Command.SINGLE_SUCCESS;
     }
 }
