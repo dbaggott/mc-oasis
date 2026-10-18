@@ -1,9 +1,12 @@
 # Every player. The plugin list is hidden. ClickVillagers is pickup-and-place
 # and trade resetting only: each of its other features is a permission it
 # grants everyone by default. Its config is the repo's, so no one, op or not,
-# edits it in game. Simple Voice Chat's plugin.yml declares its listen, speak
-# and groups permissions with no default, which makes them ops-only, so they're
-# granted here.
+# edits it in game.
+#
+# Simple Voice Chat means its listen, speak and groups permissions for
+# everyone, but its plugin.yml declares them with no default, which Bukkit
+# registers as ops-only, and LuckPerms answers from that registration. So
+# they're granted here.
 name: default
 permissions:
 - bukkit.command.plugins:
