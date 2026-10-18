@@ -44,9 +44,9 @@ public final class ReportTest {
                 "a logged egg whose source is loaded again was listed: " + back);
 
         List<String> none = Report.lines(List.of(), List.of(), source -> true, Optional.of(withPlayer));
-        check(failures, none.size() == 2 && none.get(0).startsWith("No dragon egg found.")
+        check(failures, none.size() == 2 && none.get(0).equals("No dragon egg found.")
                         && none.get(1).equals("Last known: in Someone's ender chest at 0 66 0 in minecraft:the_end,"
-                                + " as of 2026-10-16 14:03 UTC, when they left. It isn't there now."),
+                                + " as of 2026-10-16 14:03 UTC, when they left."),
                 "nothing found didn't fall back to the last known sighting: " + none);
 
         check(failures, Report.lines(List.of(), List.of(), source -> true, Optional.empty()).size() == 1,
