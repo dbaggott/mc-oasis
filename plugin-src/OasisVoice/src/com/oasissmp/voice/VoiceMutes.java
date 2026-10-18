@@ -2,6 +2,7 @@ package com.oasissmp.voice;
 
 import de.maxhenkel.voicechat.api.VoicechatConnection;
 import de.maxhenkel.voicechat.api.events.MicrophonePacketEvent;
+import java.net.InetSocketAddress;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -96,9 +97,13 @@ final class VoiceMutes implements Listener {
     }
 
     private void loadMute(Player player) {
-        UUID playerId = player.getUniqueId();
+        // None only once their connection is closing, when there's nobody to silence.
+        InetSocketAddress address = player.getAddress();
+        if (address == null) {
+            return;
+        }
         libertyBans.getSelector()
-                .getCachedMute(playerId, NetworkAddress.of(player.getAddress().getAddress()))
+                .getCachedMute(player.getUniqueId(), NetworkAddress.of(address.getAddress()))
                 .whenComplete((mute, failure) -> {
                     if (failure != null) {
                         plugin.getLogger().log(Level.SEVERE, "Couldn't look up whether "
@@ -113,8 +118,7 @@ final class VoiceMutes implements Listener {
     private void onMute(Punishment punishment) {
         if (punishment.getType() == PunishmentType.MUTE
                 && punishment.getVictim() instanceof PlayerVictim victim) {
-            mutes.mute(victim.getUUID(),
-                    punishment.isPermanent() ? Instant.MAX : punishment.getEndDate());
+            mutes.mute(victim.getUUID(), punishment.getEndDate());
         }
     }
 

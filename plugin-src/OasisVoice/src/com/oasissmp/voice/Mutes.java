@@ -16,7 +16,7 @@ final class Mutes {
     // Muted players who've been told their voice isn't heard, so they're told once a mute.
     private final Set<UUID> told = ConcurrentHashMap.newKeySet();
 
-    /** Mutes the player until {@code end}; {@link Instant#MAX} for a permanent mute. */
+    /** Mutes the player until {@code end}, which is {@link Instant#MAX} for a permanent mute. */
     void mute(UUID player, Instant end) {
         ends.put(player, end);
         told.remove(player);
