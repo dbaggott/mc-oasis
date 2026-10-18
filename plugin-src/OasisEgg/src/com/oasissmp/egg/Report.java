@@ -28,10 +28,8 @@ final class Report {
         List<String> lines = new ArrayList<>();
         int eggs = Stream.concat(live.stream(), away.stream()).mapToInt(Sighting::count).sum();
         if (eggs == 0) {
-            lines.add("No dragon egg found. Searched what's loaded now, and where eggs were"
-                    + " when their chunk unloaded or the player holding one left.");
-            lastKnown.ifPresent(last ->
-                    lines.add("Last known: " + describe(last) + ", " + since(last) + ". It isn't there now."));
+            lines.add("No dragon egg found.");
+            lastKnown.ifPresent(last -> lines.add("Last known: " + describe(last) + ", " + since(last) + "."));
             return lines;
         }
         lines.add(eggs == 1 ? "1 dragon egg:" : eggs + " dragon eggs:");
