@@ -1,6 +1,8 @@
 # Punishes players by account only: targeting an IP address is the owners'.
 # Sees Grim's cheat alerts from joining, and what the chat filter blocks.
-# Finds the dragon egg with /egg.
+# Finds the dragon egg with /egg. Sees and changes any player's inventory and
+# ender chest, online or not, with /invsee and /endersee, owners' included;
+# InvSee++ logs what each one takes and gives to its own log file.
 name: admin
 permissions:
 - grim.alerts
@@ -8,6 +10,8 @@ permissions:
 - grim.history
 - grim.profile
 - grim.spectate
+- invseeplusplus.endersee.edit
+- invseeplusplus.invsee.edit
 - libertybans.alts.command
 - libertybans.ban.do.notify
 - libertybans.ban.do.notifysilent
