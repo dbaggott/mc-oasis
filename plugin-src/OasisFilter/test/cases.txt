@@ -124,15 +124,15 @@ block clit
 block gang bang
 block gangbang
 
-# Mild swearing
-block damn
-block dammit
-block goddamn
-block what the hell
-block crap
-block pissed off
-block bugger off
-block goddamned
+# Mild swearing, let through while the mild list is left out of lists.txt
+pass damn
+pass dammit
+pass goddamn
+pass what the hell
+pass crap
+pass pissed off
+pass bugger off
+pass goddamned
 
 # Innocent words containing a term, or near one
 pass Niger

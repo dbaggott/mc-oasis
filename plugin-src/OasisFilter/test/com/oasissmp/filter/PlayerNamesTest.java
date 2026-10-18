@@ -13,18 +13,18 @@ import java.util.Map;
 public final class PlayerNamesTest {
 
     private static final PlayerNames NAMES =
-            new PlayerNames(List.of("Hell_Raiser", "Steve")).with("Damn_Daniel");
+            new PlayerNames(List.of("Bastard_Raiser", "Steve")).with("Arse_Daniel");
 
     private static final Map<String, Boolean> BLOCKED = Map.ofEntries(
-            Map.entry("/msg Hell_Raiser hi", false),
-            Map.entry("hi hell_raiser", false),
-            Map.entry("HELL_RAISER, over here", false),
-            Map.entry("/ban Damn_Daniel", false),
-            Map.entry("hell", true),
-            Map.entry("Hell_Raiser what the hell", true),
-            Map.entry("Hell_Raiser2", true),
-            Map.entry("Hell_Raiser_x", true),
-            Map.entry("Hell Raiser", true));
+            Map.entry("/msg Bastard_Raiser hi", false),
+            Map.entry("hi bastard_raiser", false),
+            Map.entry("BASTARD_RAISER, over here", false),
+            Map.entry("/ban Arse_Daniel", false),
+            Map.entry("bastard", true),
+            Map.entry("Bastard_Raiser you bastard", true),
+            Map.entry("Bastard_Raiser2", true),
+            Map.entry("Bastard_Raiser_x", true),
+            Map.entry("Bastard Raiser", true));
 
     private PlayerNamesTest() { }
 

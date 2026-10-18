@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 /**
  * Players' names, which are taken out of text before it's checked. A name was
  * approved when its player was allowlisted, so it never counts as a blocked
- * word, even where '_' splits it into words that are: "/msg Hell_Raiser hi".
+ * word, even where '_' splits it into words that are: "/msg Bastard_Raiser hi".
  */
 final class PlayerNames {
 
