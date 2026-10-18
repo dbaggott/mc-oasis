@@ -2,10 +2,13 @@
 # denies; /plugins is granted back here over default's denial. Of LuckPerms'
 # commands they get only the ones that read data or put players in groups:
 # groups and tracks are this repo's, and ops get no LuckPerms command unless
-# granted here. They're the only ones who can go off duty with /staff.
+# granted here. They're the only ones who can go off duty with /staff. Admins
+# can't open their inventories or ender chests; they can open each other's.
 name: owner
 permissions:
 - bukkit.command.plugins
+- invseeplusplus.bypass-exempt
+- invseeplusplus.exempt
 - libertybans.*
 - luckperms.group.info
 - luckperms.group.listmembers
