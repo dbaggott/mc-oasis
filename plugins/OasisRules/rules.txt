@@ -16,12 +16,16 @@ Use common sense: don't say anything you think might hurt someone.
 [Gameplay]
 No hacking, x-raying or any external modification that gives you an unfair advantage. If you're wondering whether a mod or texture pack is allowed, ask a staff member.
 No griefing builds.
+No scamming.
 No stealing. That includes picking up someone's loot when they die; the only exception is putting it in a chest or shulker box for them.
 Only PvP with someone if they've consented. You can also start a war with someone; ask staff for more info.
 Don't intentionally lag the server. Redstone machines are OK, but if they cause too much lag they might be taken down, and the materials will be refunded to you.
 Try to keep the Overworld and the Nether looking nice, especially around spawn.
-Don't build too close to someone else without their permission.
-Use common sense: if it feels like breaking a rule, it probably is.
+Don't build too close to someone else without their permission, unless you're within 300 blocks of spawn.
+If you have the dragon egg, you must attend every session. If you miss two in a row, or keep missing sessions, the dragon egg will be passed on to someone else.
+Don't hide the dragon egg.
+Don't dupe the dragon egg.
+Use common sense: if it feels like cheating, it probably is.
 
 [Administration]
 Admins and owners have the final say on disputes.
