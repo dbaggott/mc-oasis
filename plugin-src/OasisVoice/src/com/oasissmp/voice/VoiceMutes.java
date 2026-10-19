@@ -6,9 +6,6 @@ import java.net.InetSocketAddress;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.logging.Level;
-import net.kyori.adventure.audience.Audience;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -75,15 +72,6 @@ final class VoiceMutes implements Listener {
             return;
         }
         event.cancel();
-        // Simple Voice Chat shows them nothing, so they'd think they're being heard.
-        if (mutes.tell(playerId)) {
-            Audience player = plugin.getServer().getPlayer(playerId);
-            if (player != null) {
-                player.sendMessage(Component.text(
-                        "You're muted, so nobody can hear you in voice chat either.",
-                        NamedTextColor.RED));
-            }
-        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

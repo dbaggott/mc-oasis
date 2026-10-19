@@ -43,12 +43,15 @@ record Rules(List<Line> lines) {
                 .toList());
     }
 
-    /** Each rule with its number, "1. Be kind.", counting on across headings. */
-    List<Line> numbered() {
-        List<Line> numbered = new ArrayList<>();
+    /** A line as shown: a rule after its {@code number}, "1. ", or a heading, whose number is "". */
+    record Numbered(String number, Line line) { }
+
+    /** Each line with its number, the rules counting on across headings. */
+    List<Numbered> numbered() {
+        List<Numbered> numbered = new ArrayList<>();
         int number = 0;
         for (Line line : lines) {
-            numbered.add(line.heading() ? line : new Line(++number + ". " + line.text(), false));
+            numbered.add(new Numbered(line.heading() ? "" : ++number + ". ", line));
         }
         return numbered;
     }
