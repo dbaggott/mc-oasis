@@ -195,6 +195,16 @@ final class WordFilter {
         return false;
     }
 
+    /** Whether a word as typed is a single letter, as each one spelled out is. */
+    static boolean isOneLetter(String word) {
+        return normalize(word).strip().length() == 1;
+    }
+
+    /** Whether a character as typed separates words, rather than being or imitating a letter. */
+    static boolean separates(int codePoint) {
+        return !isIgnored(codePoint) && letter(codePoint) == ' ';
+    }
+
     /** Lowercase a-z for every letter, and a space for every separator. */
     private static String normalize(String text) {
         int[] codePoints = Normalizer.normalize(text, Normalizer.Form.NFKD).codePoints()
