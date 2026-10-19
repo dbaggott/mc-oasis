@@ -574,6 +574,10 @@ while IFS= read -r line; do
     exit 1
   fi
 done <"${repo_root}/Dockerfile"
+if ((${#corners[@]} != 0)); then
+  echo "error: a '//pos' line in the Dockerfile has no 'rg define -w world <region>' after it" >&2
+  exit 1
+fi
 if [[ -z "${region_bounds[spawn]+set}" ]]; then
   echo "error: the Dockerfile doesn't define the spawn region" >&2
   exit 1
