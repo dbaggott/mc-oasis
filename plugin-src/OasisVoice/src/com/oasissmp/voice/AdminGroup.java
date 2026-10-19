@@ -52,12 +52,10 @@ final class AdminGroup {
         if (!id.equals(event.getGroup().getId())) {
             return;
         }
-        // Without a connection the join is another plugin's doing, and it's let through.
+        // Without a connection there's no player to check, so the join is refused.
         VoicechatConnection connection = event.getConnection();
-        if (connection == null) {
-            return;
-        }
-        Player player = plugin.getServer().getPlayer(connection.getPlayer().getUuid());
+        Player player = connection == null
+                ? null : plugin.getServer().getPlayer(connection.getPlayer().getUuid());
         if (player != null && player.hasPermission(PERMISSION)) {
             return;
         }
