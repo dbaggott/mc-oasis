@@ -553,7 +553,7 @@ corners=()
 while IFS= read -r line; do
   if [[ "$line" =~ ^//pos[12]\ (-?[0-9]+),(-?[0-9]+),(-?[0-9]+)\\n\\$ ]]; then
     corners+=("${BASH_REMATCH[1]} ${BASH_REMATCH[2]} ${BASH_REMATCH[3]}")
-  elif [[ "$line" =~ ^rg\ define\ -w\ world\ ([a-z-]+)\\n\\$ ]]; then
+  elif [[ "$line" =~ ^rg\ define\ -w\ world\ ([A-Za-z0-9_-]+)\\n\\$ ]]; then
     if ((${#corners[@]} != 2)); then
       echo "error: expected a '//pos1 x,y,z' and a '//pos2 x,y,z' line before 'rg define -w world ${BASH_REMATCH[1]}' in the Dockerfile" >&2
       exit 1
@@ -563,7 +563,7 @@ while IFS= read -r line; do
     region_bounds[${BASH_REMATCH[1]}]="min: {x: $((x1 < x2 ? x1 : x2)), y: $((y1 < y2 ? y1 : y2)), z: $((z1 < z2 ? z1 : z2))} max: {x: $((x1 > x2 ? x1 : x2)), y: $((y1 > y2 ? y1 : y2)), z: $((z1 > z2 ? z1 : z2))}"
     region_flag_lines[${BASH_REMATCH[1]}]=""
     corners=()
-  elif [[ "$line" =~ ^rg\ flag\ -w\ world\ ([a-z-]+)\ ([a-z-]+)\ ([a-z]+)(\\n\\|\")$ ]]; then
+  elif [[ "$line" =~ ^rg\ flag\ -w\ world\ ([A-Za-z0-9_-]+)\ ([a-z-]+)\ ([a-z]+)(\\n\\|\")$ ]]; then
     if [[ -z "${region_bounds[${BASH_REMATCH[1]}]+set}" ]]; then
       echo "error: 'rg flag' for ${BASH_REMATCH[1]} in the Dockerfile comes before its 'rg define'" >&2
       exit 1
@@ -585,7 +585,7 @@ for region in "${!region_bounds[@]}"; do
     exit 1
   fi
   # The first flags after the region's own name are its own.
-  region_flags="$(grep --only-matching 'flags: {[^}]*}' <<<"${regions#* "${region}": min: }" \
+  region_flags="$({ grep --only-matching 'flags: {[^}]*}' <<<"${regions#* "${region}": min: }" || true; } \
     | head -n 1 | sed 's/^flags: {\(.*\)}$/\1/')"
   flag_count=0
   while read -r flag_name flag_value; do

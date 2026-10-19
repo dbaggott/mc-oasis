@@ -13,6 +13,7 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockFromToEvent;
@@ -48,7 +49,8 @@ final class Pedestal implements Listener {
         }
     }
 
-    // A click on the egg, either button, teleports it as this event.
+    // A click on the egg teleports it as this event. Clicks are denied above;
+    // this also holds it for ops, whom WorldGuard lets build.
     @EventHandler(ignoreCancelled = true)
     public void onTeleport(BlockFromToEvent event) {
         if (event.getBlock().getType() == Material.DRAGON_EGG && isPedestal(event.getBlock())) {
@@ -56,16 +58,21 @@ final class Pedestal implements Listener {
         }
     }
 
-    // Fired once per hand; only the main hand's takes the egg.
-    @EventHandler(ignoreCancelled = true)
-    public void onRightClick(PlayerInteractEvent event) {
+    // Runs before WorldGuard, which counts a click on the egg as building and
+    // would refuse it, and skips a click already denied. Fired once per hand;
+    // only the main hand's right-click takes the egg.
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onClick(PlayerInteractEvent event) {
         Block block = event.getClickedBlock();
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getHand() != EquipmentSlot.HAND
+        if ((event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.LEFT_CLICK_BLOCK)
                 || block == null || block.getType() != Material.DRAGON_EGG || !isPedestal(block)) {
             return;
         }
         event.setUseInteractedBlock(Event.Result.DENY);
         event.setUseItemInHand(Event.Result.DENY);
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getHand() != EquipmentSlot.HAND) {
+            return;
+        }
         Map<Integer, ItemStack> left = event.getPlayer().getInventory().addItem(new ItemStack(Material.DRAGON_EGG));
         if (!left.isEmpty()) {
             ((Audience) event.getPlayer()).sendMessage(
