@@ -26,6 +26,7 @@ import org.bukkit.plugin.java.JavaPlugin;
  * every dragon egg is, and what it's in or who has it. It searches everything
  * loaded, and logs where eggs are as each place goes out of reach, so an egg
  * in an unloaded chunk or with an offline player is found where it was left.
+ * It also keeps the {@link Pedestal} at spawn.
  */
 public final class OasisEgg extends JavaPlugin implements Listener {
 
@@ -45,6 +46,7 @@ public final class OasisEgg extends JavaPlugin implements Listener {
         log.unreadable().forEach(line -> getLogger().warning(
                 "Dropping an unreadable line from the egg sightings; /egg may miss an egg: " + line));
         getServer().getPluginManager().registerEvents(this, this);
+        getServer().getPluginManager().registerEvents(new Pedestal(), this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(Commands.literal("egg")
                         // The console and RCON have it without the permission, which ops don't get by default.

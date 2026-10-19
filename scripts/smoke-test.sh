@@ -541,44 +541,67 @@ if [[ "$exit_code" != 0 ]]; then
   exit 1
 fi
 
-# The spawn region, from the regions file WorldGuard saved on the way down.
-# WorldGuard adds and redefines regions in the background, so whether its reply
-# to the startup command reaches the log is a race; the saved file is not. Each
-# region's flags are saved on one line, which YAML may wrap, so the file is
-# read with its whitespace collapsed.
+# The WorldGuard regions, from the regions file WorldGuard saved on the way
+# down. WorldGuard adds and redefines regions in the background, so whether its
+# reply to the startup command reaches the log is a race; the saved file is not.
+# Each region's flags are saved on one line, which YAML may wrap, so the file is
+# read with its whitespace collapsed. Each `rg define` in the Dockerfile takes
+# the two `//pos` lines before it as its corners.
 regions="$(docker cp "${name}:/data/plugins/WorldGuard/worlds/world/regions.yml" - | tar -xO | tr -s ' \n' ' ')"
+declare -A region_bounds=() region_flag_lines=()
 corners=()
-while read -r corner; do
-  corners+=("$corner")
-done < <(sed -n 's/^\/\/pos[12] \(-*[0-9]*\),\(-*[0-9]*\),\(-*[0-9]*\)\\n\\$/\1 \2 \3/p' "${repo_root}/Dockerfile")
-if ((${#corners[@]} != 2)); then
-  echo "error: expected a '//pos1 x,y,z' and a '//pos2 x,y,z' line in the Dockerfile" >&2
-  exit 1
-fi
-read -r x1 y1 z1 <<<"${corners[0]}"
-read -r x2 y2 z2 <<<"${corners[1]}"
-bounds="min: {x: $((x1 < x2 ? x1 : x2)), y: $((y1 < y2 ? y1 : y2)), z: $((z1 < z2 ? z1 : z2))} max: {x: $((x1 > x2 ? x1 : x2)), y: $((y1 > y2 ? y1 : y2)), z: $((z1 > z2 ? z1 : z2))}"
-if ! grep --quiet --fixed-strings "spawn: ${bounds}" <<<"$regions"; then
-  echo "error: the spawn region isn't ${bounds}: ${regions}" >&2
-  exit 1
-fi
-flags=()
-while read -r flag; do
-  flags+=("$flag")
-done < <(sed -n 's/^rg flag -w world spawn \([a-z-]*\) \([a-z]*\)\\n\\$/\1 \2/p;s/^rg flag -w world spawn \([a-z-]*\) \([a-z]*\)"$/\1 \2/p' "${repo_root}/Dockerfile")
-if ((${#flags[@]} != $(grep -c '^rg flag ' "${repo_root}/Dockerfile"))); then
-  echo "error: an rg flag line in the Dockerfile isn't 'rg flag -w world spawn <flag> <value>'" >&2
-  exit 1
-fi
-region_flags="$(sed -n 's/.* spawn: .* flags: {\([^}]*\)}.*/\1/p' <<<"$regions")"
-for flag in ${flags[@]+"${flags[@]}"}; do
-  read -r flag_name flag_value <<<"$flag"
-  if ! grep --quiet --extended-regexp "(^|, )${flag_name}: ${flag_value}(,|$)" <<<"$region_flags"; then
-    echo "error: the spawn region doesn't have ${flag_name} ${flag_value}: ${region_flags}" >&2
+while IFS= read -r line; do
+  if [[ "$line" =~ ^//pos[12]\ (-?[0-9]+),(-?[0-9]+),(-?[0-9]+)\\n\\$ ]]; then
+    corners+=("${BASH_REMATCH[1]} ${BASH_REMATCH[2]} ${BASH_REMATCH[3]}")
+  elif [[ "$line" =~ ^rg\ define\ -w\ world\ ([A-Za-z0-9_-]+)\\n\\$ ]]; then
+    if ((${#corners[@]} != 2)); then
+      echo "error: expected a '//pos1 x,y,z' and a '//pos2 x,y,z' line before 'rg define -w world ${BASH_REMATCH[1]}' in the Dockerfile" >&2
+      exit 1
+    fi
+    read -r x1 y1 z1 <<<"${corners[0]}"
+    read -r x2 y2 z2 <<<"${corners[1]}"
+    region_bounds[${BASH_REMATCH[1]}]="min: {x: $((x1 < x2 ? x1 : x2)), y: $((y1 < y2 ? y1 : y2)), z: $((z1 < z2 ? z1 : z2))} max: {x: $((x1 > x2 ? x1 : x2)), y: $((y1 > y2 ? y1 : y2)), z: $((z1 > z2 ? z1 : z2))}"
+    region_flag_lines[${BASH_REMATCH[1]}]=""
+    corners=()
+  elif [[ "$line" =~ ^rg\ flag\ -w\ world\ ([A-Za-z0-9_-]+)\ ([a-z-]+)\ ([a-z]+)(\\n\\|\")$ ]]; then
+    if [[ -z "${region_bounds[${BASH_REMATCH[1]}]+set}" ]]; then
+      echo "error: 'rg flag' for ${BASH_REMATCH[1]} in the Dockerfile comes before its 'rg define'" >&2
+      exit 1
+    fi
+    region_flag_lines[${BASH_REMATCH[1]}]+="${BASH_REMATCH[2]} ${BASH_REMATCH[3]}"$'\n'
+  elif [[ "$line" =~ ^rg\ flag\  ]]; then
+    echo "error: an rg flag line in the Dockerfile isn't 'rg flag -w world <region> <flag> <value>': ${line}" >&2
     exit 1
   fi
+done <"${repo_root}/Dockerfile"
+if ((${#corners[@]} != 0)); then
+  echo "error: a '//pos' line in the Dockerfile has no 'rg define -w world <region>' after it" >&2
+  exit 1
+fi
+if [[ -z "${region_bounds[spawn]+set}" ]]; then
+  echo "error: the Dockerfile doesn't define the spawn region" >&2
+  exit 1
+fi
+for region in "${!region_bounds[@]}"; do
+  bounds="${region_bounds[$region]}"
+  if ! grep --quiet --fixed-strings " ${region}: ${bounds}" <<<"$regions"; then
+    echo "error: the ${region} region isn't ${bounds}: ${regions}" >&2
+    exit 1
+  fi
+  # The first flags after the region's own name are its own.
+  region_flags="$({ grep --only-matching 'flags: {[^}]*}' <<<"${regions#* "${region}": min: }" || true; } \
+    | head -n 1 | sed 's/^flags: {\(.*\)}$/\1/')"
+  flag_count=0
+  while read -r flag_name flag_value; do
+    [[ -n "$flag_name" ]] || continue
+    if ! grep --quiet --extended-regexp "(^|, )${flag_name}: ${flag_value}(,|$)" <<<"$region_flags"; then
+      echo "error: the ${region} region doesn't have ${flag_name} ${flag_value}: ${region_flags}" >&2
+      exit 1
+    fi
+    flag_count=$((flag_count + 1))
+  done <<<"${region_flag_lines[$region]}"
+  echo "${region} region ${bounds}, with ${flag_count} flags"
 done
-echo "spawn region ${bounds}, with ${#flags[@]} flags"
 
 # A LuckPerms group file and an OasisFilter word list file the repo doesn't
 # have, left on the world volume as ones deleted from the repo would be, are
