@@ -23,11 +23,16 @@ final class AdminGroup {
     static final String PERMISSION = "oasisvoice.admin-group";
 
     private final OasisVoice plugin;
+    private final LuckPerms luckPerms;
     private final UUID id = UUID.randomUUID();
     private volatile VoicechatServerApi voicechat;
 
     AdminGroup(OasisVoice plugin, LuckPerms luckPerms) {
         this.plugin = plugin;
+        this.luckPerms = luckPerms;
+    }
+
+    void enable() {
         // Subscribed as the plugin, so LuckPerms drops it when the plugin disables.
         luckPerms.getEventBus().subscribe(plugin, UserDataRecalculateEvent.class,
                 event -> onRecalculate(event.getUser().getUniqueId()));

@@ -48,6 +48,7 @@ public final class OasisVoice extends JavaPlugin implements VoicechatPlugin {
             throw new IllegalStateException("LuckPerms' API isn't registered");
         }
         adminGroup = new AdminGroup(this, luckPerms);
+        adminGroup.enable();
         BukkitVoicechatService service =
                 getServer().getServicesManager().load(BukkitVoicechatService.class);
         if (service == null) {
