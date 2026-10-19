@@ -41,6 +41,10 @@ jobs:
     # `secrets` is unavailable in a job-level `if`, hence a variable.
     if: vars.BUMP_APP_CLIENT_ID != ''
     runs-on: ubuntu-latest
+    # Explicit, for -o pipefail: a failing script must not pass behind `tee`.
+    defaults:
+      run:
+        shell: bash
     env:
       BRANCH: bump/bedrock
       BASE: ${{ github.event.repository.default_branch }}
@@ -77,10 +81,12 @@ jobs:
             echo "artifacts.lock is current"
             exit 0
           fi
-          # The branch already holding this exact lock means the open PR (or
-          # one a human closed) already proposes it.
-          if git fetch --quiet origin "$BRANCH" && git diff --quiet FETCH_HEAD -- artifacts.lock; then
+          pr="$(gh pr list --head "$BRANCH" --base "$BASE" --state open --json number --jq '.[0].number // empty')"
+          # An open PR whose branch already holds this exact lock proposes it;
+          # re-queueing auto-merge covers a run that died before queueing it.
+          if [[ -n "$pr" ]] && git fetch --quiet origin "$BRANCH" && git diff --quiet FETCH_HEAD -- artifacts.lock; then
             echo "$BRANCH already proposes this artifacts.lock"
+            gh pr merge "$pr" --auto --squash
             exit 0
           fi
 
@@ -100,7 +106,6 @@ jobs:
             echo
             echo "Opened by .github/workflows/bump-bedrock.yml, and auto-merges once ci-required passes. Merging does not deploy."
           } >"$RUNNER_TEMP/body"
-          pr="$(gh pr list --head "$BRANCH" --base "$BASE" --state open --json number --jq '.[0].number // empty')"
           if [[ -n "$pr" ]]; then
             gh pr edit "$pr" --body-file "$RUNNER_TEMP/body"
           else

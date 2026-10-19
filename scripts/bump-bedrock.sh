@@ -32,13 +32,14 @@ get() { curl -fsSL --retry 3 "$1"; }
 # build, searching versions newest first, or nothing if none qualifies.
 newest_build() {
   local project="$1" versions version builds pick
-  versions="$(get "${api}/${project}" | jq -r '.versions | reverse | .[]')"
+  versions="$(get "${api}/${project}" | jq -r '.versions[]' | sort -rV)"
   for version in $versions; do
     builds="$(get "${api}/${project}/versions/${version}/builds")"
     pick="$(jq -r --argjson skip_wait "$skip_wait" --argjson min_age "$min_age_seconds" '
       .version as $v
-      | [.builds[]
-          | select(.channel == "default")
+      | [.builds
+          | sort_by(.build)[]
+          | select(.channel == "default" and .downloads.spigot.sha256 != null)
           | select($skip_wait or (now - (.time | sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601)) >= $min_age)]
       | last // empty
       | "\($v) \(.build) \(.downloads.spigot.sha256) \(.time)"' <<<"$builds")"
@@ -81,10 +82,9 @@ while IFS= read -r line || [[ -n "$line" ]]; do
 
   # Keep the sha256 and url columns where they were: only the version's own
   # field, with its padding, is rebuilt.
-  head="${line%%"${pinned}"*}"
-  rest="${line#"${head}${pinned}"}"
-  padding="${rest%%[! ]*}"
-  width=$(( ${#pinned} + ${#padding} ))
+  [[ "$line" =~ ^([^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+)[^[:space:]]+([[:space:]]+) ]]
+  head="${BASH_REMATCH[1]}"
+  width=$(( ${#pinned} + ${#BASH_REMATCH[2]} ))
   (( width >= ${#target} + 2 )) || width=$(( ${#target} + 2 ))
   new_url="${api}/${project}/versions/${version}/builds/${build}/downloads/spigot"
   printf '%s%-*s%s  %s\n' "$head" "$width" "$target" "$new_sha" "$new_url" >>"$tmp"
