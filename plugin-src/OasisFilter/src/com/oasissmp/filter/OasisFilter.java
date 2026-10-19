@@ -42,11 +42,6 @@ public final class OasisFilter extends JavaPlugin implements Listener {
     private static final int NOTICE_TEXT_LIMIT = 256;
     private static final Component SHORT_REFUSAL =
             Component.text("That has a word that isn't allowed here.", NamedTextColor.RED);
-    private static final Component MESSAGE_REFUSAL = Component.text(
-            "Your message wasn't sent. Some words can hurt or put people down, or aren't right"
-                    + " for the younger players here, and this looks like it might be one of them."
-                    + " We want everyone to be and feel welcome here.",
-            NamedTextColor.RED);
 
     private WordFilter filter;
     // Replaced, never changed, as players join: chat reads it off the main thread.
@@ -77,7 +72,7 @@ public final class OasisFilter extends JavaPlugin implements Listener {
         String text = plainText(Stream.of(event.message()));
         if (blocks(text)) {
             event.setCancelled(true);
-            refuse(event.getPlayer(), MESSAGE_REFUSAL, "chat", text);
+            refuse(event.getPlayer(), messageRefusal(text), "chat", text);
         }
     }
 
@@ -87,7 +82,7 @@ public final class OasisFilter extends JavaPlugin implements Listener {
         if (blocks(text)) {
             event.setCancelled(true);
             refuse(event.getPlayer(),
-                    MessageCommands.sends(text) ? MESSAGE_REFUSAL : SHORT_REFUSAL, "a command", text);
+                    MessageCommands.sends(text) ? messageRefusal(text) : SHORT_REFUSAL, "a command", text);
         }
     }
 
@@ -132,6 +127,11 @@ public final class OasisFilter extends JavaPlugin implements Listener {
             event.setResult(null);
             event.getView().getPlayer().sendActionBar(SHORT_REFUSAL);
         }
+    }
+
+    private Component messageRefusal(String text) {
+        return Component.text("Messages with \"" + BlockedPhrase.in(text, this::blocks) + "\" are banned.",
+                NamedTextColor.RED);
     }
 
     private void refuse(Player player, Component refusal, String where, String text) {
