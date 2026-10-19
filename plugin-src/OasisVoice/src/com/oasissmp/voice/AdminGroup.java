@@ -19,6 +19,8 @@ import org.bukkit.entity.Player;
  */
 final class AdminGroup {
 
+    // The voice chat client lists groups by name, so this one comes after
+    // OasisVoice.GROUP_NAME only while its name sorts after that one.
     static final String NAME = "Staff VC";
     static final String PERMISSION = "oasisvoice.admin-group";
 
@@ -81,7 +83,7 @@ final class AdminGroup {
             }
             connection.setGroup(null);
             ((Audience) player).sendMessage(Component.text(
-                    "You've left " + NAME + ": it's for admins.", NamedTextColor.YELLOW));
+                    "You've left " + NAME + ".", NamedTextColor.YELLOW));
         });
     }
 }
