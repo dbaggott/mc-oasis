@@ -28,10 +28,12 @@ plugin-src/<Name>/       the repo's own plugins, each a plugin.yml and Java sour
 scripts/
   fetch-artifacts.sh     downloads everything in artifacts.lock and verifies each sha256
   smoke-test.sh          starts a built image on a throwaway world; checks every plugin and datapack loads and every config setting applies
+  bump-bedrock.sh        moves the Geyser and Floodgate lines in artifacts.lock to their newest builds at least 48 hours old
 web/                     the website: a Vite site; its rules page renders plugins/OasisRules/rules.txt
 api/                     the website's API: a parent's request for their child to be let in, as a container-image Lambda
 shared/                  what the site's forms and the API both import, so they agree on every field
 .github/workflows/ci.yml builds and tests every PR; publishes main and dispatched branches (images to ECR, the website to S3)
+.github/workflows/bump-bedrock.yml  daily, runs bump-bedrock.sh and opens or updates an auto-merging PR on bump/bedrock
 ```
 
 ## Building locally
@@ -60,6 +62,10 @@ checks the build. Requests sent to a local API are kept in memory and never leav
 Edit its line in `artifacts.lock`: version, URL and sha256 together. Take the sha256 from the publisher
 where they give one (the Paper and GeyserMC download APIs both do). Otherwise download the file and hash
 it yourself. A mismatch fails the build.
+
+Geyser and Floodgate are bumped for you: the Bump Bedrock workflow opens a PR on `bump/bedrock` daily when
+there is a newer build, which merges itself once CI passes. When a Bedrock client update has locked players
+out before a build is 48 hours old, run it from the Actions tab with `skip_wait` checked.
 
 Changing the Minecraft version also means changing `VERSION` in the `Dockerfile` to match the new Paper
 jar, and the formats in each `datapacks/*/pack.mcmeta` to the new version's data pack format.
