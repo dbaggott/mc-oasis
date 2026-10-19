@@ -145,7 +145,7 @@ jobs:
           compression-level: 0
 
   # Passes only when every build-and-test job above did, so a job joins the gate
-  # by being added here. The publish jobs need this rather than their own build,
+  # by being added here. The publish jobs need this as well as their own build,
   # so a commit with any failing test publishes no artifact at all.
   tested:
     needs: [server, site, api]
