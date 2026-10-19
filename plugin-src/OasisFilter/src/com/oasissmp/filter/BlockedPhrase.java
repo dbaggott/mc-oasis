@@ -5,9 +5,10 @@ import java.util.List;
 import java.util.function.Predicate;
 
 /**
- * The part of blocked text to show its player: the fewest words, as typed,
- * that are blocked on their own, the one that ends first, without the
- * punctuation around it. Letters spelled out one at a time are one word to
+ * The part of blocked text to show its player: the fewest words, as typed and
+ * split only at whitespace, that are blocked on their own, the one that ends
+ * first, without separators at its ends. "hey,nigger" is one word here, though
+ * {@link WordFilter} reads two. Letters spelled out one at a time are one word to
  * {@link WordFilter}, so the phrase takes in all of them, not only the ones it
  * needs: "n i g g e r", not "n i g g".
  */
