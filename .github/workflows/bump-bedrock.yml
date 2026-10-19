@@ -1,0 +1,109 @@
+################################################################################
+# Bump Bedrock — keep Geyser and Floodgate current, so a Bedrock client update
+# doesn't lock Bedrock players out until someone bumps them by hand.
+#
+# Daily, scripts/bump-bedrock.sh moves their artifacts.lock lines to the newest
+# build at least 48 hours old. Any change goes to one PR on `bump/bedrock`,
+# opened or force-pushed fresh off main, and queued to auto-merge once CI
+# passes. A merge is not a deploy: the server runs a new image only after
+# `apps/app deploy mc-oasis main` in dbaggott/infrastructure and a restart.
+#
+# The PR is pushed and opened with a token from a GitHub App installed on this
+# repo alone, because events made with GITHUB_TOKEN start no workflows, so CI
+# would never run on the PR and `ci-required` would never report.
+# BUMP_APP_CLIENT_ID is a repo variable from dbaggott/infrastructure
+# (accounts/github/mc_oasis_ci.tf); BUMP_APP_PRIVATE_KEY is a repo secret set
+# with `gh secret set`. Forks have neither, so the job skips there.
+#
+# Third-party actions are pinned to commit SHAs, as in ci.yml.
+################################################################################
+
+name: Bump Bedrock
+
+on:
+  schedule:
+    - cron: "17 9 * * *"
+  workflow_dispatch:
+    inputs:
+      skip_wait:
+        description: Take the newest builds even if under 48 hours old (a Bedrock client update has locked players out)
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    # `secrets` is unavailable in a job-level `if`, hence a variable.
+    if: vars.BUMP_APP_CLIENT_ID != ''
+    runs-on: ubuntu-latest
+    env:
+      BRANCH: bump/bedrock
+      BASE: ${{ github.event.repository.default_branch }}
+    steps:
+      - name: Mint the App token
+        id: token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.BUMP_APP_CLIENT_ID }}
+          private-key: ${{ secrets.BUMP_APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      # Always the default branch, even when dispatched from another: the PR
+      # is a bump of what main pins.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.BASE }}
+          token: ${{ steps.token.outputs.token }}
+
+      - name: Rewrite artifacts.lock
+        env:
+          SKIP_WAIT: ${{ inputs.skip_wait && '--skip-wait' || '' }}
+        run: |
+          scripts/bump-bedrock.sh ${SKIP_WAIT:+"$SKIP_WAIT"} | tee "$RUNNER_TEMP/changes"
+
+      - name: Open or update the PR
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          APP_SLUG: ${{ steps.token.outputs.app-slug }}
+        run: |
+          if git diff --quiet -- artifacts.lock; then
+            echo "artifacts.lock is current"
+            exit 0
+          fi
+          # The branch already holding this exact lock means the open PR (or
+          # one a human closed) already proposes it.
+          if git fetch --quiet origin "$BRANCH" && git diff --quiet FETCH_HEAD -- artifacts.lock; then
+            echo "$BRANCH already proposes this artifacts.lock"
+            exit 0
+          fi
+
+          bot="${APP_SLUG}[bot]"
+          bot_id="$(gh api "users/${bot}" --jq .id)"
+          git config user.name "$bot"
+          git config user.email "${bot_id}+${bot}@users.noreply.github.com"
+          git commit --quiet -m "Bump GeyserMC artifacts" -m "$(cat "$RUNNER_TEMP/changes")" -- artifacts.lock
+          git push --force origin "HEAD:refs/heads/${BRANCH}"
+
+          {
+            echo "Moves artifacts.lock to newer GeyserMC builds:"
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/changes"
+            echo '```'
+            echo
+            echo "Opened by .github/workflows/bump-bedrock.yml, and auto-merges once ci-required passes. Merging does not deploy."
+          } >"$RUNNER_TEMP/body"
+          pr="$(gh pr list --head "$BRANCH" --base "$BASE" --state open --json number --jq '.[0].number // empty')"
+          if [[ -n "$pr" ]]; then
+            gh pr edit "$pr" --body-file "$RUNNER_TEMP/body"
+          else
+            gh pr create --head "$BRANCH" --base "$BASE" --title "Bump Geyser and Floodgate" --body-file "$RUNNER_TEMP/body"
+          fi
+          gh pr merge "$BRANCH" --auto --squash
