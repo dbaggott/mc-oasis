@@ -6,5 +6,5 @@ description: The Oasis's Simple Voice Chat groups, with LibertyBans mutes applie
 depend: [voicechat, LibertyBans, LuckPerms]
 permissions:
   oasisvoice.admin-group:
-    description: Join the Admin VC voice group
+    description: Join the Staff VC voice group
     default: false

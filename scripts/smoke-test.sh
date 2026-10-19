@@ -99,7 +99,7 @@ echo "every plugin in artifacts.lock and plugin-src enabled"
 deadline=$((SECONDS + 60))
 until voice_logs="$(docker logs "$name" 2>&1)" \
     && grep --quiet --fixed-strings '[OasisVoice] Created the voice group Group VC' <<<"$voice_logs" \
-    && grep --quiet --fixed-strings '[OasisVoice] Created the voice group Admin VC' <<<"$voice_logs"; do
+    && grep --quiet --fixed-strings '[OasisVoice] Created the voice group Staff VC' <<<"$voice_logs"; do
   if [[ "$(docker inspect --format '{{.State.Running}}' "$name")" != true ]] || ((SECONDS >= deadline)); then
     docker logs "$name" 2>&1 | grep --after-context=10 --fixed-strings 'OasisVoice' | tail -n 60 || true
     echo "error: OasisVoice didn't create both voice chat groups within 60s of 'Done ('" >&2
