@@ -4,32 +4,37 @@ import de.maxhenkel.voicechat.api.BukkitVoicechatService;
 import de.maxhenkel.voicechat.api.Group;
 import de.maxhenkel.voicechat.api.VoicechatConnection;
 import de.maxhenkel.voicechat.api.VoicechatPlugin;
+import de.maxhenkel.voicechat.api.VoicechatServerApi;
 import de.maxhenkel.voicechat.api.events.CreateGroupEvent;
 import de.maxhenkel.voicechat.api.events.EventRegistration;
+import de.maxhenkel.voicechat.api.events.JoinGroupEvent;
 import de.maxhenkel.voicechat.api.events.MicrophonePacketEvent;
 import de.maxhenkel.voicechat.api.events.VoicechatServerStartedEvent;
 import java.util.UUID;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.luckperms.api.LuckPerms;
 import org.bukkit.plugin.java.JavaPlugin;
 import space.arim.libertybans.api.LibertyBans;
 import space.arim.omnibus.OmnibusProvider;
 
 /**
- * Makes the server's one Simple Voice Chat group and refuses any other, and
- * keeps players muted in LibertyBans silent in voice chat.
+ * Makes the server's Simple Voice Chat groups and refuses any other, and keeps
+ * players muted in LibertyBans silent in voice chat.
  *
- * <p>The group is open: its members hear each other wherever they are, and still
- * hear and are heard by anyone near them by proximity. It is persistent, so it
- * stays listed for players to join while it's empty.
+ * <p>{@value #GROUP_NAME} is open to everyone: its members hear each other
+ * wherever they are, and still hear and are heard by anyone near them by
+ * proximity. {@link AdminGroup} is the admins'. Both are persistent, so they
+ * stay listed for players to join while they're empty.
  */
 public final class OasisVoice extends JavaPlugin implements VoicechatPlugin {
 
-    static final String GROUP_NAME = "Oasis Group VC";
+    static final String GROUP_NAME = "Group VC";
 
     private final UUID groupId = UUID.randomUUID();
     private VoiceMutes voiceMutes;
+    private AdminGroup adminGroup;
 
     @Override
     public void onEnable() {
@@ -38,6 +43,11 @@ public final class OasisVoice extends JavaPlugin implements VoicechatPlugin {
                 .orElseThrow(() -> new IllegalStateException("LibertyBans' API isn't registered"));
         voiceMutes = new VoiceMutes(this, libertyBans);
         voiceMutes.enable();
+        LuckPerms luckPerms = getServer().getServicesManager().load(LuckPerms.class);
+        if (luckPerms == null) {
+            throw new IllegalStateException("LuckPerms' API isn't registered");
+        }
+        adminGroup = new AdminGroup(this, luckPerms);
         BukkitVoicechatService service =
                 getServer().getServicesManager().load(BukkitVoicechatService.class);
         if (service == null) {
@@ -60,31 +70,38 @@ public final class OasisVoice extends JavaPlugin implements VoicechatPlugin {
 
     @Override
     public void registerEvents(EventRegistration registration) {
-        registration.registerEvent(VoicechatServerStartedEvent.class, this::createGroup);
+        registration.registerEvent(VoicechatServerStartedEvent.class, this::createGroups);
         registration.registerEvent(CreateGroupEvent.class, this::refuseOtherGroups);
+        registration.registerEvent(JoinGroupEvent.class, adminGroup::onJoin);
         registration.registerEvent(MicrophonePacketEvent.class, voiceMutes::onMicrophone);
     }
 
-    private void createGroup(VoicechatServerStartedEvent event) {
-        event.getVoicechat().groupBuilder()
-                .setId(groupId)
-                .setName(GROUP_NAME)
-                .setType(Group.Type.OPEN)
+    private void createGroups(VoicechatServerStartedEvent event) {
+        createGroup(event.getVoicechat(), groupId, GROUP_NAME, Group.Type.OPEN);
+        adminGroup.create(event.getVoicechat());
+    }
+
+    void createGroup(VoicechatServerApi voicechat, UUID id, String name, Group.Type type) {
+        voicechat.groupBuilder()
+                .setId(id)
+                .setName(name)
+                .setType(type)
                 .setPersistent(true)
                 .build();
         // build() adds the group only if the voice server is running and no
         // listener cancels it, and says nothing either way.
-        if (event.getVoicechat().getGroup(groupId) == null) {
-            getLogger().severe("The open voice group " + GROUP_NAME + " wasn't created");
+        if (voicechat.getGroup(id) == null) {
+            getLogger().severe("The voice group " + name + " wasn't created");
             return;
         }
-        getLogger().info("Created the open voice group " + GROUP_NAME);
+        getLogger().info("Created the voice group " + name);
     }
 
     // Simple Voice Chat tells a player nothing when their group is refused, so
     // this does. A group made by another plugin comes with no connection.
     private void refuseOtherGroups(CreateGroupEvent event) {
-        if (groupId.equals(event.getGroup().getId())) {
+        UUID id = event.getGroup().getId();
+        if (groupId.equals(id) || adminGroup.id().equals(id)) {
             return;
         }
         event.cancel();
@@ -95,7 +112,7 @@ public final class OasisVoice extends JavaPlugin implements VoicechatPlugin {
         Audience player = getServer().getPlayer(connection.getPlayer().getUuid());
         if (player != null) {
             player.sendMessage(Component.text(
-                    "Voice chat has one group, " + GROUP_NAME + ". Join it from the group screen.",
+                    "Voice chat has its own groups. Join " + GROUP_NAME + " from the group screen.",
                     NamedTextColor.YELLOW));
         }
     }

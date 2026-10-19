@@ -94,18 +94,20 @@ if ((${#failed[@]} > 0)); then
 fi
 echo "every plugin in artifacts.lock and plugin-src enabled"
 
-# OasisVoice made the voice chat group. Simple Voice Chat starts its voice
-# server after the plugins enable, and the group is made then.
+# OasisVoice made the voice chat groups. Simple Voice Chat starts its voice
+# server after the plugins enable, and the groups are made then.
 deadline=$((SECONDS + 60))
-until grep --quiet --fixed-strings '[OasisVoice] Created the open voice group ' <<<"$(docker logs "$name" 2>&1)"; do
+until voice_logs="$(docker logs "$name" 2>&1)" \
+    && grep --quiet --fixed-strings '[OasisVoice] Created the voice group Group VC' <<<"$voice_logs" \
+    && grep --quiet --fixed-strings '[OasisVoice] Created the voice group Admin VC' <<<"$voice_logs"; do
   if [[ "$(docker inspect --format '{{.State.Running}}' "$name")" != true ]] || ((SECONDS >= deadline)); then
     docker logs "$name" 2>&1 | grep --after-context=10 --fixed-strings 'OasisVoice' | tail -n 60 || true
-    echo "error: OasisVoice didn't create the voice chat group within 60s of 'Done ('" >&2
+    echo "error: OasisVoice didn't create both voice chat groups within 60s of 'Done ('" >&2
     exit 1
   fi
   sleep 2
 done
-echo "voice chat group created"
+echo "voice chat groups created"
 
 # rcon-cli authenticates with the password the image generated at start, so
 # this also proves nothing has to supply one. It has to run as the server's own
