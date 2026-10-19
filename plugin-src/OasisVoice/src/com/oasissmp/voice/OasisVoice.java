@@ -112,9 +112,7 @@ public final class OasisVoice extends JavaPlugin implements VoicechatPlugin {
         }
         Audience player = getServer().getPlayer(connection.getPlayer().getUuid());
         if (player != null) {
-            player.sendMessage(Component.text(
-                    "Voice chat has its own groups. Join " + GROUP_NAME + " from the group screen.",
-                    NamedTextColor.YELLOW));
+            player.sendMessage(Component.text("You cannot create a group.", NamedTextColor.YELLOW));
         }
     }
 }

@@ -19,7 +19,7 @@ import org.bukkit.entity.Player;
  */
 final class AdminGroup {
 
-    static final String NAME = "Admin VC";
+    static final String NAME = "Staff VC";
     static final String PERMISSION = "oasisvoice.admin-group";
 
     private final OasisVoice plugin;
@@ -62,7 +62,7 @@ final class AdminGroup {
         event.cancel();
         if (player != null) {
             ((Audience) player).sendMessage(
-                    Component.text(NAME + " is for admins.", NamedTextColor.RED));
+                    Component.text("You cannot join this group.", NamedTextColor.RED));
         }
     }
 
