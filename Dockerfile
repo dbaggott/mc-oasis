@@ -26,6 +26,8 @@ RUN mkdir /out && cd /src && for pack in */; do \
 # A plugin's tests, any test/**/*Test.java, are each run from the repo root,
 # where they can read the plugin's config under plugins/, and a failing one
 # fails the build.
+# The `path` warning is off: worldedit-bukkit's manifest puts jars on the class
+# path, for archive and scripting support, that aren't here and aren't needed.
 FROM eclipse-temurin:25-jdk-alpine@sha256:3fd2d245c4e0eba615fe366a71b8bd25f5db7104f53e4026b24bf508b880bd2a AS repo-plugins
 COPY build/artifacts/libraries/ /libraries/
 COPY plugin-src/ /repo/plugin-src/
@@ -34,11 +36,11 @@ RUN set -e; mkdir /out; cd /repo/plugin-src; for plugin in */; do \
       [ -d "$plugin" ] || continue; \
       plugin="${plugin%/}"; \
       mkdir -p "/classes/${plugin}"; \
-      javac --release 25 -Xlint:all,-classfile -Werror -cp '/libraries/*' \
+      javac --release 25 -Xlint:all,-classfile,-path -Werror -cp '/libraries/*' \
         -d "/classes/${plugin}" $(find "${plugin}/src" -name '*.java'); \
       if [ -d "${plugin}/test" ]; then \
         mkdir -p "/test-classes/${plugin}"; \
-        javac --release 25 -Xlint:all,-classfile -Werror -cp "/classes/${plugin}:/libraries/*" \
+        javac --release 25 -Xlint:all,-classfile,-path -Werror -cp "/classes/${plugin}:/libraries/*" \
           -d "/test-classes/${plugin}" $(find "${plugin}/test" -name '*.java'); \
         for test in $(cd "${plugin}/test" && find . -name '*Test.java'); do \
           test="${test#./}"; \
@@ -161,6 +163,11 @@ ENV DATAPACKS=/datapacks \
 # but swaps the copy in later, in the background, so a flag set after it could
 # land on the region being replaced. With no owners or members, only ops can
 # build or break blocks in it; the flags cover what membership doesn't.
+#
+# The region `egg-pedestal` is the one block at spawn where a player leaves the
+# dragon egg for someone else to take. Anyone can place a block there; OasisEgg
+# turns away everything but the egg, and gives the egg to whoever right-clicks
+# it.
 ENV RCON_CMDS_STARTUP="\
 execute in minecraft:overworld run worldborder center 0 0\n\
 execute in minecraft:overworld run worldborder set 20001\n\
@@ -190,7 +197,12 @@ rg flag -w world spawn lighter deny\n\
 rg flag -w world spawn enderman-grief deny\n\
 rg flag -w world spawn use allow\n\
 rg flag -w world spawn chest-access allow\n\
-rg redefine -w world spawn"
+rg redefine -w world spawn\n\
+//pos1 -453,65,908\n\
+//pos2 -453,65,908\n\
+rg define -w world egg-pedestal\n\
+rg flag -w world egg-pedestal block-place allow\n\
+rg redefine -w world egg-pedestal"
 
 COPY build/artifacts/server.jar /opt/server.jar
 COPY build/artifacts/plugins/ /plugins/
