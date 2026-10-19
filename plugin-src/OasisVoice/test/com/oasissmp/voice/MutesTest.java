@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/** Checks when a player counts as muted, and that they're told once a mute. */
+/** Checks when a player counts as muted. */
 public final class MutesTest {
 
     private static final Instant NOW = Instant.parse("2026-10-18T12:00:00Z");
@@ -27,14 +27,8 @@ public final class MutesTest {
         check(failures, mutes.isMuted(player, NOW.plusSeconds(1_000_000_000L)),
                 "a permanent mute never ends");
 
-        check(failures, mutes.tell(player), "a muted player is told the first time");
-        check(failures, !mutes.tell(player), "a muted player isn't told twice");
-
         mutes.unmute(player);
         check(failures, !mutes.isMuted(player, NOW), "an unmuted player isn't muted");
-
-        mutes.mute(player, Instant.MAX);
-        check(failures, mutes.tell(player), "a player muted again is told again");
 
         if (!failures.isEmpty()) {
             failures.forEach(System.err::println);

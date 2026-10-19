@@ -22,8 +22,10 @@ public final class RulesTest {
 
         Rules headed = Rules.parse(List.of("[ Chat ]", "Be kind.", "[Building]", "No griefing."));
         check(failures, headed.numbered().equals(List.of(
-                        new Rules.Line("Chat", true), new Rules.Line("1. Be kind.", false),
-                        new Rules.Line("Building", true), new Rules.Line("2. No griefing.", false))),
+                        new Rules.Numbered("", new Rules.Line("Chat", true)),
+                        new Rules.Numbered("1. ", new Rules.Line("Be kind.", false)),
+                        new Rules.Numbered("", new Rules.Line("Building", true)),
+                        new Rules.Numbered("2. ", new Rules.Line("No griefing.", false)))),
                 "headings unnumbered and stripped, rules numbered on across them: " + headed.numbered());
         check(failures, !headed.fingerprint().equals(
                         Rules.parse(List.of("[Chat]", "Be kind.", "[Builds]", "No griefing.")).fingerprint()),
@@ -59,8 +61,8 @@ public final class RulesTest {
         System.out.println("rules.txt reads as expected; the repo's has " + repoRules + " rules");
     }
 
-    private static List<String> texts(List<Rules.Line> lines) {
-        return lines.stream().map(Rules.Line::text).toList();
+    private static List<String> texts(List<Rules.Numbered> lines) {
+        return lines.stream().map(line -> line.number() + line.line().text()).toList();
     }
 
     private static void check(List<String> failures, boolean passed, String failure) {
