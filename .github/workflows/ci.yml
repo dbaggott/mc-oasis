@@ -144,15 +144,16 @@ jobs:
           retention-days: 1
           compression-level: 0
 
-  # The only jobs that can reach AWS, one per artifact, so each publishes as soon
-  # as its own build passes and a failed one re-runs alone. The publish role
-  # trusts the `publish` environment and nothing else in this repo, and these
-  # jobs must keep running only on push and workflow_dispatch, never on
-  # anything a fork can trigger.
+  # The only jobs that can reach AWS, one per artifact so a failed one re-runs
+  # alone. Each needs every build-and-test job, not just its own: a commit with
+  # any failing test publishes nothing, so no branch tag ever resolves to a
+  # partly-green release. The publish role trusts the `publish` environment and
+  # nothing else in this repo, and these jobs must keep running only on push
+  # and workflow_dispatch, never on anything a fork can trigger.
 
   # Pushes the server's image as tested in `server`.
   publish-server:
-    needs: server
+    needs: [server, site, api]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment: publish
@@ -195,7 +196,7 @@ jobs:
 
   # Pushes the API's image as tested in `api`.
   publish-api:
-    needs: api
+    needs: [server, site, api]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment: publish
@@ -238,7 +239,7 @@ jobs:
 
   # Writes the website's release as built in `site`.
   publish-site:
-    needs: site
+    needs: [server, site, api]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment: publish
