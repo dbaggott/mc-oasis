@@ -143,8 +143,9 @@ ENV DATAPACKS=/datapacks \
 # Everyone spawns on the spawn point itself: respawn_radius, the rule older
 # versions call spawnRadius, is 0.
 #
-# One player in bed is enough to skip the night: vanilla needs at least one
-# sleeper whatever the percentage, so 0 means one. There is no locator bar.
+# 30% of the players in the overworld, rounded up, must sleep to skip the
+# night; spectators don't count, and it is never fewer than one. There is no
+# locator bar.
 # Paper keeps game rules per dimension and RCON runs in the overworld, so a rule
 # that matters outside it is set in each dimension with `execute in`.
 #
@@ -175,7 +176,7 @@ execute in minecraft:the_nether run worldborder center 0 0\n\
 execute in minecraft:the_nether run worldborder set 10001\n\
 setworldspawn -468 63 898\n\
 gamerule respawn_radius 0\n\
-gamerule players_sleeping_percentage 0\n\
+gamerule players_sleeping_percentage 30\n\
 execute in minecraft:overworld run gamerule locator_bar false\n\
 execute in minecraft:the_nether run gamerule locator_bar false\n\
 execute in minecraft:the_end run gamerule locator_bar false\n\
