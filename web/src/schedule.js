@@ -36,7 +36,7 @@ function description(content) {
 
 function list({ sessions, timeZone }) {
   if (sessions.length === 0) {
-    note("No sessions are scheduled right now. Subscribe above to hear when they are.");
+    note("Coming soon...");
     return;
   }
   const ol = document.createElement("ol");
