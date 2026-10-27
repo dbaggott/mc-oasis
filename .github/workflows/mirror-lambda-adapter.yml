@@ -8,8 +8,8 @@
 # `api` job runs on pull requests from forks, which get no AWS credentials. GHCR
 # serves a public image to anyone, without logging in.
 #
-# The copy keeps upstream's digest, so the digest api/Dockerfile pins is the
-# one ECR Public serves, and anyone can check the mirror against upstream.
+# The copy keeps upstream's digest, so a digest pinned from it is the one ECR
+# Public serves, and anyone can check the mirror against upstream.
 #
 # To move to a new adapter release: dispatch this with its version, then point
 # api/Dockerfile at the tag and the digest the run prints.
@@ -26,6 +26,10 @@ on:
         type: string
 
 permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.version }}
+  cancel-in-progress: false
 
 jobs:
   mirror:
@@ -48,10 +52,11 @@ jobs:
             exit 1
           fi
           # --preserve-digests fails the copy rather than push a different
-          # digest, so the one read back below is upstream's.
+          # digest, so the one written to the digest file is upstream's.
           skopeo copy --all --preserve-digests --retry-times 5 \
             --dest-creds "${GH_ACTOR}:${GH_TOKEN}" \
+            --digestfile "$RUNNER_TEMP/digest" \
             "docker://${SOURCE}:${VERSION}" "docker://${DEST}:${VERSION}"
 
-          digest="sha256:$(skopeo inspect --raw --creds "${GH_ACTOR}:${GH_TOKEN}" "docker://${DEST}:${VERSION}" | sha256sum | cut -d' ' -f1)"
+          digest="$(cat "$RUNNER_TEMP/digest")"
           echo "Pin in api/Dockerfile: ${DEST}:${VERSION}@${digest}" | tee -a "$GITHUB_STEP_SUMMARY"
