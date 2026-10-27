@@ -10,8 +10,9 @@ import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
 import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -44,24 +45,33 @@ public final class OasisRegions extends JavaPlugin {
         if (manager == null) {
             throw new IllegalStateException("WorldGuard has no regions for " + WORLD);
         }
-        // Every region built before any is added, so a flag WorldGuard doesn't
-        // have stops the plugin with none of the file applied rather than some.
-        List<ProtectedRegion> protectedRegions = regions.regions().stream()
-                .map(region -> protectedRegion(region, manager.getRegion(region.name())))
-                .toList();
-        protectedRegions.forEach(manager::addRegion);
+        // Every flag looked up before any region is added, so a flag WorldGuard
+        // doesn't have stops the plugin with none of the file applied rather than some.
+        Map<Regions.Region, Map<StateFlag, StateFlag.State>> flags = new LinkedHashMap<>();
+        for (Regions.Region region : regions.regions()) {
+            Map<StateFlag, StateFlag.State> regionFlags = new LinkedHashMap<>();
+            region.flags().forEach((name, value) ->
+                    regionFlags.put(stateFlag(name), StateFlag.State.valueOf(value.toUpperCase(Locale.ROOT))));
+            flags.put(region, regionFlags);
+        }
+        // Each region built only once those before it are added: adding a
+        // region repoints the regions in the index whose parent it replaces,
+        // and one built earlier would copy the old parent, which adding it
+        // would put back.
+        flags.forEach((region, regionFlags) ->
+                manager.addRegion(protectedRegion(region, regionFlags, manager.getRegion(region.name()))));
         getLogger().info("Set up the regions " + String.join(", ",
                 regions.regions().stream().map(Regions.Region::name).toList()));
     }
 
-    private static ProtectedRegion protectedRegion(Regions.Region region, ProtectedRegion existing) {
+    private static ProtectedRegion protectedRegion(
+            Regions.Region region, Map<StateFlag, StateFlag.State> flags, ProtectedRegion existing) {
         ProtectedRegion protectedRegion = new ProtectedCuboidRegion(
                 region.name(), vector(region.first()), vector(region.second()));
         if (existing != null) {
             protectedRegion.copyFrom(existing);
         }
-        region.flags().forEach((name, value) -> protectedRegion.setFlag(
-                stateFlag(name), StateFlag.State.valueOf(value.toUpperCase(Locale.ROOT))));
+        flags.forEach(protectedRegion::setFlag);
         return protectedRegion;
     }
 
