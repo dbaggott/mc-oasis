@@ -35,6 +35,7 @@ public final class RegionsTest {
         rejects(failures, "a second corners line", List.of("[spawn]", "corners 0,0,0 1,1,1", "corners 0,0,0 2,2,2"));
         rejects(failures, "a flag set twice", List.of("[spawn]", "corners 0,0,0 1,1,1", "pvp allow", "pvp deny"));
         rejects(failures, "a region named twice", List.of("[spawn]", "corners 0,0,0 1,1,1", "[spawn]", "corners 0,0,0 1,1,1"));
+        rejects(failures, "WorldGuard's global region", List.of("[__global__]", "corners 0,0,0 1,1,1"));
         rejects(failures, "a flag value other than allow or deny", List.of("[spawn]", "corners 0,0,0 1,1,1", "pvp none"));
         rejects(failures, "a corner without three coordinates", List.of("[spawn]", "corners 0,0 1,1,1"));
 

@@ -64,6 +64,10 @@ record Regions(List<Region> regions) {
                     regions.add(region(name, first, second, flags));
                 }
                 name = matcher.group(1);
+                // WorldGuard's world-wide region, which a cuboid would replace.
+                if (name.equals("__global__")) {
+                    throw new IllegalArgumentException(where + "[__global__] isn't a region with corners");
+                }
                 if (!names.add(name)) {
                     throw new IllegalArgumentException(where + "a second [" + name + "]");
                 }

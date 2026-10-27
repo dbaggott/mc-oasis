@@ -280,7 +280,7 @@ echo "LibertyBans exempts staff by LuckPerms group weight"
 # The Dockerfile's RCON_CMDS_STARTUP. The image runs them through RCON once the
 # server listens and only logs a failure, so what they set is checked below,
 # from these lines: one command each, without the `\n\` or closing quote.
-startup_commands="$(sed -n '/^ENV RCON_CMDS_STARTUP="\\$/,/"$/{/^ENV /d;s/\\n\\$//;s/"$//;p;}' "${repo_root}/Dockerfile")"
+startup_commands="$(sed -n '/^ENV RCON_CMDS_STARTUP="\\$/,/"$/{/^ENV /d;s/"$//;s/\\n\\$//;p;}' "${repo_root}/Dockerfile")"
 deadline=$((SECONDS + 120))
 until grep --quiet 'stopping rcon cmd service' <<<"$(docker logs "$name" 2>&1)"; do
   if ((SECONDS >= deadline)); then
@@ -550,8 +550,9 @@ fi
 regions="$(docker cp "${name}:/data/plugins/WorldGuard/worlds/world/regions.yml" - | tar -xO | tr -s ' \n' ' ')"
 declare -A region_bounds=() region_flag_lines=()
 region=""
-while IFS= read -r line; do
-  if [[ "$line" =~ ^[[:space:]]*(#|$) ]]; then
+while IFS= read -r line || [[ -n "$line" ]]; do
+  read -r line <<<"$line"
+  if [[ "$line" =~ ^(#|$) ]]; then
     continue
   elif [[ "$line" =~ ^\[([a-z0-9_-]+)\]$ ]]; then
     region="${BASH_REMATCH[1]}"

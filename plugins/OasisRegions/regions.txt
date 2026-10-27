@@ -1,6 +1,6 @@
 # The WorldGuard regions in the overworld, set up by OasisRegions at every
-# start, so the repo stays authoritative over them and a change made in game
-# lasts only until the next start.
+# start, so the repo stays authoritative over the corners and flags here and a
+# change to them made in game lasts only until the next start.
 #
 # Each region is a [name] line, then a `corners` line giving two opposite
 # corners as x,y,z, then one `<flag> allow|deny` line per flag. A region that

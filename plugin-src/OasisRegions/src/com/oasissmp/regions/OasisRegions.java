@@ -10,6 +10,7 @@ import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.List;
 import java.util.Locale;
 import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -43,9 +44,12 @@ public final class OasisRegions extends JavaPlugin {
         if (manager == null) {
             throw new IllegalStateException("WorldGuard has no regions for " + WORLD);
         }
-        for (Regions.Region region : regions.regions()) {
-            manager.addRegion(protectedRegion(region, manager.getRegion(region.name())));
-        }
+        // Every region built before any is added, so a flag WorldGuard doesn't
+        // have stops the plugin with none of the file applied rather than some.
+        List<ProtectedRegion> protectedRegions = regions.regions().stream()
+                .map(region -> protectedRegion(region, manager.getRegion(region.name())))
+                .toList();
+        protectedRegions.forEach(manager::addRegion);
         getLogger().info("Set up the regions " + String.join(", ",
                 regions.regions().stream().map(Regions.Region::name).toList()));
     }
