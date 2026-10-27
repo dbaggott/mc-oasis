@@ -82,8 +82,8 @@ final class Pedestal implements Listener {
         block.setType(Material.AIR);
     }
 
-    // Looked up each time: the region is made by a startup command, after
-    // this plugin enables.
+    // Looked up each time: OasisRegions replaces the region at start, which
+    // can come after this plugin enables.
     private static boolean isPedestal(Block block) {
         RegionManager regions = WorldGuard.getInstance().getPlatform().getRegionContainer()
                 .get(BukkitAdapter.adapt(block.getWorld()));

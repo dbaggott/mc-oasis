@@ -278,7 +278,9 @@ fi
 echo "LibertyBans exempts staff by LuckPerms group weight"
 
 # The Dockerfile's RCON_CMDS_STARTUP. The image runs them through RCON once the
-# server listens and only logs a failure, so what they set is checked below.
+# server listens and only logs a failure, so what they set is checked below,
+# from these lines: one command each, without the `\n\` or closing quote.
+startup_commands="$(sed -n '/^ENV RCON_CMDS_STARTUP="\\$/,/"$/{/^ENV /d;s/"$//;s/\\n\\$//;p;}' "${repo_root}/Dockerfile")"
 deadline=$((SECONDS + 120))
 until grep --quiet 'stopping rcon cmd service' <<<"$(docker logs "$name" 2>&1)"; do
   if ((SECONDS >= deadline)); then
@@ -427,8 +429,8 @@ echo "/egg finds eggs in loaded and unloaded chunks"
 borders=()
 while read -r border; do
   borders+=("$border")
-done < <(sed -n 's/.*execute in minecraft:\([a-z_]*\) run worldborder set \([0-9]*\).*/\1 \2/p' "${repo_root}/Dockerfile")
-if ((${#borders[@]} != $(grep -c 'worldborder set' "${repo_root}/Dockerfile"))); then
+done < <(sed -n 's/^execute in minecraft:\([a-z_]*\) run worldborder set \([0-9]*\)$/\1 \2/p' <<<"$startup_commands")
+if ((${#borders[@]} != $(grep -c 'worldborder set' <<<"$startup_commands"))); then
   echo "error: a worldborder set line in the Dockerfile isn't 'execute in minecraft:<dimension> run worldborder set <width>'" >&2
   exit 1
 fi
@@ -444,7 +446,7 @@ done
 
 # The spawn point, by the reply the image logged for `setworldspawn`: no
 # command reports it.
-if ! read -r spawn_x spawn_y spawn_z < <(sed -n 's/^setworldspawn \(-*[0-9]*\) \(-*[0-9]*\) \(-*[0-9]*\)\\n\\$/\1 \2 \3/p' "${repo_root}/Dockerfile"); then
+if ! read -r spawn_x spawn_y spawn_z < <(sed -n 's/^setworldspawn \(-*[0-9]*\) \(-*[0-9]*\) \(-*[0-9]*\)$/\1 \2 \3/p' <<<"$startup_commands"); then
   echo "error: no 'setworldspawn <x> <y> <z>' line in the Dockerfile" >&2
   exit 1
 fi
@@ -461,8 +463,8 @@ echo "world spawn at ${spawn_x} ${spawn_y} ${spawn_z}"
 rules=()
 while read -r rule; do
   rules+=("$rule")
-done < <(sed -n 's/^gamerule \([a-z_]*\) \([a-z0-9]*\)\\n\\$/minecraft:overworld \1 \2/p;s/^execute in \(minecraft:[a-z_]*\) run gamerule \([a-z_]*\) \([a-z0-9]*\)\\n\\$/\1 \2 \3/p' "${repo_root}/Dockerfile")
-if ((${#rules[@]} != $(grep -c 'gamerule ' "${repo_root}/Dockerfile"))); then
+done < <(sed -n 's/^gamerule \([a-z_]*\) \([a-z0-9]*\)$/minecraft:overworld \1 \2/p;s/^execute in \(minecraft:[a-z_]*\) run gamerule \([a-z_]*\) \([a-z0-9]*\)$/\1 \2 \3/p' <<<"$startup_commands")
+if ((${#rules[@]} != $(grep -c 'gamerule ' <<<"$startup_commands"))); then
   echo "error: a gamerule line in the Dockerfile isn't '[execute in minecraft:<dimension> run ]gamerule <rule> <value>'" >&2
   exit 1
 fi
@@ -481,8 +483,8 @@ done
 scores=()
 while read -r score; do
   scores+=("$score")
-done < <(sed -n 's/^scoreboard players set \([^ ]*\) \([^ ]*\) \(-*[0-9]*\)\\n\\$/\1 \2 \3/p' "${repo_root}/Dockerfile")
-if ((${#scores[@]} != $(grep -c '^scoreboard players set ' "${repo_root}/Dockerfile"))); then
+done < <(sed -n 's/^scoreboard players set \([^ ]*\) \([^ ]*\) \(-*[0-9]*\)$/\1 \2 \3/p' <<<"$startup_commands")
+if ((${#scores[@]} != $(grep -c '^scoreboard players set ' <<<"$startup_commands"))); then
   echo "error: a scoreboard line in the Dockerfile isn't 'scoreboard players set <holder> <objective> <value>'" >&2
   exit 1
 fi
@@ -541,45 +543,39 @@ if [[ "$exit_code" != 0 ]]; then
   exit 1
 fi
 
-# The WorldGuard regions, from the regions file WorldGuard saved on the way
-# down. WorldGuard adds and redefines regions in the background, so whether its
-# reply to the startup command reaches the log is a race; the saved file is not.
-# Each region's flags are saved on one line, which YAML may wrap, so the file is
-# read with its whitespace collapsed. Each `rg define` in the Dockerfile takes
-# the two `//pos` lines before it as its corners.
+# The WorldGuard regions OasisRegions set up, from the regions file WorldGuard
+# saved on the way down, against plugins/OasisRegions/regions.txt. Each
+# region's flags are saved on one line, which YAML may wrap, so the file is read
+# with its whitespace collapsed.
 regions="$(docker cp "${name}:/data/plugins/WorldGuard/worlds/world/regions.yml" - | tar -xO | tr -s ' \n' ' ')"
 declare -A region_bounds=() region_flag_lines=()
-corners=()
-while IFS= read -r line; do
-  if [[ "$line" =~ ^//pos[12]\ (-?[0-9]+),(-?[0-9]+),(-?[0-9]+)\\n\\$ ]]; then
-    corners+=("${BASH_REMATCH[1]} ${BASH_REMATCH[2]} ${BASH_REMATCH[3]}")
-  elif [[ "$line" =~ ^rg\ define\ -w\ world\ ([A-Za-z0-9_-]+)\\n\\$ ]]; then
-    if ((${#corners[@]} != 2)); then
-      echo "error: expected a '//pos1 x,y,z' and a '//pos2 x,y,z' line before 'rg define -w world ${BASH_REMATCH[1]}' in the Dockerfile" >&2
-      exit 1
-    fi
-    read -r x1 y1 z1 <<<"${corners[0]}"
-    read -r x2 y2 z2 <<<"${corners[1]}"
-    region_bounds[${BASH_REMATCH[1]}]="min: {x: $((x1 < x2 ? x1 : x2)), y: $((y1 < y2 ? y1 : y2)), z: $((z1 < z2 ? z1 : z2))} max: {x: $((x1 > x2 ? x1 : x2)), y: $((y1 > y2 ? y1 : y2)), z: $((z1 > z2 ? z1 : z2))}"
-    region_flag_lines[${BASH_REMATCH[1]}]=""
-    corners=()
-  elif [[ "$line" =~ ^rg\ flag\ -w\ world\ ([A-Za-z0-9_-]+)\ ([a-z-]+)\ ([a-z]+)(\\n\\|\")$ ]]; then
-    if [[ -z "${region_bounds[${BASH_REMATCH[1]}]+set}" ]]; then
-      echo "error: 'rg flag' for ${BASH_REMATCH[1]} in the Dockerfile comes before its 'rg define'" >&2
-      exit 1
-    fi
-    region_flag_lines[${BASH_REMATCH[1]}]+="${BASH_REMATCH[2]} ${BASH_REMATCH[3]}"$'\n'
-  elif [[ "$line" =~ ^rg\ flag\  ]]; then
-    echo "error: an rg flag line in the Dockerfile isn't 'rg flag -w world <region> <flag> <value>': ${line}" >&2
+region=""
+while IFS= read -r line || [[ -n "$line" ]]; do
+  read -r line <<<"$line"
+  if [[ "$line" =~ ^(#|$) ]]; then
+    continue
+  elif [[ "$line" =~ ^\[([a-z0-9_-]+)\]$ ]]; then
+    region="${BASH_REMATCH[1]}"
+    region_flag_lines[$region]=""
+  elif [[ -n "$region" && "$line" =~ ^corners\ (-?[0-9]+),(-?[0-9]+),(-?[0-9]+)\ (-?[0-9]+),(-?[0-9]+),(-?[0-9]+)$ ]]; then
+    x1="${BASH_REMATCH[1]}" y1="${BASH_REMATCH[2]}" z1="${BASH_REMATCH[3]}"
+    x2="${BASH_REMATCH[4]}" y2="${BASH_REMATCH[5]}" z2="${BASH_REMATCH[6]}"
+    region_bounds[$region]="min: {x: $((x1 < x2 ? x1 : x2)), y: $((y1 < y2 ? y1 : y2)), z: $((z1 < z2 ? z1 : z2))} max: {x: $((x1 > x2 ? x1 : x2)), y: $((y1 > y2 ? y1 : y2)), z: $((z1 > z2 ? z1 : z2))}"
+  elif [[ -n "$region" && "$line" =~ ^([a-z-]+)\ (allow|deny)$ ]]; then
+    region_flag_lines[$region]+="${BASH_REMATCH[1]} ${BASH_REMATCH[2]}"$'\n'
+  else
+    echo "error: a line in plugins/OasisRegions/regions.txt isn't [name], corners x,y,z x,y,z, or <flag> allow|deny under a [name]: ${line}" >&2
     exit 1
   fi
-done <"${repo_root}/Dockerfile"
-if ((${#corners[@]} != 0)); then
-  echo "error: a '//pos' line in the Dockerfile has no 'rg define -w world <region>' after it" >&2
-  exit 1
-fi
+done <"${repo_root}/plugins/OasisRegions/regions.txt"
+for region in "${!region_flag_lines[@]}"; do
+  if [[ -z "${region_bounds[$region]+set}" ]]; then
+    echo "error: the ${region} region in plugins/OasisRegions/regions.txt has no corners line" >&2
+    exit 1
+  fi
+done
 if [[ -z "${region_bounds[spawn]+set}" ]]; then
-  echo "error: the Dockerfile doesn't define the spawn region" >&2
+  echo "error: plugins/OasisRegions/regions.txt doesn't define the spawn region" >&2
   exit 1
 fi
 for region in "${!region_bounds[@]}"; do

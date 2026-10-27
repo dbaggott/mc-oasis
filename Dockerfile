@@ -100,8 +100,8 @@ ENV MOTD="§bThe Oasis SMP" \
     VIEW_DISTANCE=20 \
     SIMULATION_DISTANCE=15
 
-# Spawn is protected by the WorldGuard region set up in RCON_CMDS_STARTUP, so
-# vanilla's square of op-only blocks around it is off.
+# Spawn is protected by the WorldGuard region in plugins/OasisRegions/regions.txt,
+# so vanilla's square of op-only blocks around it is off.
 ENV SPAWN_PROTECTION=0
 
 # For `rcon-cli` inside the container only; the port is never published. With
@@ -154,21 +154,6 @@ ENV DATAPACKS=/datapacks \
 # after with a welcome. `introduced` 1 marks the thank-you as already given and
 # `intro_msg` 0 turns off the welcome. The pack's load function sets up its
 # settings, intro_msg 1 in a new world, before these run.
-#
-# Spawn is on an island, and the WorldGuard region `spawn` covers all of it:
-# the island runs x -504 to -437 and z 854 to 928, the region 8 blocks of water
-# past that, from the bottom of the world to the top. The console has no
-# selection of its own, so the region is drawn from WorldEdit positions.
-# `define` fails once the region exists, and `redefine` then resets its area to
-# these bounds. `redefine` comes after the flags: it copies the region at once
-# but swaps the copy in later, in the background, so a flag set after it could
-# land on the region being replaced. With no owners or members, only ops can
-# build or break blocks in it; the flags cover what membership doesn't.
-#
-# The region `egg-pedestal` is the one block at spawn where a player leaves the
-# dragon egg for someone else to take. Anyone can place a block there; OasisEgg
-# turns away everything but the egg, and gives the egg to whoever right-clicks
-# it.
 ENV RCON_CMDS_STARTUP="\
 execute in minecraft:overworld run worldborder center 0 0\n\
 execute in minecraft:overworld run worldborder set 20001\n\
@@ -181,29 +166,7 @@ execute in minecraft:overworld run gamerule locator_bar false\n\
 execute in minecraft:the_nether run gamerule locator_bar false\n\
 execute in minecraft:the_end run gamerule locator_bar false\n\
 scoreboard players set introduced bac_settings 1\n\
-scoreboard players set intro_msg bac_settings 0\n\
-//world world\n\
-//pos1 -512,-64,846\n\
-//pos2 -429,319,936\n\
-rg define -w world spawn\n\
-rg flag -w world spawn pvp allow\n\
-rg flag -w world spawn mob-spawning deny\n\
-rg flag -w world spawn creeper-explosion deny\n\
-rg flag -w world spawn tnt deny\n\
-rg flag -w world spawn other-explosion deny\n\
-rg flag -w world spawn ghast-fireball deny\n\
-rg flag -w world spawn fire-spread deny\n\
-rg flag -w world spawn lava-fire deny\n\
-rg flag -w world spawn lighter deny\n\
-rg flag -w world spawn enderman-grief deny\n\
-rg flag -w world spawn use allow\n\
-rg flag -w world spawn chest-access allow\n\
-rg redefine -w world spawn\n\
-//pos1 -453,65,908\n\
-//pos2 -453,65,908\n\
-rg define -w world egg-pedestal\n\
-rg flag -w world egg-pedestal block-place allow\n\
-rg redefine -w world egg-pedestal"
+scoreboard players set intro_msg bac_settings 0"
 
 COPY build/artifacts/server.jar /opt/server.jar
 COPY build/artifacts/plugins/ /plugins/
@@ -221,7 +184,8 @@ COPY --from=libertybans-addons /out/ /plugins/
 # TAB's turns on its spectator fix, so a player in spectator doesn't show as
 # one in non-ops' tab lists, and puts each player's LuckPerms prefix before
 # their name in the tab list.
-# OasisFilter's are its word lists, and OasisRules' the server rules.
+# OasisFilter's are its word lists, OasisRules' the server rules, and
+# OasisRegions' the WorldGuard regions it sets up.
 COPY plugins/ /plugins/
 COPY data/ /config/
 COPY build/artifacts/datapacks/ /datapacks/
