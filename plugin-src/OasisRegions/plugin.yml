@@ -1,0 +1,6 @@
+name: OasisRegions
+version: 1.0.0
+main: com.oasissmp.regions.OasisRegions
+api-version: '26.3'
+description: Sets up the WorldGuard regions in regions.txt at every start
+depend: [WorldGuard, WorldEdit]
