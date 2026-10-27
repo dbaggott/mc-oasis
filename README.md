@@ -34,6 +34,7 @@ api/                     the website's API: a parent's request for their child t
 shared/                  what the site's forms and the API both import, so they agree on every field
 .github/workflows/ci.yml builds and tests every PR; publishes main and dispatched branches (images to ECR, the website to S3)
 .github/workflows/bump-bedrock.yml  daily, runs bump-bedrock.sh and opens or updates an auto-merging PR on bump/bedrock
+.github/workflows/mirror-lambda-adapter.yml  on dispatch, copies a Lambda Web Adapter release from ECR Public to GHCR for api/Dockerfile
 ```
 
 ## Building locally
