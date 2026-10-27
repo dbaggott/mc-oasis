@@ -17,7 +17,9 @@ COPY api api
 RUN npm run build --prefix api
 
 FROM node:${NODE_VERSION}-slim
-COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:1.0.1 /lambda-adapter /opt/extensions/lambda-adapter
+# Upstream's image as copied to GHCR, digest unchanged, by
+# .github/workflows/mirror-lambda-adapter.yml, which says why and how to bump.
+COPY --from=ghcr.io/dbaggott/aws-lambda-adapter:1.0.1@sha256:1e5ab4d9242167500ed8a7bed8a79b448228aaa51cf382fb51fe4bf8a5f9a811 /lambda-adapter /opt/extensions/lambda-adapter
 WORKDIR /app
 COPY --from=builder /repo/api/dist/index.mjs /repo/api/dist/index.mjs.map ./
 
