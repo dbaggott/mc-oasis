@@ -1,0 +1,63 @@
+################################################################################
+# Mirror Lambda Adapter — copy one release of the Lambda Web Adapter image from
+# ECR Public, its only upstream registry, to this account's GHCR namespace.
+#
+# api/Dockerfile copies the adapter out of that image. Pulled anonymously from
+# ECR Public, the build fails whenever the runner's shared IP has used up its
+# quota there (429 "Data limit exceeded"), and logging in is not an option: the
+# `api` job runs on pull requests from forks, which get no AWS credentials. GHCR
+# serves a public image to anyone, without logging in.
+#
+# The copy keeps upstream's digest, so the digest api/Dockerfile pins is the
+# one ECR Public serves, and anyone can check the mirror against upstream.
+#
+# To move to a new adapter release: dispatch this with its version, then point
+# api/Dockerfile at the tag and the digest the run prints. The first run of
+# all creates the package private; it then needs making public by hand, under
+# the package's settings on GitHub.
+################################################################################
+
+name: Mirror Lambda Adapter
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Adapter release to copy, as tagged on ECR Public (e.g. 1.0.1)
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    env:
+      VERSION: ${{ inputs.version }}
+      SOURCE: public.ecr.aws/awsguru/aws-lambda-adapter
+      DEST: ghcr.io/${{ github.repository_owner }}/aws-lambda-adapter
+    steps:
+      - name: Copy the image
+        env:
+          GH_ACTOR: ${{ github.actor }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::version must look like 1.0.1, got: $VERSION"
+            exit 1
+          fi
+          # --preserve-digests makes skopeo fail rather than push a different digest.
+          skopeo copy --all --preserve-digests --retry-times 5 \
+            --dest-creds "${GH_ACTOR}:${GH_TOKEN}" \
+            "docker://${SOURCE}:${VERSION}" "docker://${DEST}:${VERSION}"
+
+          digest="sha256:$(skopeo inspect --raw --creds "${GH_ACTOR}:${GH_TOKEN}" "docker://${DEST}:${VERSION}" | sha256sum | cut -d' ' -f1)"
+          upstream="sha256:$(skopeo inspect --raw --retry-times 5 "docker://${SOURCE}:${VERSION}" | sha256sum | cut -d' ' -f1)"
+          if [[ "$digest" != "$upstream" ]]; then
+            echo "::error::${DEST}:${VERSION} is ${digest}, but upstream is ${upstream}"
+            exit 1
+          fi
+          echo "Pin in api/Dockerfile: ${DEST}:${VERSION}@${digest}" | tee -a "$GITHUB_STEP_SUMMARY"
