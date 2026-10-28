@@ -36,7 +36,7 @@ function description(content) {
 
 function list({ sessions, timeZone }) {
   if (sessions.length === 0) {
-    note("Coming soon...");
+    note("Session times aren't scheduled yet. We'll survey everyone who signs up to find times that work for as many people as possible.");
     return;
   }
   const ol = document.createElement("ol");
