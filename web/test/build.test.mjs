@@ -111,6 +111,7 @@ test("the logo is built, and the home page shows the logo large", () => {
 const CURRENT = {
   "index.html": "/",
   "play/index.html": "/play/",
+  "setup/index.html": "/setup/",
   "schedule/index.html": "/schedule/",
   "rules/index.html": "/rules/",
   "request-access/index.html": "/request-access/",

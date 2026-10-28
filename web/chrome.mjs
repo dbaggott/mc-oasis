@@ -6,6 +6,7 @@ import { logoImg } from "./logo.mjs";
 const LEFT = [
   { href: "/", label: "Home" },
   { href: "/play/", label: "Play" },
+  { href: "/setup/", label: "Setup" },
   { href: "/schedule/", label: "Schedule" },
 ];
 const RIGHT = [

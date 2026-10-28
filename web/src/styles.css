@@ -161,7 +161,8 @@ a {
   color: var(--accent);
 }
 
-code {
+code,
+kbd {
   font-family: var(--pixel);
   font-size: 0.9em;
   overflow-wrap: anywhere;
