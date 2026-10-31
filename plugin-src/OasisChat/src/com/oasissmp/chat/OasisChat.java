@@ -16,8 +16,9 @@ import org.bukkit.plugin.java.JavaPlugin;
  * puts it before their name in the tab list and over their head. It's read as
  * the message is sent, so it's always the current one, duty included.
  *
- * <p>A player with no prefix keeps the server's own renderer: Paper sends a
- * message another renderer formatted with that formatting as unsigned content.
+ * <p>A player with no prefix keeps Paper's own renderer, so their messages go
+ * out exactly as signed: Paper sends a line any other renderer formats as
+ * unsigned content.
  */
 public final class OasisChat extends JavaPlugin implements Listener {
 

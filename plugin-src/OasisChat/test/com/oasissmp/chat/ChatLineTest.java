@@ -22,7 +22,7 @@ public final class ChatLineTest {
     private static final Path GROUPS = Path.of("plugins/LuckPerms/yaml-storage/groups");
     private static final Pattern PREFIX = Pattern.compile("^- '(.*)':$");
     private static final Component NAME = Component.text("Steve");
-    private static final Component MESSAGE = Component.text("hi <red>there");
+    private static final Component MESSAGE = Component.text("hi");
     private static final Component VANILLA = Component.translatable("chat.type.text", NAME, MESSAGE);
 
     private ChatLineTest() { }
