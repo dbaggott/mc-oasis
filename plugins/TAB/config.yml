@@ -2,9 +2,11 @@
 # the tab list, rather than grayed out at the bottom. Holders of
 # tab.spectatorbypass, ops by default, still see the real game mode.
 #
-# Tab list names carry the player's LuckPerms prefix, set in groups.yml. The
-# list isn't sorted by group: that takes scoreboard teams, which also change
-# nametags and collisions.
+# Tab list names and nametags carry the player's LuckPerms prefix, set in
+# groups.yml. Nametags take scoreboard teams, which TAB then owns: no other
+# plugin can put a player on a team. The list is sorted by name alone, ignoring
+# case: sorting by group would place staff by their group even off duty, when
+# they show no prefix.
 #
 # TAB turns on a feature whose key is missing here when its own default is on,
 # so every feature defaulting on is turned off by name.
@@ -18,7 +20,15 @@ tablist-name-formatting:
   # TAB's default, which TAB warns about when missing; there's no such world.
   disable-condition: '%world%=disabledworld'
 scoreboard-teams:
-  enabled: false
+  enabled: true
+  enable-collision: true
+  invisible-nametags: false
+  sorting-types:
+    - "PLACEHOLDER_A_TO_Z:%player%"
+  case-sensitive-sorting: false
+  can-see-friendly-invisibles: false
+  # TAB's default, which TAB warns about when missing; there's no such world.
+  disable-condition: '%world%=disabledworld'
 playerlist-objective:
   enabled: false
 proxy-support:

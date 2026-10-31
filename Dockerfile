@@ -183,7 +183,7 @@ COPY --from=libertybans-addons /out/ /plugins/
 # ClickVillagers' pickup.
 # TAB's turns on its spectator fix, so a player in spectator doesn't show as
 # one in non-ops' tab lists, and puts each player's LuckPerms prefix before
-# their name in the tab list.
+# their name in the tab list and over their head.
 # OasisFilter's are its word lists, OasisRules' the server rules, and
 # OasisRegions' the WorldGuard regions it sets up.
 COPY plugins/ /plugins/
