@@ -94,6 +94,27 @@ if ((${#failed[@]} > 0)); then
 fi
 echo "every plugin in artifacts.lock and plugin-src enabled"
 
+# Geyser takes Bedrock players over NetherNet, with its own signaling on the
+# Bedrock port, from the Dockerfile's -DgeyserTransport rather than its config:
+# checked again below after a restart with `raknet` in the config.
+geyser_nethernet_problem() {
+  local geyser_logs="$1"
+  if grep --quiet --fixed-strings 'NetherNet support is NOT enabled' <<<"$geyser_logs"; then
+    echo "Geyser started without NetherNet"
+  elif ! grep --quiet --fixed-strings '[Geyser-Spigot] Transport set from system property: nethernet' <<<"$geyser_logs"; then
+    echo "Geyser didn't take its transport from -DgeyserTransport=nethernet"
+  elif ! grep --quiet --fixed-strings '[Geyser-Spigot] Built-in signaling started on http://0.0.0.0:19132' <<<"$geyser_logs"; then
+    echo "Geyser's built-in signaling didn't start on port 19132"
+  fi
+}
+problem="$(geyser_nethernet_problem "$logs")"
+if [[ -n "$problem" ]]; then
+  grep --fixed-strings '[Geyser-Spigot]' <<<"$logs" | tail -n 30 || true
+  echo "error: ${problem}" >&2
+  exit 1
+fi
+echo "Geyser on NetherNet with built-in signaling"
+
 # OasisVoice made the voice chat groups. Simple Voice Chat starts its voice
 # server after the plugins enable, and the groups are made then.
 deadline=$((SECONDS + 60))
@@ -534,6 +555,15 @@ if ! grep --quiet --fixed-strings 'none is set' <<<"$(rcon scoreboard players ge
 fi
 echo "xaero fair-play pack loaded"
 
+# The transport a Geyser build before 1273 wrote into its config on the world
+# volume, there for the restart below to start with.
+geyser_config=/data/plugins/Geyser-Spigot/config.yml
+docker exec --user 1000 "$name" sed --in-place 's/^  transport: nethernet$/  transport: raknet/' "$geyser_config"
+if ! docker exec --user 1000 "$name" grep --quiet --line-regexp '  transport: raknet' "$geyser_config"; then
+  echo "error: couldn't set bedrock.transport to raknet in ${geyser_config}" >&2
+  exit 1
+fi
+
 echo "stopping"
 docker stop --time "$stop_timeout_seconds" "$name" >/dev/null
 exit_code="$(docker inspect --format '{{.State.ExitCode}}' "$name")"
@@ -629,9 +659,32 @@ for stale_file in "${stale_files[@]}"; do
     exit 1
   fi
 done
+echo "LuckPerms groups and OasisFilter word lists the repo doesn't have are removed at start"
+
+# Geyser is still on NetherNet with `raknet` in its config, which it left as is.
+deadline=$((SECONDS + startup_deadline_seconds))
+until restarted_logs="$(docker logs --since "$restarted_at" "$name" 2>&1)" \
+    && grep --quiet --extended-regexp 'Built-in signaling (started|could not start)|NetherNet support is NOT enabled' <<<"$restarted_logs"; do
+  if [[ "$(docker inspect --format '{{.State.Running}}' "$name")" != true ]] || ((SECONDS >= deadline)); then
+    tail -n 100 <<<"$restarted_logs"
+    echo "error: Geyser didn't start its Bedrock listener after the restart" >&2
+    exit 1
+  fi
+  sleep 2
+done
+problem="$(geyser_nethernet_problem "$restarted_logs")"
+if [[ -n "$problem" ]]; then
+  grep --fixed-strings '[Geyser-Spigot]' <<<"$restarted_logs" | tail -n 30 || true
+  echo "error: with raknet in its config, ${problem}" >&2
+  exit 1
+fi
+if ! docker exec --user 1000 "$name" grep --quiet --line-regexp '  transport: raknet' "$geyser_config"; then
+  echo "error: Geyser rewrote bedrock.transport in ${geyser_config}, so the restart didn't test a persisted raknet" >&2
+  exit 1
+fi
+echo "Geyser on NetherNet with raknet in its config"
 # Removed rather than stopped: a stop waits out the rest of the start, and how
 # the server stops was checked above.
 docker rm --force --volumes "$name" >/dev/null
-echo "LuckPerms groups and OasisFilter word lists the repo doesn't have are removed at start"
 
 echo "smoke test passed"
