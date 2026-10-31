@@ -1,0 +1,80 @@
+package com.oasissmp.chat;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+
+/**
+ * Checks that OasisChat's line is a player's prefix and then the vanilla chat
+ * line, and that every prefix in the LuckPerms groups under
+ * plugins/LuckPerms/yaml-storage/groups reads as MiniMessage: a tag
+ * MiniMessage doesn't know is shown as typed. Runs from the repo root.
+ */
+public final class ChatLineTest {
+
+    private static final Path GROUPS = Path.of("plugins/LuckPerms/yaml-storage/groups");
+    private static final Pattern PREFIX = Pattern.compile("^- '(.*)':$");
+    private static final Component NAME = Component.text("Steve");
+    private static final Component MESSAGE = Component.text("hi <red>there");
+    private static final Component VANILLA = Component.translatable("chat.type.text", NAME, MESSAGE);
+
+    private ChatLineTest() { }
+
+    public static void main(String[] args) throws IOException {
+        List<String> failures = new ArrayList<>();
+
+        Component line = OasisChat.line("<gold>[Admin]</gold> ", NAME, MESSAGE);
+        if (!line.children().getLast().equals(VANILLA)) {
+            failures.add("the line doesn't end with the vanilla line: " + line);
+        }
+        if (!shownPrefix(line).equals("[Admin] ")) {
+            failures.add("the line's prefix shows as '" + shownPrefix(line) + "', not '[Admin] '");
+        }
+
+        int prefixes = 0;
+        List<Path> files;
+        try (Stream<Path> listing = Files.list(GROUPS)) {
+            files = listing.filter(file -> file.toString().endsWith(".yml")).sorted().toList();
+        }
+        for (Path file : files) {
+            for (String yamlLine : Files.readAllLines(file)) {
+                Matcher prefix = PREFIX.matcher(yamlLine);
+                if (!prefix.matches()) {
+                    continue;
+                }
+                prefixes++;
+                String shown = shownPrefix(OasisChat.line(prefix.group(1), NAME, MESSAGE));
+                if (shown.contains("<") || !shown.endsWith(" ")) {
+                    failures.add(file + ": " + prefix.group(1) + " shows as '" + shown
+                            + "': a tag MiniMessage doesn't know, or no space before the name");
+                }
+            }
+        }
+        if (prefixes == 0) {
+            failures.add("no prefixes found in " + GROUPS);
+        }
+
+        if (!failures.isEmpty()) {
+            failures.forEach(System.err::println);
+            System.exit(1);
+        }
+        System.out.println("the chat line and " + prefixes + " prefixes check out");
+    }
+
+    // The line's text before the vanilla line, whose own text is the same in every line.
+    private static String shownPrefix(Component line) {
+        String text = plain(line);
+        return text.substring(0, text.length() - plain(VANILLA).length());
+    }
+
+    private static String plain(Component component) {
+        return PlainTextComponentSerializer.plainText().serialize(component);
+    }
+}
