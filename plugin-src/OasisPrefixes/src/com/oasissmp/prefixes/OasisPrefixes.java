@@ -65,8 +65,10 @@ public final class OasisPrefixes extends JavaPlugin implements Listener {
         player.displayName(prefix == null ? null : withPrefix(prefix, Component.text(player.getName())));
     }
 
-    // The prefixes are MiniMessage, as TAB reads them too.
+    // The prefixes are MiniMessage, as TAB reads them too. Side by side rather
+    // than the name inside the prefix: MiniMessage can style the whole of what
+    // it returns, which the name would then take on.
     static Component withPrefix(String prefix, Component name) {
-        return MiniMessage.miniMessage().deserialize(prefix).append(name);
+        return Component.textOfChildren(MiniMessage.miniMessage().deserialize(prefix), name);
     }
 }

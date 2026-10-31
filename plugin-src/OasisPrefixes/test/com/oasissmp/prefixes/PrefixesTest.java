@@ -13,7 +13,7 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 /**
  * Checks that OasisPrefixes' display name is a player's prefix and then their
- * name, and that every prefix in the LuckPerms groups under
+ * name, with none of the prefix's style on the name, and that every prefix in the LuckPerms groups under
  * plugins/LuckPerms/yaml-storage/groups reads as MiniMessage: a tag
  * MiniMessage doesn't know, or a legacy colour code, which TAB would still
  * read, is shown in the display name as typed. Runs from the repo root.
@@ -30,12 +30,14 @@ public final class PrefixesTest {
     public static void main(String[] args) throws IOException {
         List<String> failures = new ArrayList<>();
 
-        Component displayName = OasisPrefixes.withPrefix("<gold>[Admin]</gold> ", NAME);
-        if (!displayName.children().getLast().equals(NAME)) {
-            failures.add("the display name doesn't end with the name itself: " + displayName);
-        }
-        if (!shownPrefix(displayName).equals("[Admin] ")) {
-            failures.add("the display name's prefix shows as '" + shownPrefix(displayName) + "', not '[Admin] '");
+        for (String sample : List.of("<gold>[Admin]</gold> ", "<gold>[Admin] </gold>", "<gold>[Admin] ")) {
+            Component displayName = OasisPrefixes.withPrefix(sample, NAME);
+            if (!keepsNameUnstyled(displayName)) {
+                failures.add(sample + " styles the name: " + displayName);
+            }
+            if (!shownPrefix(displayName).equals("[Admin] ")) {
+                failures.add(sample + " shows as '" + shownPrefix(displayName) + "', not '[Admin] '");
+            }
         }
 
         int prefixes = 0;
@@ -61,7 +63,11 @@ public final class PrefixesTest {
                 }
                 prefixes++;
                 String prefix = key.group(1).replace("''", "'");
-                String shown = shownPrefix(OasisPrefixes.withPrefix(prefix, NAME));
+                Component displayName = OasisPrefixes.withPrefix(prefix, NAME);
+                if (!keepsNameUnstyled(displayName)) {
+                    failures.add(file + ": " + prefix + " styles the name: " + displayName);
+                }
+                String shown = shownPrefix(displayName);
                 if (shown.contains("<") || LEGACY_CODE.matcher(shown).find() || !shown.endsWith(" ")) {
                     failures.add(file + ": " + prefix + " shows as '" + shown + "': a tag MiniMessage"
                             + " doesn't know, a legacy colour code, or no space before the name");
@@ -77,6 +83,11 @@ public final class PrefixesTest {
             System.exit(1);
         }
         System.out.println("the display name and " + prefixes + " prefixes check out");
+    }
+
+    // The name is last and unchanged, under nothing that carries a style to it.
+    private static boolean keepsNameUnstyled(Component displayName) {
+        return displayName.style().isEmpty() && displayName.children().getLast().equals(NAME);
     }
 
     // The display name's text before the name.
