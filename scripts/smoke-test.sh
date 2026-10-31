@@ -96,23 +96,35 @@ echo "every plugin in artifacts.lock and plugin-src enabled"
 
 # Geyser takes Bedrock players over NetherNet, with its own signaling on the
 # Bedrock port, from the Dockerfile's -DgeyserTransport rather than its config:
-# checked again below after a restart with `raknet` in the config.
-geyser_nethernet_problem() {
-  local geyser_logs="$1"
-  if grep --quiet --fixed-strings 'NetherNet support is NOT enabled' <<<"$geyser_logs"; then
-    echo "Geyser started without NetherNet"
-  elif ! grep --quiet --fixed-strings '[Geyser-Spigot] Transport set from system property: nethernet' <<<"$geyser_logs"; then
-    echo "Geyser didn't take its transport from -DgeyserTransport=nethernet"
-  elif ! grep --quiet --fixed-strings '[Geyser-Spigot] Built-in signaling started on http://0.0.0.0:19132' <<<"$geyser_logs"; then
-    echo "Geyser's built-in signaling didn't start on port 19132"
+# checked again below after a restart with `raknet` in the config. Geyser logs
+# its transport and listeners before its own "Done (", which can come after the
+# server's. Takes the time the server was started, or "" for its first start.
+check_geyser_nethernet() {
+  local since="$1" geyser_logs problem="" deadline=$((SECONDS + startup_deadline_seconds))
+  until geyser_logs="$(docker logs ${since:+--since "$since"} "$name" 2>&1)" \
+      && grep --quiet --fixed-strings '[Geyser-Spigot] Done (' <<<"$geyser_logs"; do
+    if [[ "$(docker inspect --format '{{.State.Running}}' "$name")" != true ]] || ((SECONDS >= deadline)); then
+      problem="Geyser didn't finish starting"
+      break
+    fi
+    sleep 2
+  done
+  if [[ -z "$problem" ]]; then
+    if grep --quiet --fixed-strings 'NetherNet support is NOT enabled' <<<"$geyser_logs"; then
+      problem="Geyser started without NetherNet"
+    elif ! grep --quiet --fixed-strings '[Geyser-Spigot] Transport set from system property: nethernet' <<<"$geyser_logs"; then
+      problem="Geyser didn't take its transport from -DgeyserTransport=nethernet"
+    elif ! grep --quiet --fixed-strings '[Geyser-Spigot] Built-in signaling started on http://0.0.0.0:19132' <<<"$geyser_logs"; then
+      problem="Geyser's built-in signaling didn't start on port 19132"
+    fi
+  fi
+  if [[ -n "$problem" ]]; then
+    grep --fixed-strings '[Geyser-Spigot]' <<<"$geyser_logs" | tail -n 30 || true
+    echo "error: ${problem}" >&2
+    return 1
   fi
 }
-problem="$(geyser_nethernet_problem "$logs")"
-if [[ -n "$problem" ]]; then
-  grep --fixed-strings '[Geyser-Spigot]' <<<"$logs" | tail -n 30 || true
-  echo "error: ${problem}" >&2
-  exit 1
-fi
+check_geyser_nethernet "" || exit 1
 echo "Geyser on NetherNet with built-in signaling"
 
 # OasisVoice made the voice chat groups. Simple Voice Chat starts its voice
@@ -662,22 +674,7 @@ done
 echo "LuckPerms groups and OasisFilter word lists the repo doesn't have are removed at start"
 
 # Geyser is still on NetherNet with `raknet` in its config, which it left as is.
-deadline=$((SECONDS + startup_deadline_seconds))
-until restarted_logs="$(docker logs --since "$restarted_at" "$name" 2>&1)" \
-    && grep --quiet --extended-regexp 'Built-in signaling (started|could not start)|NetherNet support is NOT enabled' <<<"$restarted_logs"; do
-  if [[ "$(docker inspect --format '{{.State.Running}}' "$name")" != true ]] || ((SECONDS >= deadline)); then
-    tail -n 100 <<<"$restarted_logs"
-    echo "error: Geyser didn't start its Bedrock listener after the restart" >&2
-    exit 1
-  fi
-  sleep 2
-done
-problem="$(geyser_nethernet_problem "$restarted_logs")"
-if [[ -n "$problem" ]]; then
-  grep --fixed-strings '[Geyser-Spigot]' <<<"$restarted_logs" | tail -n 30 || true
-  echo "error: with raknet in its config, ${problem}" >&2
-  exit 1
-fi
+check_geyser_nethernet "$restarted_at" || exit 1
 if ! docker exec --user 1000 "$name" grep --quiet --line-regexp '  transport: raknet' "$geyser_config"; then
   echo "error: Geyser rewrote bedrock.transport in ${geyser_config}, so the restart didn't test a persisted raknet" >&2
   exit 1
