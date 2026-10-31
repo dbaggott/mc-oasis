@@ -15,12 +15,14 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
  * Checks that OasisChat's line is a player's prefix and then the vanilla chat
  * line, and that every prefix in the LuckPerms groups under
  * plugins/LuckPerms/yaml-storage/groups reads as MiniMessage: a tag
- * MiniMessage doesn't know is shown as typed. Runs from the repo root.
+ * MiniMessage doesn't know, or a legacy colour code, which TAB would still
+ * read, is shown in chat as typed. Runs from the repo root.
  */
 public final class ChatLineTest {
 
     private static final Path GROUPS = Path.of("plugins/LuckPerms/yaml-storage/groups");
     private static final Pattern PREFIX = Pattern.compile("^- '(.*)':$");
+    private static final Pattern LEGACY_CODE = Pattern.compile("[&\u00a7][0-9a-fk-or]", Pattern.CASE_INSENSITIVE);
     private static final Component NAME = Component.text("Steve");
     private static final Component MESSAGE = Component.text("hi");
     private static final Component VANILLA = Component.translatable("chat.type.text", NAME, MESSAGE);
@@ -44,16 +46,27 @@ public final class ChatLineTest {
             files = listing.filter(file -> file.toString().endsWith(".yml")).sorted().toList();
         }
         for (Path file : files) {
+            boolean inPrefixes = false;
             for (String yamlLine : Files.readAllLines(file)) {
-                Matcher prefix = PREFIX.matcher(yamlLine);
-                if (!prefix.matches()) {
+                if (!yamlLine.startsWith(" ") && !yamlLine.startsWith("- ")) {
+                    inPrefixes = yamlLine.equals("prefixes:");
+                    continue;
+                }
+                if (!inPrefixes || !yamlLine.startsWith("- ")) {
+                    continue;
+                }
+                Matcher key = PREFIX.matcher(yamlLine);
+                if (!key.matches()) {
+                    failures.add(file + ": can't read the prefix in " + yamlLine
+                            + ", which isn't single-quoted the way LuckPerms writes it");
                     continue;
                 }
                 prefixes++;
-                String shown = shownPrefix(OasisChat.line(prefix.group(1), NAME, MESSAGE));
-                if (shown.contains("<") || !shown.endsWith(" ")) {
-                    failures.add(file + ": " + prefix.group(1) + " shows as '" + shown
-                            + "': a tag MiniMessage doesn't know, or no space before the name");
+                String prefix = key.group(1).replace("''", "'");
+                String shown = shownPrefix(OasisChat.line(prefix, NAME, MESSAGE));
+                if (shown.contains("<") || LEGACY_CODE.matcher(shown).find() || !shown.endsWith(" ")) {
+                    failures.add(file + ": " + prefix + " shows as '" + shown + "': a tag MiniMessage"
+                            + " doesn't know, a legacy colour code, or no space before the name");
                 }
             }
         }
