@@ -78,6 +78,13 @@ ENV EULA=TRUE \
 ENV MEMORY=6G \
     USE_AIKAR_FLAGS=true
 
+# Bedrock players connect over NetherNet, whatever transport Geyser's config on
+# the world volume holds: builds before 1273 wrote `raknet` there, and current
+# Bedrock clients no longer speak it. Signaling stays Geyser's default, built
+# in on the Bedrock port over TCP. JVM_OPTS rather than JVM_DD_OPTS, which the
+# host replaces (mc-oasis-boot in dbaggott/infrastructure's apps/mc-oasis).
+ENV JVM_OPTS=-DgeyserTransport=nethernet
+
 # Access control. The whitelist is only as good as online-mode, which makes
 # Mojang (and Xbox Live, through Floodgate) prove who a player is. SYNCHRONIZE
 # makes the host-supplied lists authoritative: in-game /whitelist and /op
