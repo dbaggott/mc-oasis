@@ -1,0 +1,6 @@
+name: OasisPrefixes
+version: 1.0.0
+main: com.oasissmp.prefixes.OasisPrefixes
+api-version: '26.3'
+description: Puts each player's LuckPerms prefix in their display name, which chat shows
+depend: [LuckPerms]

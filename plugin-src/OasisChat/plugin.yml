@@ -1,6 +1,0 @@
-name: OasisChat
-version: 1.0.0
-main: com.oasissmp.chat.OasisChat
-api-version: '26.3'
-description: Puts each player's LuckPerms prefix before their chat messages
-depend: [LuckPerms]

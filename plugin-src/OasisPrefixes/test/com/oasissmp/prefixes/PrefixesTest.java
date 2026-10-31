@@ -1,4 +1,4 @@
-package com.oasissmp.chat;
+package com.oasissmp.prefixes;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,32 +12,30 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 /**
- * Checks that OasisChat's line is a player's prefix and then the vanilla chat
- * line, and that every prefix in the LuckPerms groups under
+ * Checks that OasisPrefixes' display name is a player's prefix and then their
+ * name, and that every prefix in the LuckPerms groups under
  * plugins/LuckPerms/yaml-storage/groups reads as MiniMessage: a tag
  * MiniMessage doesn't know, or a legacy colour code, which TAB would still
- * read, is shown in chat as typed. Runs from the repo root.
+ * read, is shown in the display name as typed. Runs from the repo root.
  */
-public final class ChatLineTest {
+public final class PrefixesTest {
 
     private static final Path GROUPS = Path.of("plugins/LuckPerms/yaml-storage/groups");
     private static final Pattern PREFIX = Pattern.compile("^- '(.*)':$");
     private static final Pattern LEGACY_CODE = Pattern.compile("[&\u00a7][0-9a-fk-or]", Pattern.CASE_INSENSITIVE);
     private static final Component NAME = Component.text("Steve");
-    private static final Component MESSAGE = Component.text("hi");
-    private static final Component VANILLA = Component.translatable("chat.type.text", NAME, MESSAGE);
 
-    private ChatLineTest() { }
+    private PrefixesTest() { }
 
     public static void main(String[] args) throws IOException {
         List<String> failures = new ArrayList<>();
 
-        Component line = OasisChat.line("<gold>[Admin]</gold> ", NAME, MESSAGE);
-        if (!line.children().getLast().equals(VANILLA)) {
-            failures.add("the line doesn't end with the vanilla line: " + line);
+        Component displayName = OasisPrefixes.withPrefix("<gold>[Admin]</gold> ", NAME);
+        if (!displayName.children().getLast().equals(NAME)) {
+            failures.add("the display name doesn't end with the name itself: " + displayName);
         }
-        if (!shownPrefix(line).equals("[Admin] ")) {
-            failures.add("the line's prefix shows as '" + shownPrefix(line) + "', not '[Admin] '");
+        if (!shownPrefix(displayName).equals("[Admin] ")) {
+            failures.add("the display name's prefix shows as '" + shownPrefix(displayName) + "', not '[Admin] '");
         }
 
         int prefixes = 0;
@@ -63,7 +61,7 @@ public final class ChatLineTest {
                 }
                 prefixes++;
                 String prefix = key.group(1).replace("''", "'");
-                String shown = shownPrefix(OasisChat.line(prefix, NAME, MESSAGE));
+                String shown = shownPrefix(OasisPrefixes.withPrefix(prefix, NAME));
                 if (shown.contains("<") || LEGACY_CODE.matcher(shown).find() || !shown.endsWith(" ")) {
                     failures.add(file + ": " + prefix + " shows as '" + shown + "': a tag MiniMessage"
                             + " doesn't know, a legacy colour code, or no space before the name");
@@ -78,13 +76,13 @@ public final class ChatLineTest {
             failures.forEach(System.err::println);
             System.exit(1);
         }
-        System.out.println("the chat line and " + prefixes + " prefixes check out");
+        System.out.println("the display name and " + prefixes + " prefixes check out");
     }
 
-    // The line's text before the vanilla line, whose own text is the same in every line.
-    private static String shownPrefix(Component line) {
-        String text = plain(line);
-        return text.substring(0, text.length() - plain(VANILLA).length());
+    // The display name's text before the name.
+    private static String shownPrefix(Component displayName) {
+        String text = plain(displayName);
+        return text.substring(0, text.length() - plain(NAME).length());
     }
 
     private static String plain(Component component) {
