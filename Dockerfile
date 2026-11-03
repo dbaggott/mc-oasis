@@ -156,6 +156,9 @@ ENV DATAPACKS=/datapacks \
 # Paper keeps game rules per dimension and RCON runs in the overworld, so a rule
 # that matters outside it is set in each dimension with `execute in`.
 #
+# The vanilla "moved too quickly" check is off for players, flying or not,
+# since GrimAC checks movement; data/spigot.yml turns off the rest.
+#
 # BlazeandCave's Advancements Pack greets each player in chat on their first
 # join: the first player ever with a thank-you for downloading it, everyone
 # after with a welcome. `introduced` 1 marks the thank-you as already given and
@@ -172,6 +175,12 @@ gamerule players_sleeping_percentage 30\n\
 execute in minecraft:overworld run gamerule locator_bar false\n\
 execute in minecraft:the_nether run gamerule locator_bar false\n\
 execute in minecraft:the_end run gamerule locator_bar false\n\
+execute in minecraft:overworld run gamerule player_movement_check false\n\
+execute in minecraft:the_nether run gamerule player_movement_check false\n\
+execute in minecraft:the_end run gamerule player_movement_check false\n\
+execute in minecraft:overworld run gamerule elytra_movement_check false\n\
+execute in minecraft:the_nether run gamerule elytra_movement_check false\n\
+execute in minecraft:the_end run gamerule elytra_movement_check false\n\
 scoreboard players set introduced bac_settings 1\n\
 scoreboard players set intro_msg bac_settings 0"
 

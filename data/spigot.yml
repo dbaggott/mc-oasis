@@ -1,8 +1,9 @@
 # Spigot settings. In every world, entities tick at any distance, as in
 # vanilla, and TNT is capped at 1,000 explosions a tick, where vanilla has no
 # cap. The server's two movement checks, "moved too quickly" and "moved
-# wrongly", are off, since GrimAC checks movement. They cover vehicles as well
-# as players.
+# wrongly", are off for players and vehicles, since GrimAC checks movement.
+# The game rules in the Dockerfile also turn off "moved too quickly" for
+# players, but only these settings reach the other three.
 #
 # No config-version: Spigot takes a file without one to be at the current
 # version.
