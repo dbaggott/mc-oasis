@@ -1,9 +1,16 @@
-# Spigot settings for every world. Entities tick at any distance, as in
+# Spigot settings. In every world, entities tick at any distance, as in
 # vanilla, and TNT is capped at 1,000 explosions a tick, where vanilla has no
-# cap.
+# cap. The server's two player movement checks are off, since GrimAC checks
+# movement.
 #
 # No config-version: Spigot takes a file without one to be at the current
 # version.
+
+# Neither check has an off switch, so each limit is set past any move a client
+# can make. moved-wrongly-threshold is in blocks squared.
+settings:
+  moved-too-quickly-multiplier: 1000000.0
+  moved-wrongly-threshold: 1000000.0
 
 world-settings:
   default:
