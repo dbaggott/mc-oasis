@@ -946,3 +946,19 @@ code {
 [hidden] {
   display: none !important;
 }
+
+/* The FAQ: each question and its answer on a panel, like a rule on the Rules page. */
+.faq-item {
+  background: var(--panel);
+  border: 2px solid var(--panel-edge);
+  padding: 16px 16px 4px;
+  margin-bottom: 12px;
+}
+
+.faq-item h2 {
+  margin: 0 0 0.6em;
+}
+
+.faq-item p {
+  margin: 0 0 12px;
+}
