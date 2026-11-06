@@ -6,6 +6,7 @@ export const pages = [
   "play/index.html",
   "schedule/index.html",
   "rules/index.html",
+  "faq/index.html",
   "request-access/index.html",
   "contact/index.html",
   "404.html",

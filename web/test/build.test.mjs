@@ -113,6 +113,7 @@ const CURRENT = {
   "play/index.html": "/play/",
   "schedule/index.html": "/schedule/",
   "rules/index.html": "/rules/",
+  "faq/index.html": "/faq/",
   "request-access/index.html": "/request-access/",
   "contact/index.html": "/contact/",
   "404.html": null,
