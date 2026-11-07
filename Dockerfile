@@ -202,6 +202,11 @@ COPY --from=libertybans-addons /out/ /plugins/
 # their name in the tab list and over their head.
 # OasisFilter's are its word lists, OasisRules' the server rules, and
 # OasisRegions' the WorldGuard regions it sets up.
+# Geyser-Spigot's is MCXboxBroadcast's, under the extension's id in Geyser's
+# extensions/: the file the pinned build generates, with expiry off, so a
+# console player who stops playing for a while stays on its friend list. Its
+# Xbox sign-in, cache.json beside it, is never in the image and stays on the
+# world volume.
 COPY plugins/ /plugins/
 COPY data/ /config/
 COPY build/artifacts/datapacks/ /datapacks/

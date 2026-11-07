@@ -28,7 +28,7 @@ plugin-src/<Name>/       the repo's own plugins, each a plugin.yml and Java sour
 scripts/
   fetch-artifacts.sh     downloads everything in artifacts.lock and verifies each sha256
   smoke-test.sh          starts a built image on a throwaway world; checks every plugin and datapack loads and every config setting applies
-  bump-bedrock.sh        moves the Geyser and Floodgate lines in artifacts.lock to their newest builds at least 48 hours old
+  bump-bedrock.sh        moves the Geyser, Floodgate and MCXboxBroadcast lines in artifacts.lock to their newest builds at least 48 hours old
 web/                     the website: a Vite site; its rules page renders plugins/OasisRules/rules.txt
 api/                     the website's API: a parent's request for their child to be let in, as a container-image Lambda
 shared/                  what the site's forms and the API both import, so they agree on every field
@@ -61,12 +61,16 @@ checks the build. Requests sent to a local API are kept in memory and never leav
 ## Changing a plugin, datapack or the Paper build
 
 Edit its line in `artifacts.lock`: version, URL and sha256 together. Take the sha256 from the publisher
-where they give one (the Paper and GeyserMC download APIs both do). Otherwise download the file and hash
+where they give one (the Paper and GeyserMC download APIs both do, and GitHub's release API gives each
+asset's as its `digest`). Otherwise download the file and hash
 it yourself. A mismatch fails the build.
 
-Geyser and Floodgate are bumped for you: the Bump Bedrock workflow opens a PR on `bump/bedrock` daily when
-there is a newer build, which merges itself once CI passes. When a Bedrock client update has locked players
-out before a build is 48 hours old, run it from the Actions tab with `skip_wait` checked.
+Geyser, Floodgate and the MCXboxBroadcast extension are bumped for you: the Bump Bedrock workflow opens a PR on
+`bump/bedrock` daily when there is a newer build, which merges itself once CI passes. If an extension release
+fails CI, pin its line back by hand in that PR, or the day's Geyser bump is held back with it. The next day's
+run proposes that release again, so this repeats daily until one passes. When a Bedrock
+client update has locked players out before a build is 48 hours old, run it from the Actions tab with
+`skip_wait` checked.
 
 Changing the Minecraft version also means changing `VERSION` in the `Dockerfile` to match the new Paper
 jar, and the formats in each `datapacks/*/pack.mcmeta` to the new version's data pack format.

@@ -959,6 +959,11 @@ code {
   margin: 0 0 0.6em;
 }
 
-.faq-item p {
+.faq-item p,
+.faq-item ol {
   margin: 0 0 12px;
+}
+
+.faq-item li + li {
+  margin-top: 6px;
 }
