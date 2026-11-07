@@ -1,0 +1,67 @@
+# Core session settings
+session:
+  # The address of the server to relay joins to
+  # auto uses the address Geyser is bound to, or 127.0.0.1 for standalone
+  remote-address: auto
+
+  # The port of the server to relay joins to
+  # auto uses Geyser's Bedrock port, or 19132 for standalone
+  remote-port: auto
+
+  # The amount of time in seconds to update session information
+  # Warning: This can be no lower than 20 due to Xbox rate limits
+  update-interval: 30
+
+  # When the session fills up a new one is created and the old one is closed
+  # true: Players in the old session lose the friends of friends tag, so their friends can't see the server
+  # false: Players in the old session keep the friends of friends tag, but their friends get an error when trying to join
+  hide-old-sessions: true
+
+  # Relay IPv6 candidates to the server
+  # When false, IPv6 ICE candidates are stripped from relayed offers so players connect over IPv4
+  allow-ipv6: false
+
+# Friend list sync settings
+friend-sync:
+  # The amount of time in seconds to update session information
+  # Warning: This can be no lower than 20 due to Xbox rate limits
+  update-interval: 60
+
+  # Should we automatically accept friend requests
+  auto-friend: true
+
+  # Should we automatically send an invite when a friend is added
+  initial-invite: true
+
+  # Friend expiry settings
+  expiry:
+    # Should we unfriend people that haven't joined the server in a while
+    enabled: false
+
+    # The amount of time in days before a friend is considered expired
+    days: 15
+
+    # How often to check in seconds for expired friends
+    check: 1800
+
+# Notification settings (e.g., Slack/Discord webhook)
+notifications:
+  # Should we send a message to a slack webhook when the session is updated
+  enabled: false
+
+  # The webhook url to send the message to
+  # If you are using discord add "/slack" to the end of the webhook url
+  webhook-url: ''
+
+  # The message to send when the session is expired and needs to be updated
+  session-expired-message: |-
+    <!here> Xbox Session expired, sign in again to update it.
+
+    Use the following link to sign in: %s
+    Enter the code: %s
+
+  # The message to send when a friend has restrictions in place that prevent them from being friends with our account
+  friend-restriction-message: '%s (%s) has restrictions in place that prevent them from being friends with our account.'
+
+# Do not change!
+config-version: 9

@@ -1,9 +1,12 @@
 ################################################################################
-# Bump Bedrock — keep Geyser and Floodgate current, so a Bedrock client update
-# doesn't lock Bedrock players out until someone bumps them by hand.
+# Bump Bedrock — keep Geyser, Floodgate and the MCXboxBroadcast extension
+# current, so a Bedrock client update doesn't lock Bedrock players out, or drop
+# the server from consoles' Friends tabs, until someone bumps them by hand.
 #
 # Daily, scripts/bump-bedrock.sh moves their artifacts.lock lines to the newest
-# build at least 48 hours old. Any change goes to one PR on `bump/bedrock`,
+# build at least 48 hours old. The three share the one PR, so an extension
+# release that fails CI holds back that day's Geyser bump too: pin the
+# extension's line back by hand in the PR. Any change goes to one PR on `bump/bedrock`,
 # opened or force-pushed fresh off main, and queued to auto-merge once CI
 # passes. A merge is not a deploy: the server runs a new image only after
 # `apps/app deploy mc-oasis main` in dbaggott/infrastructure and a restart.
@@ -66,9 +69,12 @@ jobs:
           ref: ${{ env.BASE }}
           token: ${{ steps.token.outputs.token }}
 
+      # GITHUB_TOKEN for reading MCXboxBroadcast's releases: without a token,
+      # a hosted runner shares the anonymous rate limit with every job on its IP.
       - name: Rewrite artifacts.lock
         env:
           SKIP_WAIT: ${{ inputs.skip_wait && '--skip-wait' || '' }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           scripts/bump-bedrock.sh ${SKIP_WAIT:+"$SKIP_WAIT"} | tee "$RUNNER_TEMP/changes"
 
@@ -94,11 +100,11 @@ jobs:
           bot_id="$(gh api "users/${bot}" --jq .id)"
           git config user.name "$bot"
           git config user.email "${bot_id}+${bot}@users.noreply.github.com"
-          git commit --quiet -m "Bump GeyserMC artifacts" -m "$(cat "$RUNNER_TEMP/changes")" -- artifacts.lock
+          git commit --quiet -m "Bump Bedrock artifacts" -m "$(cat "$RUNNER_TEMP/changes")" -- artifacts.lock
           git push --force origin "HEAD:refs/heads/${BRANCH}"
 
           {
-            echo "Moves artifacts.lock to newer GeyserMC builds:"
+            echo "Moves artifacts.lock to newer Geyser, Floodgate and MCXboxBroadcast builds:"
             echo
             echo '```'
             cat "$RUNNER_TEMP/changes"
@@ -109,6 +115,6 @@ jobs:
           if [[ -n "$pr" ]]; then
             gh pr edit "$pr" --body-file "$RUNNER_TEMP/body"
           else
-            gh pr create --head "$BRANCH" --base "$BASE" --title "Bump Geyser and Floodgate" --body-file "$RUNNER_TEMP/body"
+            gh pr create --head "$BRANCH" --base "$BASE" --title "Bump Geyser, Floodgate and MCXboxBroadcast" --body-file "$RUNNER_TEMP/body"
           fi
           gh pr merge "$BRANCH" --auto --squash

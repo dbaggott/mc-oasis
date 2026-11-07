@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Start the built image against a throwaway world and check that it comes up,
-# enables every plugin and datapack the image carries, applies the settings the
+# enables every plugin, Geyser extension and datapack the image carries, applies the settings the
 # repo owns, answers RCON and stops cleanly. Uses no real player data: the
 # whitelist is left empty.
 #
@@ -309,6 +309,49 @@ if ! grep --quiet --fixed-strings 'ExemptionLuckPermsAddon] LuckPerms detected a
   exit 1
 fi
 echo "LibertyBans exempts staff by LuckPerms group weight"
+
+# The Geyser extensions in artifacts.lock started, each by the lines its own
+# code logs: Geyser reports an extension enabled before the extension's own
+# start, which can still fail. They start after Geyser's "Done (", so the log is
+# read again until each one has logged its start or its failure. Past its start
+# MCXboxBroadcast only waits for a sign-in, which the smoke test has no account
+# for, so nothing here depends on reaching Xbox Live.
+while read -r kind extension _ || [[ -n "${kind:-}" ]]; do
+  [[ "${kind:-}" == extension ]] || continue
+  case "$extension" in
+    mcxboxbroadcast)
+      start_line='[mcxboxbroadcast] Starting MCXboxBroadcast Extension '
+      failure_line='extension will not start'
+      ;;
+    *)
+      echo "error: artifacts.lock has extension ${extension}, which the smoke test has no start check for" >&2
+      exit 1
+      ;;
+  esac
+  deadline=$((SECONDS + 120))
+  until extension_logs="$(docker logs "$name" 2>&1)" \
+      && grep --quiet --fixed-strings --regexp="$start_line" --regexp="$failure_line" <<<"$extension_logs"; do
+    if [[ "$(docker inspect --format '{{.State.Running}}' "$name")" != true ]] || ((SECONDS >= deadline)); then
+      break
+    fi
+    sleep 2
+  done
+  if ! grep --quiet --fixed-strings "$start_line" <<<"$extension_logs" \
+    || grep --quiet --fixed-strings "$failure_line" <<<"$extension_logs"; then
+    grep --fixed-strings "[${extension}]" <<<"$extension_logs" | tail -n 30 || true
+    echo "error: the ${extension} extension didn't start" >&2
+    exit 1
+  fi
+  echo "extension ${extension} started"
+done <"${repo_root}/artifacts.lock"
+
+# The repo's MCXboxBroadcast config, by the one setting it changes from the
+# file the pinned build generates, read back from the file the extension loaded.
+# Its other settings are that file's defaults, and the config has a block
+# scalar, which repo_settings can't read.
+check_settings "$name" value "$(printf '%s\t%s\t%s' \
+  plugins/Geyser-Spigot/extensions/mcxboxbroadcast/config.yml "\$['friend-sync']['expiry']['enabled']" false)" || exit 1
+echo "MCXboxBroadcast keeps friends who haven't joined lately"
 
 # The Dockerfile's RCON_CMDS_STARTUP. The image runs them through RCON once the
 # server listens and only logs a failure, so what they set is checked below,
@@ -643,14 +686,18 @@ done
 
 # A LuckPerms group file and an OasisFilter word list file the repo doesn't
 # have, left on the world volume as ones deleted from the repo would be, are
-# gone once the server starts again.
+# gone once the server starts again. MCXboxBroadcast's token cache, which the
+# image doesn't ship, is still there, so the sign-in lasts across restarts and
+# deploys. Only that it exists: the extension reads it at start, and may
+# rewrite content it can't use.
 stale_files=(
   /data/plugins/LuckPerms/yaml-storage/groups/smoke-stale.yml
   /data/plugins/OasisFilter/lists/slurs/smoke-stale.txt
 )
+xbox_token_cache=/data/plugins/Geyser-Spigot/extensions/mcxboxbroadcast/cache.json
 stale_dir="$(mktemp -d)"
 echo "# left by the smoke test" >"${stale_dir}/content"
-for stale_file in "${stale_files[@]}"; do
+for stale_file in "${stale_files[@]}" "$xbox_token_cache"; do
   cp "${stale_dir}/content" "${stale_dir}/$(basename "$stale_file")"
   COPYFILE_DISABLE=1 tar -c --no-xattrs -C "$stale_dir" "$(basename "$stale_file")" | docker cp - "${name}:$(dirname "$stale_file")"
 done
@@ -672,6 +719,11 @@ for stale_file in "${stale_files[@]}"; do
   fi
 done
 echo "LuckPerms groups and OasisFilter word lists the repo doesn't have are removed at start"
+if ! docker exec --user 1000 "$name" test -e "$xbox_token_cache"; then
+  echo "error: ${xbox_token_cache} didn't survive a restart" >&2
+  exit 1
+fi
+echo "MCXboxBroadcast's sign-in survives a restart"
 
 # Geyser is still on NetherNet with `raknet` in its config, which it left as is.
 check_geyser_nethernet "$restarted_at" || exit 1

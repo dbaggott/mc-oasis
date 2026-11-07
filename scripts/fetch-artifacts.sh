@@ -7,6 +7,7 @@ set -euo pipefail
 #
 #   build/artifacts/server.jar          the one server jar, whatever its name
 #   build/artifacts/plugins/<name>.jar
+#   build/artifacts/plugins/Geyser-Spigot/extensions/<name>.jar
 #   build/artifacts/datapacks/<name>.zip
 #   build/artifacts/libraries/<name>.jar
 #
@@ -31,6 +32,7 @@ destination() {
   case "$kind" in
     server) echo "server.jar" ;;
     plugin) echo "plugins/${name}.jar" ;;
+    extension) echo "plugins/Geyser-Spigot/extensions/${name}.jar" ;;
     datapack) echo "datapacks/${name}.zip" ;;
     library) echo "libraries/${name}.jar" ;;
     *) return 1 ;;
@@ -45,7 +47,7 @@ rm -rf "$out"
 mkdir -p "${repo_root}/build"
 staging="$(mktemp -d "${repo_root}/build/.artifacts.XXXXXX")"
 trap 'rm -rf "$staging"' EXIT
-mkdir -p "${staging}/plugins" "${staging}/datapacks" "${staging}/libraries"
+mkdir -p "${staging}/plugins/Geyser-Spigot/extensions" "${staging}/datapacks" "${staging}/libraries"
 
 servers=0
 line_no=0
