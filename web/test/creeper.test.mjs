@@ -218,19 +218,20 @@ test("a spawned creeper strolls along its ledge, in front of the letters, its fe
     // A fixed run of numbers, so a failure repeats.
     const random = () => ((n = (n * 1103515245 + 12345) % 2147483648) / 2147483648);
     const route = spawnedRoute(world, random);
-    // Its ledge is the one nearest its height: it stands where it is seen on
-    // the ledge's edge, within half a block of it.
+    // It stands where the player sees it on its ledge's front edge, within
+    // half a block of the ledge's height; `seen` is where on the edge.
+    const seen = (x, z) => (x * player.z) / (player.z - z);
     const ledge = ledges
       .filter(({ top }) => Math.abs(top - route[0].y) < 0.5)
-      .find(({ from, to }) => route.every(({ x }) => x - 0.45 >= from - 1e-9 && x + 0.45 <= to + 1e-9));
+      .find(({ from, to }) => route.every(({ x, z }) => seen(x, z) - 0.45 >= from - 1e-9 && seen(x, z) + 0.45 <= to + 1e-9));
     assert.ok(ledge, `route ${JSON.stringify(route)} leaves every ledge`);
     assert.ok(route.every(({ z }) => z > 0), "it is behind the letters");
     assert.ok(route.every(({ y }) => y === route[0].y), "it changes height");
     assert.ok(
-      route.slice(1).every(({ x }, i) => Math.abs(x - route[i].x) <= 4),
+      route.slice(1).every(({ x, z }, i) => Math.abs(seen(x, z) - seen(route[i].x, route[i].z)) <= 4 + 1e-9),
       "it strolls more than 4 blocks at a time",
     );
-    if (ledge.to - ledge.from >= 3) assert.ok(Math.abs(route[1].x - route[0].x) >= 1 - 1e-9, "it doesn't stroll on a ledge with room to");
+    if (ledge.to - ledge.from >= 3) assert.ok(Math.abs(seen(route[1].x, route[1].z) - seen(route[0].x, route[0].z)) >= 1 - 1e-9, "it doesn't stroll on a ledge with room to");
   }
 });
 
@@ -244,8 +245,9 @@ test("a spawned creeper favours ledges with room to stroll", () => {
   const random = () => ((n = (n * 1103515245 + 12345) % 2147483648) / 2147483648);
   let onNarrow = 0;
   for (let i = 0; i < 1000; i++) {
-    const [{ x, y }] = spawnedRoute(world, random);
-    if (narrow.some(({ top, from, to }) => Math.abs(top - y) < 0.5 && x >= from && x <= to)) onNarrow++;
+    const [{ x, y, z }] = spawnedRoute(world, random);
+    const seen = (x * player.z) / (player.z - z);
+    if (narrow.some(({ top, from, to }) => Math.abs(top - y) < 0.5 && seen >= from && seen <= to)) onNarrow++;
   }
   assert.ok(onNarrow / 1000 < (narrow.length / ledges.length) / 2, `${onNarrow} of 1000 spawned on ledges with no room`);
 });

@@ -492,17 +492,16 @@ export function logoWorld(data) {
     // run of standing blocks side by side with nothing standing on them. Each
     // is its height and the stretch of x it covers.
     ledges() {
-      const tops = solids.filter(({ block }) => standing.has(block) && !standing.has(byPlace.get(placeKey(block.word, block.column, block.row - 1))));
+      const tops = solids
+        .filter(({ block }) => standing.has(block) && !standing.has(byPlace.get(placeKey(block.word, block.column, block.row - 1))))
+        .sort((a, b) => a.block.word - b.block.word || a.block.row - b.block.row || a.block.column - b.block.column);
       const runs = [];
-      for (const row of Object.values(Object.groupBy(tops, ({ block }) => `${block.word}:${block.row}`))) {
-        row.sort((a, b) => a.block.column - b.block.column);
-        for (const top of row) {
-          const run = runs.at(-1);
-          if (run?.last.block.word === top.block.word && run.last.block.row === top.block.row && run.last.block.column === top.block.column - 1) {
-            run.to = top.max[0];
-            run.last = top;
-          } else runs.push({ top: top.max[1], from: top.min[0], to: top.max[0], last: top });
-        }
+      for (const top of tops) {
+        const run = runs.at(-1);
+        if (run?.last.block.word === top.block.word && run.last.block.row === top.block.row && run.last.block.column === top.block.column - 1) {
+          run.to = top.max[0];
+          run.last = top;
+        } else runs.push({ top: top.max[1], from: top.min[0], to: top.max[0], last: top });
       }
       const along = { top: 0, from: Math.min(...smp.map(({ min }) => min[0])), to: Math.max(...smp.map(({ max }) => max[0])) };
       return [along, ...runs.map(({ top, from, to }) => ({ top, from, to }))];
@@ -513,11 +512,12 @@ export function logoWorld(data) {
   };
 }
 
-// A creeper standing at `x`, at depth `z`, on a ledge at height `top`: at the
-// height the player sees level with the ledge's front edge, where the letters
-// are drawn.
+// A creeper standing at depth `z` on a ledge at height `top`, at `x` along it:
+// where the player sees it at that place on the ledge's front edge, where the
+// letters are drawn.
 function standingOn(x, top, z) {
-  return { x, y: PLAYER.y + ((top - PLAYER.y) * (PLAYER.z - z)) / PLAYER.z, z };
+  const nearer = (PLAYER.z - z) / PLAYER.z;
+  return { x: PLAYER.x + (x - PLAYER.x) * nearer, y: PLAYER.y + (top - PLAYER.y) * nearer, z };
 }
 
 // The first creeper's route: from behind the M's centre block, through the gap
@@ -653,8 +653,9 @@ function buildLogo(logo, data) {
     piece.style.height = u(h + seam);
   };
   const pieces = new Map();
+  // Draws `block`, its pieces in each pass where any it had were, so that each
+  // keeps its place among its neighbours'.
   function drawBlock(block) {
-    pieces.get(block)?.forEach((piece) => piece.remove());
     const outline = element("logo-piece", passes[0]);
     place(outline, block.outline);
     outline.style.backgroundColor = colours.outline;
@@ -674,7 +675,9 @@ function buildLogo(logo, data) {
       face.style.backgroundSize = `${u(width)} ${u(height)}`;
       face.style.backgroundPosition = `${u(-block.face[0])} ${u(-block.face[1])}`;
     }
-    pieces.set(block, [outline, side, face]);
+    const drawn = [outline, side, face];
+    pieces.get(block)?.forEach((piece, pass) => piece.replaceWith(drawn[pass]));
+    pieces.set(block, drawn);
   }
   blocks.forEach(drawBlock);
   logo.classList.add("logo-built");
