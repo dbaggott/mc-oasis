@@ -304,7 +304,7 @@ code {
 /* A phone: the menu button and the logo on one row, the logo centred by an
    empty third column as wide as the button, and the links beneath, shown once
    the button opens them. */
-@media (max-width: 1060px) {
+@media (max-width: 1190px) {
   .nav {
     display: grid;
     grid-template-columns: 48px 1fr 48px;
@@ -945,4 +945,20 @@ code {
 
 [hidden] {
   display: none !important;
+}
+
+/* The FAQ: each question and its answer on a panel, like a rule on the Rules page. */
+.faq-item {
+  background: var(--panel);
+  border: 2px solid var(--panel-edge);
+  padding: 16px 16px 4px;
+  margin-bottom: 12px;
+}
+
+.faq-item h2 {
+  margin: 0 0 0.6em;
+}
+
+.faq-item p {
+  margin: 0 0 12px;
 }

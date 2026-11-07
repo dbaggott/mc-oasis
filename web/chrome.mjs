@@ -10,6 +10,7 @@ const LEFT = [
 ];
 const RIGHT = [
   { href: "/rules/", label: "Rules" },
+  { href: "/faq/", label: "FAQ" },
   { href: "/request-access/", label: "Request Access" },
   { href: "/contact/", label: "Contact" },
 ];
