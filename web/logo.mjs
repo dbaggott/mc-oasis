@@ -174,7 +174,7 @@ export function logoSvg() {
 // browser reserves the right shape before the file arrives; CSS sets the size.
 export function logoImg(className) {
   const { width, height } = logoSvg();
-  return `<img class="${className}" src="/logo.svg" alt="Oasis SMP" width="${width}" height="${height}" />`;
+  return `<img class="${className}" src="/logo.svg" alt="OASIS SMP" width="${width}" height="${height}" />`;
 }
 
 // Invisible targets over the logo, in logoSvg's order, each marked with what
