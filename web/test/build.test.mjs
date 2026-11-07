@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import { test } from "node:test";
 import { pages } from "../pages.mjs";
 import { logoSvg } from "../logo.mjs";
-import { BLOCKS_FILE, PICTURES } from "../src/creeper.js";
+import { BLOCKS_FILE, FACE_FILES, PICTURES } from "../src/creeper.js";
 import { parseRules } from "../rules.mjs";
 
 const dist = resolve(import.meta.dirname, "../dist");
@@ -169,7 +169,7 @@ test("the favicon is built in every form, and every page links it", () => {
 
 // creeper.js fetches these from script, where the reference check above can't see them.
 test("every file the creeper fetches is built", () => {
-  assertBuilt("creeper.js", dist, [...PICTURES, BLOCKS_FILE]);
+  assertBuilt("creeper.js", dist, [...PICTURES, BLOCKS_FILE, ...Object.values(FACE_FILES)]);
 });
 
 // The creeper walks from behind the M's centre block, between the M and the P.

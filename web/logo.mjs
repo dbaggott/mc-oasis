@@ -1,4 +1,5 @@
-// The site's pixel art, drawn at build time: the logo and the favicon.
+// The site's pixel art, drawn at build time: the logo, the bedrock under its
+// M, and the favicon.
 //
 // The Oasis SMP logo is drawn as an SVG of blocks, in the manner of
 // Minecraft's edition logos: chunky pixel letters, each pixel a textured block
@@ -33,6 +34,12 @@ const TEXTURES = {
     light: "#9fd8cb",
     dark: "#3f7a6e",
     side: "#285148",
+  },
+  bedrock: {
+    face: ["#575757", "#3d3d3d", "#6e6e6e", "#2c2c2c", "#4a4a4a"],
+    light: "#8a8a8a",
+    dark: "#1f1f1f",
+    side: "#181818",
   },
 };
 
@@ -75,6 +82,27 @@ function paths(rects) {
   return [...byColour].map(([fill, d]) => `<path fill="${fill}" d="${d.join("")}"/>`).join("");
 }
 
+// The faces of `blocks`, a texture pixel at a time, with the word at (ox, oy).
+// The bevel runs along the edges of the shape the blocks make together, not
+// each block's, so a letter reads as one carved piece: lit where it faces up or
+// left, shaded where it faces down or right.
+function faces(blocks, t, ox, oy, salt) {
+  const filled = new Set(blocks.map(({ x, y }) => `${x},${y}`));
+  const open = (x, y) => !filled.has(`${x},${y}`);
+  const pixels = [];
+  for (const { x: bx, y: by } of blocks) {
+    for (let sy = 0; sy < SUB; sy++) {
+      for (let sx = 0; sx < SUB; sx++) {
+        let fill = t.face[Math.floor(noise(bx * SUB + sx, by * SUB + sy, salt) * t.face.length)];
+        if ((sy === 0 && open(bx, by - 1)) || (sx === 0 && open(bx - 1, by))) fill = t.light;
+        if ((sy === SUB - 1 && open(bx, by + 1)) || (sx === SUB - 1 && open(bx + 1, by))) fill = t.dark;
+        pixels.push([ox + bx * SUB + sx, oy + by * SUB + sy, 1, 1, fill]);
+      }
+    }
+  }
+  return pixels;
+}
+
 // One word in texture-pixel units, each block SUB of them across, at (ox, oy).
 // Drawn in three passes so each sits under the next: outline, extruded side,
 // face. Alongside the art, its blocks, each with the rectangle of each pass it
@@ -95,21 +123,7 @@ function word(text, texture, ox, oy, salt) {
 
   for (const { outline } of outlined) under.push([...outline, OUTLINE]);
   for (const { side } of outlined) under.push([...side, t.side]);
-  // The bevel runs along the letter's own edges, not each block's, so a letter
-  // reads as one carved piece: lit where it faces up or left, shaded where it
-  // faces down or right.
-  const filled = new Set(blocks.map(({ x, y }) => `${x},${y}`));
-  const open = (x, y) => !filled.has(`${x},${y}`);
-  for (const { x: bx, y: by } of blocks) {
-    for (let sy = 0; sy < SUB; sy++) {
-      for (let sx = 0; sx < SUB; sx++) {
-        let fill = t.face[Math.floor(noise(bx * SUB + sx, by * SUB + sy, salt) * t.face.length)];
-        if ((sy === 0 && open(bx, by - 1)) || (sx === 0 && open(bx - 1, by))) fill = t.light;
-        if ((sy === SUB - 1 && open(bx, by + 1)) || (sx === SUB - 1 && open(bx + 1, by))) fill = t.dark;
-        face.push([ox + bx * SUB + sx, oy + by * SUB + sy, 1, 1, fill]);
-      }
-    }
-  }
+  face.push(...faces(blocks, t, ox, oy, salt));
   // Outline and side first, as one layer, so no block's outline covers its
   // neighbour's face.
   return {
@@ -191,9 +205,20 @@ export function logoTargets() {
   return `<svg class="logo-targets" viewBox="0 0 ${width} ${height}" aria-hidden="true">${shapes.join("")}</svg>`;
 }
 
+// The block under the M's centre: once a blast breaks the prismarine, the
+// creeper's button is bedrock, which no blast breaks.
+const UNDER_M_CENTRE = "bedrock";
+
+// One block of bedrock's face on its own, beveled all round, served at
+// /bedrock.svg for src/creeper.js to draw the M's centre with once it shows.
+export function bedrockSvg() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SUB} ${SUB}" shape-rendering="crispEdges">${paths(faces([{ x: 0, y: 0 }], TEXTURES.bedrock, 0, 0, 4))}</svg>`;
+}
+
 // The logo as blocks, served at /logo-blocks.json for src/creeper.js to draw
 // the logo from a block at a time, so the creeper can blow blocks away: which
-// block the creeper starts behind (the one whose target lets it out), each
+// block the creeper starts behind (the one whose target lets it out) and the
+// block under it, each
 // block's word, the block it is made of, its place in its word's grid, and,
 // in the logo's units, the rectangle of each pass it is drawn in; the colours
 // of the outline and the sides; and the line along the foot of "SMP", where
@@ -203,7 +228,7 @@ export function logoBlocks() {
   const blocks = words.flatMap(({ blocks, texture, place }, word) => {
     const placed = ([x, y, w, h]) => [place.x + x * place.scale, place.y + y * place.scale, w * place.scale, h * place.scale];
     return blocks.map((block) => ({
-      ...(block === mCentre && { creeperStart: true }),
+      ...(block === mCentre && { creeperStart: true, under: UNDER_M_CENTRE }),
       word,
       block: texture,
       column: block.x,
@@ -216,7 +241,8 @@ export function logoBlocks() {
     }));
   });
   const bottom = words.at(-1);
-  const colours = { outline: OUTLINE, ...Object.fromEntries(words.map(({ texture }) => [texture, TEXTURES[texture].side])) };
+  const textures = [...words.map(({ texture }) => texture), UNDER_M_CENTRE];
+  const colours = { outline: OUTLINE, ...Object.fromEntries(textures.map((texture) => [texture, TEXTURES[texture].side])) };
   return { width, height, ground: bottom.place.y + bottom.rows * SUB, colours, blocks };
 }
 

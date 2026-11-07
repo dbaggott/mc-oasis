@@ -2,15 +2,20 @@
 // blocks it is drawn as, and the creeper — the game's own model and texture —
 // walks out from behind its letters, stops at the foot of the P and blows up,
 // with the game's own explosion sprites and smoke (public/minecraft holds them,
-// unchanged from the Minecraft 26.1 client). Every step is the game's: a tick at
-// a time, by its numbers, each named for the class it comes from. Whatever the
-// explosion breaks stays broken until the page is loaded again.
+// unchanged from the Minecraft 26.1 client). Each creeper after the first spawns
+// where a creeper could stand in front of the logo, on the ground or on top of a
+// letter's block, strolls back and forth along it and blows up there. Every step is
+// the game's: a tick at a time, by its numbers, each named for the class it comes
+// from. Whatever the explosion breaks stays broken until the page is loaded
+// again; under the M's centre block is bedrock, which no explosion breaks.
 //
 // The world is measured in blocks — x right, y up, z toward the viewer, the
 // ground at y = 0 along the foot of "SMP", and the letters' faces at z = 0. The
 // letters are drawn flat, block by block, exactly as the logo draws them; the
 // creeper and the explosion are drawn in CSS 3D as a player standing in front
 // of the logo sees them, behind the letters or in front of them as they are.
+// A creeper on a letter stands at the front edge of its block, in front of the
+// letters, at the height the player sees level with that edge.
 // All of it is drawn in the logo's own units, scaled by --u, so it keeps its
 // place on the logo however the page is resized.
 
@@ -25,6 +30,8 @@ export const PICTURES = [
   ...Array.from({ length: 8 }, (_, frame) => smokeSprite(frame)),
 ];
 export const BLOCKS_FILE = "/logo-blocks.json";
+// The face of each block that is not drawn from the logo's own art.
+export const FACE_FILES = { bedrock: "/bedrock.svg" };
 
 // A block of "SMP" is one of the game's blocks.
 const LOGO_UNITS_PER_BLOCK = 4;
@@ -39,9 +46,10 @@ const PLAYER = { x: 0, y: 1.62, z: 24 };
 // blocks. It still fits between the M and the P.
 const CREEPER_SCALE = 1.5;
 
-// Blocks.SANDSTONE and Blocks.PRISMARINE, the logo's two blocks, and under the
-// ground the logo stands on, Blocks.GRASS_BLOCK over Blocks.DIRT.
-export const BLAST_RESISTANCE = { sandstone: 0.8, prismarine: 6, grass_block: 0.6, dirt: 0.5 };
+// Blocks.SANDSTONE and Blocks.PRISMARINE, the logo's two blocks, Blocks.BEDROCK
+// under the M's centre, and under the ground the logo stands on,
+// Blocks.GRASS_BLOCK over Blocks.DIRT.
+export const BLAST_RESISTANCE = { sandstone: 0.8, prismarine: 6, bedrock: 3600000, grass_block: 0.6, dirt: 0.5 };
 
 // CreeperModel.createBodyLayer: each part's pivot, its box's corner and size
 // from that pivot, and where the box's faces begin on the texture, in texture
@@ -73,8 +81,17 @@ const PUSH = 0.25 * 0.98 * 0.25;
 // The share of its speed it keeps after each tick: LivingEntity.travelInAir's
 // block friction, 0.6 for most blocks, times 0.91.
 const GLIDE = 0.6 * 0.91;
+// EntityType.CREEPER's width.
+const CREEPER_WIDTH = 0.6;
 // PathNavigation's reach for a waypoint, for a mob as narrow as a creeper.
-const WAYPOINT_REACH = 0.75 - 0.6 / 2;
+const WAYPOINT_REACH = 0.75 - CREEPER_WIDTH / 2;
+
+// Where a spawned creeper stands: in front of the letters' faces by as far as
+// the first creeper stands from the P. It strolls along its ledge, `STROLLS`
+// times, each time from one to `STROLL` blocks, where the ledge has room.
+const IN_FRONT = 0.6;
+const STROLLS = 3;
+const STROLL = 4;
 
 const degrees = (radians) => (radians * 180) / Math.PI;
 const radians = (degrees) => (degrees * Math.PI) / 180;
@@ -256,9 +273,9 @@ const BLOCK_PARTICLES = [
 ];
 
 // The creeper and its explosion in the logo's world, a tick at a time. `level`
-// has the eyes of the player it is after, its route (its first point where it starts,
-// its last where it stops), what is at a point, and what to do with the logo's
-// blocks the blast breaks. Without `walk` it starts at the end of its route;
+// has the eyes of the player it is after, its route (its first point where it
+// starts, its last where it stops, all at one height), what is at a point, and
+// what to do with the logo's blocks the blast breaks. Without `walk` it starts at the end of its route;
 // without `effects` its explosion breaks blocks but throws out no particles.
 // Each tick returns false once there is nothing left to draw.
 export function creeperWorld(level, { walk = true, effects = true, random = Math.random } = {}) {
@@ -267,6 +284,7 @@ export function creeperWorld(level, { walk = true, effects = true, random = Math
   const creeper = {
     alive: true,
     x: start.x,
+    y: start.y,
     z: start.z,
     vx: 0,
     vz: 0,
@@ -293,7 +311,7 @@ export function creeperWorld(level, { walk = true, effects = true, random = Math
     // MeleeAttackGoal and SwellGoal: the creeper's eyes are on its target, turning
     // at most 30 degrees a tick each way.
     creeper.yHeadRot = turnToward(creeper.yHeadRot, yawToward(dx, dz), radians(30));
-    creeper.xHeadRot = turnToward(creeper.xHeadRot, Math.atan2(player.y - HEAD_HEIGHT, Math.hypot(dx, dz)), radians(30));
+    creeper.xHeadRot = turnToward(creeper.xHeadRot, Math.atan2(player.y - creeper.y - HEAD_HEIGHT, Math.hypot(dx, dz)), radians(30));
   }
   const next = route[creeper.waypoint];
   creeper.yRot = next ? yawToward(next.x - creeper.x, next.z - creeper.z) : 0;
@@ -351,7 +369,7 @@ export function creeperWorld(level, { walk = true, effects = true, random = Math
     // ClientExplosionTracker has a particle thrown out for each place it reached.
     if (creeper.fusing && ++creeper.swell >= FUSE_TICKS) {
       creeper.alive = false;
-      const center = [creeper.x, 0, creeper.z];
+      const center = [creeper.x, creeper.y, creeper.z];
       const places = blastedPlaces(center, EXPLOSION_RADIUS, resistanceAt, random);
       breakBlocks([...places.values()]);
       if (effects) {
@@ -407,6 +425,140 @@ export function creeperWorld(level, { walk = true, effects = true, random = Math
       return creeper.alive || emitter !== null || blockParticles !== null || particles.length > 0;
     },
   };
+}
+
+// --- The logo's world --------------------------------------------------------
+
+const placeKey = (word, column, row) => `${word}:${column}:${row}`;
+
+// The logo's blocks in the world, from /logo-blocks.json's `data`: each as deep
+// as it is wide, standing until a blast breaks it. A block with something under
+// it becomes that instead of breaking.
+export function logoWorld(data) {
+  const { width, ground, blocks } = data;
+  const byPlace = new Map(blocks.map((block) => [placeKey(block.word, block.column, block.row), block]));
+  const solids = blocks.map((block) => {
+    const [x, y, size] = block.face;
+    return {
+      block,
+      min: [(x - width / 2) / LOGO_UNITS_PER_BLOCK, (ground - y - size) / LOGO_UNITS_PER_BLOCK, -size / LOGO_UNITS_PER_BLOCK],
+      max: [(x + size - width / 2) / LOGO_UNITS_PER_BLOCK, (ground - y) / LOGO_UNITS_PER_BLOCK, 0],
+    };
+  });
+  const standing = new Set(blocks);
+  // The blocks by each whole-block cell they reach into, for resistanceAt.
+  const cells = new Map();
+  for (const solid of solids) {
+    const [x0, y0, z0] = solid.min.map(Math.floor);
+    const [x1, y1, z1] = solid.max.map((c) => Math.ceil(c) - 1);
+    for (let x = x0; x <= x1; x++) {
+      for (let y = y0; y <= y1; y++) {
+        for (let z = z0; z <= z1; z++) {
+          const key = [x, y, z].join();
+          cells.set(key, [...(cells.get(key) ?? []), solid]);
+        }
+      }
+    }
+  }
+  const smp = solids.filter(({ block }) => block.word === 1);
+
+  return {
+    byPlace,
+    isStanding: (block) => standing.has(block),
+    // What is at a point: one of the logo's blocks, the ground, or air.
+    resistanceAt(x, y, z) {
+      const solid = (cells.get([x, y, z].map(Math.floor).join()) ?? []).find(
+        ({ block, min, max }) => standing.has(block) && x >= min[0] && x < max[0] && y >= min[1] && y < max[1] && z >= min[2] && z < max[2],
+      );
+      if (solid) return { key: solid.block, place: solid.block, resistance: BLAST_RESISTANCE[solid.block.block] };
+      const cell = [x, y, z].map(Math.floor);
+      const key = cell.join();
+      if (cell[1] < -1) return { key, place: "dirt", resistance: BLAST_RESISTANCE.dirt };
+      if (cell[1] < 0) return { key, place: "grass_block", resistance: BLAST_RESISTANCE.grass_block };
+      return { key, place: "air", resistance: null };
+    },
+    // Breaks those of `places` that are standing blocks, and returns them.
+    breakBlocks(places) {
+      const broken = places.filter((place) => standing.has(place));
+      for (const block of broken) {
+        if (block.under) {
+          block.block = block.under;
+          delete block.under;
+        } else standing.delete(block);
+      }
+      return broken;
+    },
+    // Where a creeper can stand: the ground along "SMP", and the top of each
+    // run of standing blocks side by side with nothing standing on them. Each
+    // is its height and the stretch of x it covers.
+    ledges() {
+      const tops = solids
+        .filter(({ block }) => standing.has(block) && !standing.has(byPlace.get(placeKey(block.word, block.column, block.row - 1))))
+        .sort((a, b) => a.block.word - b.block.word || a.block.row - b.block.row || a.block.column - b.block.column);
+      const runs = [];
+      for (const top of tops) {
+        const run = runs.at(-1);
+        if (run?.last.block.word === top.block.word && run.last.block.row === top.block.row && run.last.block.column === top.block.column - 1) {
+          run.to = top.max[0];
+          run.last = top;
+        } else runs.push({ top: top.max[1], from: top.min[0], to: top.max[0], last: top });
+      }
+      const along = { top: 0, from: Math.min(...smp.map(({ min }) => min[0])), to: Math.max(...smp.map(({ max }) => max[0])) };
+      return [along, ...runs.map(({ top, from, to }) => ({ top, from, to }))];
+    },
+    solidOf: (find) => solids.find(({ block }) => find(block)),
+    // The solids of "SMP"'s `letter`, or with no letter, of the whole logo.
+    solidsOf: (letter) => (letter ? smp.filter(({ block }) => block.letter === letter) : solids),
+  };
+}
+
+// A creeper standing at depth `z` on a ledge at height `top`, at `x` along it:
+// where the player sees it at that place on the ledge's front edge, where the
+// letters are drawn.
+function standingOn(x, top, z) {
+  const nearer = (PLAYER.z - z) / PLAYER.z;
+  return { x: PLAYER.x + (x - PLAYER.x) * nearer, y: PLAYER.y + (top - PLAYER.y) * nearer, z };
+}
+
+// The first creeper's route: from behind the M's centre block, through the gap
+// between the M and the P, to stand at the P's foot.
+export function firstRoute(world) {
+  const centre = world.solidOf(({ creeperStart }) => creeperStart);
+  const m = world.solidsOf("M");
+  const p = world.solidsOf("P");
+  const mRight = Math.max(...m.map(({ max }) => max[0]));
+  const pLeft = Math.min(...p.map(({ min }) => min[0]));
+  const gap = (mRight + pLeft) / 2;
+  const behind = Math.min(...p.map(({ min }) => min[2])) - 1;
+  return [
+    { x: (centre.min[0] + centre.max[0]) / 2, y: 0, z: behind },
+    { x: gap, y: 0, z: behind },
+    { x: gap, y: 0, z: 1 },
+    { x: pLeft + 0.5, y: 0, z: IN_FRONT },
+  ];
+}
+
+// Every later creeper's: it spawns on one of the world's ledges, and strolls
+// back and forth along it in front of the letters before it stops, with its
+// feet over the ledge all the way. It favours ledges with room to stroll, up to
+// a stroll's length: a ledge it can't walk along at all is the least likely.
+export function spawnedRoute(world, random = Math.random) {
+  const half = (CREEPER_WIDTH / 2) * CREEPER_SCALE;
+  const ledges = world.ledges().map((ledge) => ({ ...ledge, low: ledge.from + half, high: ledge.to - half }));
+  const likelihood = ({ low, high }) => Math.min(high - low, STROLL);
+  let pick = random() * ledges.reduce((sum, ledge) => sum + likelihood(ledge), 0);
+  const { top, low, high } = ledges.find((ledge) => (pick -= likelihood(ledge)) < 0) ?? ledges.at(-1);
+  const xs = [lerp(random(), low, high)];
+  for (let i = 0; i < STROLLS; i++) {
+    const at = xs.at(-1);
+    const far = lerp(random(), 1, STROLL);
+    // Whichever way it picks, unless that way runs out of ledge sooner.
+    const way = random() < 0.5 ? -1 : 1;
+    const room = (direction) => (direction < 0 ? at - low : high - at);
+    const direction = room(way) >= room(-way) || room(way) >= far ? way : -way;
+    xs.push(clamp(at + direction * far, low, high));
+  }
+  return xs.map((x) => standingOn(x, top, IN_FRONT));
 }
 
 // --- Drawing ---------------------------------------------------------------
@@ -489,8 +641,10 @@ function buildLogo(logo, data) {
   }
   art.after(behind, letters, front);
 
+  const world = logoWorld(data);
   // The logo's three passes, with each block's piece of each: its outline, then
-  // its side, then its face, the logo's own art for it.
+  // its side, then its face, the logo's own art for it unless its block has a
+  // face of its own.
   const passes = ["outline", "side", "face"].map(() => element("logo-pass", letters));
   const place = (piece, [x, y, w, h], seam = 0) => {
     piece.style.left = u(x);
@@ -498,9 +652,10 @@ function buildLogo(logo, data) {
     piece.style.width = u(w + seam);
     piece.style.height = u(h + seam);
   };
-  const byPlace = new Map(blocks.map((block) => [`${block.word}:${block.column}:${block.row}`, block]));
-  const rightOf = new Set(blocks.filter(({ word, column, row }) => byPlace.has(`${word}:${column + 1}:${row}`)));
-  for (const block of blocks) {
+  const pieces = new Map();
+  // Draws `block`, its pieces in each pass where any it had were, so that each
+  // keeps its place among its neighbours'.
+  function drawBlock(block) {
     const outline = element("logo-piece", passes[0]);
     place(outline, block.outline);
     outline.style.backgroundColor = colours.outline;
@@ -508,95 +663,51 @@ function buildLogo(logo, data) {
     // covers the outline beyond the letter.
     const side = element("logo-piece", passes[1]);
     const [x, y, w, h] = block.side;
-    place(side, [x, y, w + (rightOf.has(block) ? SEAM : 0), h]);
+    place(side, [x, y, w + (world.byPlace.has(placeKey(block.word, block.column + 1, block.row)) ? SEAM : 0), h]);
     side.style.backgroundColor = colours[block.block];
     const face = element("logo-piece logo-face", passes[2]);
     place(face, block.face, SEAM);
-    face.style.backgroundSize = `${u(width)} ${u(height)}`;
-    face.style.backgroundPosition = `${u(-block.face[0])} ${u(-block.face[1])}`;
-    block.pieces = [outline, side, face];
+    const own = FACE_FILES[block.block];
+    if (own) {
+      face.style.backgroundImage = `url(${own})`;
+      face.style.backgroundSize = "100% 100%";
+    } else {
+      face.style.backgroundSize = `${u(width)} ${u(height)}`;
+      face.style.backgroundPosition = `${u(-block.face[0])} ${u(-block.face[1])}`;
+    }
+    const drawn = [outline, side, face];
+    pieces.get(block)?.forEach((piece, pass) => piece.replaceWith(drawn[pass]));
+    pieces.set(block, drawn);
   }
+  blocks.forEach(drawBlock);
   logo.classList.add("logo-built");
 
-  // The blocks in the world, each as deep as it is wide.
-  const solids = blocks.map((block) => {
-    const [x, y, size] = block.face;
-    return {
-      block,
-      min: [(x - width / 2) / LOGO_UNITS_PER_BLOCK, (ground - y - size) / LOGO_UNITS_PER_BLOCK, -size / LOGO_UNITS_PER_BLOCK],
-      max: [(x + size - width / 2) / LOGO_UNITS_PER_BLOCK, (ground - y) / LOGO_UNITS_PER_BLOCK, 0],
-    };
-  });
-  const standing = new Set(blocks);
-  // The blocks by each whole-block cell they reach into, for resistanceAt.
-  const cells = new Map();
-  for (const solid of solids) {
-    const [x0, y0, z0] = solid.min.map(Math.floor);
-    const [x1, y1, z1] = solid.max.map((c) => Math.ceil(c) - 1);
-    for (let x = x0; x <= x1; x++) {
-      for (let y = y0; y <= y1; y++) {
-        for (let z = z0; z <= z1; z++) {
-          const key = [x, y, z].join();
-          cells.set(key, [...(cells.get(key) ?? []), solid]);
-        }
-      }
-    }
-  }
-
   return {
+    ...world,
+    released: 0,
     // Where a point in the world is drawn, in the logo's units.
     toLogo: (x, y, z) => [width / 2 + x * LOGO_UNITS_PER_BLOCK, ground - y * LOGO_UNITS_PER_BLOCK, z * LOGO_UNITS_PER_BLOCK],
     // The scene a point is drawn in: behind the letters or in front of them.
     sceneFor: (z) => (z < 0 ? behind : front),
-    // What is at a point: one of the logo's blocks, the ground, or air.
-    resistanceAt(x, y, z) {
-      const solid = (cells.get([x, y, z].map(Math.floor).join()) ?? []).find(
-        ({ block, min, max }) => standing.has(block) && x >= min[0] && x < max[0] && y >= min[1] && y < max[1] && z >= min[2] && z < max[2],
-      );
-      if (solid) return { key: solid.block, place: solid.block, resistance: BLAST_RESISTANCE[solid.block.block] };
-      const cell = [x, y, z].map(Math.floor);
-      const key = cell.join();
-      if (cell[1] < -1) return { key, place: "dirt", resistance: BLAST_RESISTANCE.dirt };
-      if (cell[1] < 0) return { key, place: "grass_block", resistance: BLAST_RESISTANCE.grass_block };
-      return { key, place: "air", resistance: null };
-    },
     breakBlocks(places) {
-      for (const block of places.filter((place) => standing.has(place))) {
-        standing.delete(block);
-        block.pieces.forEach((piece) => piece.remove());
+      for (const block of world.breakBlocks(places)) {
+        if (world.isStanding(block)) drawBlock(block);
+        else pieces.get(block).forEach((piece) => piece.remove());
       }
     },
-    solidOf: (find) => solids.find(({ block }) => find(block)),
-    solidsOf: (letter) => solids.filter(({ block }) => block.word === 1 && block.letter === letter),
   };
 }
 
-// The creeper's route: from behind the M's centre block, through the gap
-// between the M and the P, to stand at the P's foot.
-function routeFor(level) {
-  const centre = level.solidOf(({ creeperStart }) => creeperStart);
-  const m = level.solidsOf("M");
-  const p = level.solidsOf("P");
-  const mRight = Math.max(...m.map(({ max }) => max[0]));
-  const pLeft = Math.min(...p.map(({ min }) => min[0]));
-  const gap = (mRight + pLeft) / 2;
-  const behind = Math.min(...p.map(({ min }) => min[2])) - 1;
-  return [
-    { x: (centre.min[0] + centre.max[0]) / 2, z: behind },
-    { x: gap, z: behind },
-    { x: gap, z: 1 },
-    { x: pLeft + 0.5, z: 0.6 },
-  ];
-}
-
 // Lets a creeper out of `target`, the M's centre block in the logo's targets,
-// and resolves once its explosion has cleared. With `walk` false it is already
-// standing at the P, and makes no flash, swell or smoke on its way out.
+// and resolves once its explosion has cleared: the first by the M, each later
+// one spawned on a ledge. With `walk` false it is already standing where its
+// route ends, and makes no flash, swell or smoke on its way out.
 export async function releaseCreeper(target, { walk }) {
   const logo = target.closest(".logo");
   const effects = walk;
   // The explosion's sprites have the length of the walk and fuse to arrive.
   if (effects) PICTURES.filter((picture) => picture !== SKIN).forEach(load);
+  Object.values(FACE_FILES).forEach(load);
   const [data, skin] = await Promise.all([
     built.has(logo)
       ? null
@@ -631,7 +742,8 @@ export async function releaseCreeper(target, { walk }) {
     }
   }
 
-  const world = creeperWorld({ ...level, player: PLAYER, route: routeFor(level) }, { walk, effects });
+  const route = level.released++ === 0 ? firstRoute(level) : spawnedRoute(level);
+  const world = creeperWorld({ ...level, player: PLAYER, route }, { walk, effects });
   const drawnParticles = new Map();
 
   function drawCreeper(t) {
@@ -654,7 +766,7 @@ export async function releaseCreeper(target, { walk }) {
 
     const z = lerp(t, was.z, now.z);
     if (root.parentElement !== sceneFor(z)) sceneFor(z).append(root);
-    root.style.transform = `${translate(...toLogo(lerp(t, was.x, now.x), 0, z))} rotateY(${bodyYaw}rad) scale3d(${wide}, ${tall}, ${wide})`;
+    root.style.transform = `${translate(...toLogo(lerp(t, was.x, now.x), lerp(t, was.y, now.y), z))} rotateY(${bodyYaw}rad) scale3d(${wide}, ${tall}, ${wide})`;
     root.style.setProperty("--white", whiteness(swelling));
     // Each part's turn, [about y, about x].
     const turns = { head: [headYaw, headPitch], body: [0, 0] };
