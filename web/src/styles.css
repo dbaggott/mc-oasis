@@ -959,8 +959,8 @@ code {
   margin: 0 0 0.6em;
 }
 
-.panel-section p,
-.panel-section ol {
+.panel-section > p,
+.panel-section > ol {
   margin: 0 0 12px;
 }
 
