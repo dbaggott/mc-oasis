@@ -67,7 +67,8 @@ it yourself. A mismatch fails the build.
 
 Geyser, Floodgate and the MCXboxBroadcast extension are bumped for you: the Bump Bedrock workflow opens a PR on
 `bump/bedrock` daily when there is a newer build, which merges itself once CI passes. If an extension release
-fails CI, pin its line back by hand in that PR, or the day's Geyser bump is held back with it. When a Bedrock
+fails CI, pin its line back by hand in that PR, or the day's Geyser bump is held back with it. The next day's
+run proposes that release again, so this repeats daily until one passes. When a Bedrock
 client update has locked players out before a build is 48 hours old, run it from the Actions tab with
 `skip_wait` checked.
 

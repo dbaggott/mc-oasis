@@ -6,7 +6,7 @@
 # Daily, scripts/bump-bedrock.sh moves their artifacts.lock lines to the newest
 # build at least 48 hours old. The three share the one PR, so an extension
 # release that fails CI holds back that day's Geyser bump too: pin the
-# extension's line back by hand in the PR. Any change goes to one PR on `bump/bedrock`,
+# extension's line back by hand in the PR, each day until a release passes. Any change goes to one PR on `bump/bedrock`,
 # opened or force-pushed fresh off main, and queued to auto-merge once CI
 # passes. A merge is not a deploy: the server runs a new image only after
 # `apps/app deploy mc-oasis main` in dbaggott/infrastructure and a restart.

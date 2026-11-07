@@ -312,15 +312,18 @@ echo "LibertyBans exempts staff by LuckPerms group weight"
 
 # The Geyser extensions in artifacts.lock started, each by the lines its own
 # code logs: Geyser reports an extension enabled before the extension's own
-# start, which can still fail. They start after Geyser's "Done (", so the log is
-# read again until each one has logged its start or its failure. Past its start
-# MCXboxBroadcast only waits for a sign-in, which the smoke test has no account
-# for, so nothing here depends on reaching Xbox Live.
+# start, which can still fail. They start after the server's "Done (", past the
+# ERROR check above, so the log is read again until each one is past loading
+# its config or has failed, and then has to hold no WARN or ERROR line of its
+# own: MCXboxBroadcast logs its errors at WARN. Past that point MCXboxBroadcast
+# only waits for a sign-in, which the smoke test has no account for, so nothing
+# here depends on reaching Xbox Live.
 while read -r kind extension _ || [[ -n "${kind:-}" ]]; do
   [[ "${kind:-}" == extension ]] || continue
   case "$extension" in
     mcxboxbroadcast)
       start_line='[mcxboxbroadcast] Starting MCXboxBroadcast Extension '
+      ready_line='[mcxboxbroadcast] [Primary Session] Starting SessionManager'
       failure_line='extension will not start'
       ;;
     *)
@@ -328,18 +331,22 @@ while read -r kind extension _ || [[ -n "${kind:-}" ]]; do
       exit 1
       ;;
   esac
+  problem_lines=" (WARN|ERROR)\]: \[Geyser-Spigot\] \[${extension}\] "
   deadline=$((SECONDS + 120))
   until extension_logs="$(docker logs "$name" 2>&1)" \
-      && grep --quiet --fixed-strings --regexp="$start_line" --regexp="$failure_line" <<<"$extension_logs"; do
+      && { grep --quiet --fixed-strings --regexp="$ready_line" --regexp="$failure_line" <<<"$extension_logs" \
+        || grep --quiet --extended-regexp "$problem_lines" <<<"$extension_logs"; }; do
     if [[ "$(docker inspect --format '{{.State.Running}}' "$name")" != true ]] || ((SECONDS >= deadline)); then
       break
     fi
     sleep 2
   done
   if ! grep --quiet --fixed-strings "$start_line" <<<"$extension_logs" \
-    || grep --quiet --fixed-strings "$failure_line" <<<"$extension_logs"; then
-    grep --fixed-strings "[${extension}]" <<<"$extension_logs" | tail -n 30 || true
-    echo "error: the ${extension} extension didn't start" >&2
+    || ! grep --quiet --fixed-strings "$ready_line" <<<"$extension_logs" \
+    || grep --quiet --fixed-strings "$failure_line" <<<"$extension_logs" \
+    || grep --quiet --extended-regexp "$problem_lines" <<<"$extension_logs"; then
+    grep --after-context=3 --fixed-strings "[${extension}]" <<<"$extension_logs" | tail -n 40 || true
+    echo "error: the ${extension} extension didn't start, or logged errors starting" >&2
     exit 1
   fi
   echo "extension ${extension} started"
