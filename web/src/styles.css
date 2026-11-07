@@ -947,23 +947,27 @@ code {
   display: none !important;
 }
 
-/* The FAQ: each question and its answer on a panel, like a rule on the Rules page. */
-.faq-item {
+/* A section on a panel, like a rule on the Rules page: each FAQ answer, each way to join on the Play page. */
+.panel-section {
   background: var(--panel);
   border: 2px solid var(--panel-edge);
   padding: 16px 16px 4px;
   margin-bottom: 12px;
 }
 
-.faq-item h2 {
+.panel-section h2 {
   margin: 0 0 0.6em;
 }
 
-.faq-item p,
-.faq-item ol {
+.panel-section > p,
+.panel-section > ol {
   margin: 0 0 12px;
 }
 
-.faq-item li + li {
+.panel-section li + li {
   margin-top: 6px;
+}
+
+.panel-section .addresses {
+  margin: 0 0 12px;
 }
