@@ -54,13 +54,15 @@ RUN set -e; mkdir /out; cd /repo/plugin-src; for plugin in */; do \
 
 # The repo's Java agent, hook-dupe-agent/: it rewrites one vanilla check as
 # the server loads the class, which no plugin can. Its class comment says what
-# and why. Its test, against classes it generates, runs here, and a failing one
+# and why. Its tests, any test/**/*Test.java, run here, and a failing one
 # fails the build.
 FROM eclipse-temurin:25-jdk-alpine@sha256:3fd2d245c4e0eba615fe366a71b8bd25f5db7104f53e4026b24bf508b880bd2a AS hook-dupe-agent
 COPY hook-dupe-agent/ /agent/
 RUN javac --release 25 -Xlint:all -Werror -d /classes $(find /agent/src -name '*.java') \
     && javac --release 25 -Xlint:all -Werror -cp /classes -d /test-classes $(find /agent/test -name '*.java') \
-    && java -cp /test-classes:/classes com.oasissmp.hookdupe.HookDupeAgentTest \
+    && cd /agent/test && for test in $(find . -name '*Test.java'); do \
+      test="${test#./}" && java -cp /test-classes:/classes "$(echo "${test%.java}" | tr / .)" || exit 1; \
+    done \
     && jar --create --file /hook-dupe-agent.jar --manifest /agent/MANIFEST.MF -C /classes .
 
 # LibertyBans' LuckPerms exemption add-on, taken from inside the pinned

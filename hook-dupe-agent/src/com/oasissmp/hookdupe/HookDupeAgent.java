@@ -32,7 +32,11 @@ import java.util.List;
  * vanilla returns before it, through
  * {@code if (!level.getBlockState(pos).is(TRIPWIRE_HOOK)) { onRemoved(...); return; }}
  * right after the receiver hook's updates. This makes that test always true,
- * so the method goes on to Paper's check, and the setting decides again.
+ * so the method goes on to Paper's check, which the setting turns off.
+ *
+ * <p>It relies on the setting being on. With it off, Paper's check skips the
+ * write and the source hook stays gone, but the {@code onRemoved} this
+ * bypasses, which detaches the rest of the line, never runs.
  */
 public final class HookDupeAgent {
 

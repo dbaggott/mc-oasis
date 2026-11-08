@@ -41,8 +41,10 @@ public final class HookDupeAgentTest {
         List<String> failures = new ArrayList<>();
 
         expectRefusal(failures, "no guard", hookBlock(code -> {
+            removalAfterTest(code, "TRIPWIRE", true);
+            // onRemoved followed by Paper's guard rather than a return.
+            removalAfterTest(code, "TRIPWIRE_HOOK", false);
             paperGuard(code);
-            removalAfterTest(code, "TRIPWIRE");
             code.return_();
         }));
         expectRefusal(failures, "two guards", hookBlock(code -> {
@@ -92,20 +94,22 @@ public final class HookDupeAgentTest {
 
     /** {@code if (!level.getBlockState(pos).is(TRIPWIRE_HOOK)) { onRemoved(state, level, pos); return; }} */
     private static void mojangGuard(CodeBuilder code) {
-        removalAfterTest(code, "TRIPWIRE_HOOK");
+        removalAfterTest(code, "TRIPWIRE_HOOK", true);
     }
 
-    private static void removalAfterTest(CodeBuilder code, String block) {
+    private static void removalAfterTest(CodeBuilder code, String block, boolean thenReturn) {
         Label stillThere = code.newLabel();
         code.aload(0).aload(1).invokevirtual(LEVEL, "getBlockState", GET_BLOCK_STATE)
                 .getstatic(BLOCKS, block, BLOCK).invokevirtual(BLOCK_STATE, "is", IS)
                 .ifne(stillThere)
-                .aload(2).aload(0).aload(1).invokestatic(HOOK_BLOCK, "onRemoved", ON_REMOVED)
-                .return_()
-                .labelBinding(stillThere);
+                .aload(2).aload(0).aload(1).invokestatic(HOOK_BLOCK, "onRemoved", ON_REMOVED);
+        if (thenReturn) {
+            code.return_();
+        }
+        code.labelBinding(stillThere);
     }
 
-    /** {@code if (state.is(TRIPWIRE_HOOK)) { ... }}, an {@code is(TRIPWIRE_HOOK)} that guards no removal. */
+    /** {@code if (state.is(TRIPWIRE_HOOK)) return;}: an {@code is(TRIPWIRE_HOOK)} branching on {@code ifeq}, as Paper's guard does, and guarding no removal. */
     private static void paperGuard(CodeBuilder code) {
         Label skip = code.newLabel();
         code.aload(2).getstatic(BLOCKS, "TRIPWIRE_HOOK", BLOCK).invokevirtual(BLOCK_STATE, "is", IS)

@@ -26,7 +26,7 @@ plugins/OasisSpawn/      spawn as built on the live server, spawn.schem, and the
 data/                    server config files the repo owns, copied over the same paths under the server's /data at every start
 datapacks/<name>/        the repo's own datapacks, each zipped as <name>.zip in the image
 plugin-src/<Name>/       the repo's own plugins, each a plugin.yml and Java sources under src/, compiled into <Name>.jar in the image; tests under test/ run at build
-hook-dupe-agent/         a Java agent the server starts with, which puts back tripwire hook duping; its class comment says how; its test under test/ runs at build
+hook-dupe-agent/         a Java agent the server starts with, which puts back tripwire hook duping; its class comment says how; tests under test/ run at build
 scripts/
   fetch-artifacts.sh     downloads everything in artifacts.lock and verifies each sha256
   smoke-test.sh          starts a built image on a throwaway world; checks every plugin and datapack loads and every config setting applies
