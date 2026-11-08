@@ -16,14 +16,24 @@ public final class WalkTest {
 
     private WalkTest() { }
 
-    /** Flat ground: floor at and below {@code ground}, open above it, with some blocks set otherwise. */
+    /**
+     * Flat ground: floor at and below {@code ground}, then water up to
+     * {@code waterTop} if that is higher, and open above, with some blocks set
+     * otherwise.
+     */
     private static final class Blocks implements Terrain {
 
         private final int ground;
+        private final int waterTop;
         private final Map<Pos, Cell> set = new HashMap<>();
 
         Blocks(int ground) {
+            this(ground, ground);
+        }
+
+        Blocks(int ground, int waterTop) {
             this.ground = ground;
+            this.waterTop = waterTop;
         }
 
         Blocks with(Cell cell, Pos... positions) {
@@ -47,7 +57,8 @@ public final class WalkTest {
 
         @Override
         public Cell at(int x, int y, int z) {
-            return set.getOrDefault(new Pos(x, y, z), y <= ground ? Cell.FLOOR : Cell.OPEN);
+            Cell otherwise = y <= ground ? Cell.FLOOR : y <= waterTop ? Cell.WATER : Cell.OPEN;
+            return set.getOrDefault(new Pos(x, y, z), otherwise);
         }
     }
 
@@ -86,6 +97,39 @@ public final class WalkTest {
         check(failures, threeDown.contains(new Pos(1, 2, 0)), "a 3-block drop isn't walkable: " + threeDown);
         List<Pos> fourDown = Walk.steps(new Blocks(0).with(Terrain.Cell.FLOOR, pillar), onPillar);
         check(failures, fourDown.isEmpty(), "a 4-block drop is walkable: " + fourDown);
+
+        Pos floating = new Pos(0, 3, 0);
+        check(failures, !Walk.trapped(new Blocks(0, 2), floating, THRESHOLD), "open water is a trap");
+        check(failures, Walk.start(new Blocks(0, 2), new Pos(0, 1, 0)).equals(new Pos(0, 2, 0))
+                        && Walk.start(new Blocks(0, 2), new Pos(0, 3, 0)).equals(new Pos(0, 2, 0)),
+                "a pig under water or floating on it doesn't start at the surface");
+
+        // Flooded to y 0 inside a fence, ground at y 0 outside it.
+        Blocks floodedPen = new Blocks(0).ring(Terrain.Cell.WALL, 1, -2, -2, 2, 2);
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                floodedPen.with(Terrain.Cell.WATER, new Pos(x, 0, z));
+            }
+        }
+        check(failures, Walk.trapped(floodedPen, new Pos(0, 0, 0), THRESHOLD), "a flooded 3x3 pen isn't a trap");
+
+        Blocks wetHole = new Blocks(0).with(Terrain.Cell.OPEN, new Pos(0, 0, 0)).with(Terrain.Cell.WATER, new Pos(0, -1, 0));
+        check(failures, Walk.trapped(wetHole, new Pos(0, -1, 0), THRESHOLD),
+                "a 1x1 hole two deep with water in the bottom isn't a trap");
+
+        Blocks shaft = new Blocks(0).with(Terrain.Cell.OPEN, new Pos(0, 0, 0));
+        for (int y = -10; y <= -1; y++) {
+            shaft.with(Terrain.Cell.WATER, new Pos(0, y, 0));
+        }
+        check(failures, Walk.trapped(shaft, Walk.start(shaft, new Pos(0, -6, 0)), THRESHOLD),
+                "a 1x1 water shaft ten deep isn't a trap: its depth counted as room");
+
+        Blocks flushPool = new Blocks(0).with(Terrain.Cell.WATER, new Pos(0, 0, 0));
+        check(failures, !Walk.trapped(flushPool, new Pos(0, 0, 0), THRESHOLD),
+                "a 1x1 pool level with the ground, which a pig climbs out of, is a trap");
+
+        List<Pos> intoWater = Walk.steps(new Blocks(-10, -8).with(Terrain.Cell.FLOOR, pillar), onPillar);
+        check(failures, intoWater.contains(new Pos(1, -8, 0)), "a long drop into water isn't reachable: " + intoWater);
 
         Blocks lava = new Blocks(0);
         for (int x = -3; x <= 3; x++) {

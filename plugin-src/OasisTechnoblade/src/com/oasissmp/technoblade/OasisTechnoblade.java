@@ -345,21 +345,16 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         getLogger().info("Technoblade teleported out of a trap at " + describe(from) + " to " + describe(exit.get()));
     }
 
-    // In water or in the air it's moving, and a pig that is swimming is never in a pen.
+    // Mid-jump or falling, where it is isn't a place it stays: the next check sees where it lands.
     private boolean trapped(Pig pig, boolean suffocating) {
         if (suffocating || pig.isInsideVehicle() || pig.isLeashed()) {
             return true;
         }
-        if (pig.isInWater() || !pig.isOnGround()) {
+        if (!pig.isOnGround() && !pig.isInWater()) {
             return false;
         }
         Terrain terrain = new WorldTerrain(pig.getWorld());
-        Pos standing = pos(pig.getLocation());
-        // Standing on a slab, carpet or farmland puts its feet inside that block.
-        if (terrain.at(standing) != Terrain.Cell.OPEN) {
-            standing = standing.above();
-        }
-        return Walk.trapped(terrain, standing, TRAP_THRESHOLD);
+        return Walk.trapped(terrain, Walk.start(terrain, pos(pig.getLocation())), TRAP_THRESHOLD);
     }
 
     /**

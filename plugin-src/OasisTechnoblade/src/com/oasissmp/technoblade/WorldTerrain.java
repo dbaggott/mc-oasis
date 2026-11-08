@@ -14,12 +14,15 @@ import org.bukkit.util.BoundingBox;
  */
 final class WorldTerrain implements Terrain {
 
+    // Water, and the blocks that only ever stand in it.
+    private static final Set<Material> WATER = Set.of(
+            Material.WATER, Material.BUBBLE_COLUMN,
+            Material.KELP, Material.KELP_PLANT, Material.SEAGRASS, Material.TALL_SEAGRASS);
     // Blocks with no collision, or that a pig can stand on, that still hurt or hold it.
     private static final Set<Material> DANGEROUS = Set.of(
             Material.MAGMA_BLOCK, Material.CACTUS, Material.CAMPFIRE, Material.SOUL_CAMPFIRE,
             Material.FIRE, Material.SOUL_FIRE, Material.POWDER_SNOW, Material.SWEET_BERRY_BUSH,
-            Material.WITHER_ROSE, Material.POINTED_DRIPSTONE, Material.COBWEB, Material.BUBBLE_COLUMN,
-            Material.KELP, Material.KELP_PLANT, Material.SEAGRASS, Material.TALL_SEAGRASS,
+            Material.WITHER_ROSE, Material.POINTED_DRIPSTONE, Material.COBWEB,
             Material.NETHER_PORTAL, Material.END_PORTAL, Material.END_GATEWAY);
 
     private final World world;
@@ -40,14 +43,18 @@ final class WorldTerrain implements Terrain {
             return Cell.OPEN;
         }
         Block block = world.getBlockAt(x, y, z);
-        if (block.isLiquid() || DANGEROUS.contains(block.getType())
-                || (block.getBlockData() instanceof Waterlogged waterlogged && waterlogged.isWaterlogged())) {
+        if (WATER.contains(block.getType())) {
+            return Cell.WATER;
+        }
+        if (block.isLiquid() || DANGEROUS.contains(block.getType())) {
             return Cell.DANGER;
         }
         double top = block.getCollisionShape().getBoundingBoxes().stream()
                 .mapToDouble(BoundingBox::getMaxY).max().orElse(0);
         if (top == 0) {
-            return Cell.OPEN;
+            // A waterlogged block with nothing to bump into, such as a sign, is water.
+            return block.getBlockData() instanceof Waterlogged waterlogged && waterlogged.isWaterlogged()
+                    ? Cell.WATER : Cell.OPEN;
         }
         return top > 1 ? Cell.WALL : Cell.FLOOR;
     }
