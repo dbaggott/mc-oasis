@@ -5,6 +5,7 @@ import { test } from "node:test";
 import {
   BLAST_RESISTANCE,
   blastedPlaces,
+  blocksInReach,
   brightness,
   creeperWorld,
   explosionParticle,
@@ -142,6 +143,18 @@ test("it stops, burns a 30-tick fuse, and its explosion sets off 48 large explos
   assert.ok(smoke.size > 0, "no poof or smoke thrown out");
 });
 
+test("its blast is over once its large explosions are, before its smoke clears", () => {
+  const world = creeperWorld(level());
+  let ticks = 0;
+  while (!world.blastOver) {
+    assert.ok(world.tick(), "it cleared before its blast was over");
+    assert.ok(++ticks < 400, "its blast was never over");
+  }
+  assert.ok(!world.creeper.alive);
+  assert.ok(world.particles.length > 0, "no smoke left once the blast was over");
+  assert.ok(world.particles.every(({ kind }) => kind !== "explosion"));
+});
+
 test("without effects, the blast still breaks blocks but throws out nothing", () => {
   const broken = [];
   const world = creeperWorld(level(broken), { walk: false, effects: false });
@@ -255,9 +268,38 @@ test("a spawned creeper favours ledges with room to stroll", () => {
 test("a creeper blown up on top of OASIS breaks OASIS's blocks, not SMP's", () => {
   const world = logo();
   const ledge = world.ledges().find(({ top }) => top === topOf(world, 0));
-  const broken = explodeOn(world, spawnedRoute({ ledges: () => [ledge] }, () => 0.5));
+  const broken = explodeOn(world, spawnedRoute({ ...world, ledges: () => [ledge] }, () => 0.5));
   assert.ok(broken.length > 0, "it broke nothing");
   assert.ok(broken.every(({ word }) => word === 0));
+});
+
+test("a spawned creeper stops where its blast has something to break", () => {
+  const world = logo();
+  // Everything but the P is broken, down to the M's bedrock.
+  const p = new Set(world.solidsOf("P").map(({ block }) => block));
+  const rest = () => world.solidsOf().map(({ block }) => block).filter((block) => !p.has(block) && block.block !== "bedrock" && world.isStanding(block));
+  while (rest().length > 0) world.breakBlocks(rest());
+  let n = 5;
+  const random = () => ((n = (n * 1103515245 + 12345) % 2147483648) / 2147483648);
+  for (let i = 0; i < 200; i++) {
+    const { x, y, z } = spawnedRoute(world, random).at(-1);
+    assert.ok(blocksInReach(world, [x, y, z]) > 0, `it stopped at ${x}, ${y} with nothing in reach`);
+  }
+});
+
+test("a blast's reach is sandstone 3 blocks off and prismarine 1 block off, never bedrock", () => {
+  const world = logo();
+  const reaches = (find, distance) => {
+    const { block, min, max } = world.solidOf(find);
+    return blocksInReach({ solidsOf: () => [{ block, min, max }], isStanding: () => true }, [(min[0] + max[0]) / 2, min[1] + 0.5, distance]) > 0;
+  };
+  const sandstone = (block) => block.block === "sandstone";
+  const prismarine = (block) => block.block === "prismarine";
+  assert.ok(reaches(sandstone, 3) && !reaches(sandstone, 4));
+  assert.ok(reaches(prismarine, 1) && !reaches(prismarine, 2));
+  const centre = blockAt(world, ({ creeperStart }) => creeperStart);
+  world.breakBlocks([centre]);
+  assert.ok(!reaches(({ creeperStart }) => creeperStart, 0.1));
 });
 
 test("enough creepers break most of the logo", () => {

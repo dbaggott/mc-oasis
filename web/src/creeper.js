@@ -4,9 +4,9 @@
 // with the game's own explosion sprites and smoke (public/minecraft holds them,
 // unchanged from the Minecraft 26.1 client). Each creeper after the first spawns
 // where a creeper could stand in front of the logo, on the ground or on top of a
-// letter's block, strolls back and forth along it and blows up there. Every step is
-// the game's: a tick at a time, by its numbers, each named for the class it comes
-// from. Whatever the explosion breaks stays broken until the page is loaded
+// letter's block, strolls back and forth along it and blows up there, likelier
+// where its blast has more to break. Every step is the game's: a tick at a
+// time, by its numbers, each named for the class it comes from. Whatever the explosion breaks stays broken until the page is loaded
 // again; under the M's centre block is bedrock, which no explosion breaks.
 //
 // The world is measured in blocks — x right, y up, z toward the viewer, the
@@ -277,7 +277,9 @@ const BLOCK_PARTICLES = [
 // starts, its last where it stops, all at one height), what is at a point, and
 // what to do with the logo's blocks the blast breaks. Without `walk` it starts at the end of its route;
 // without `effects` its explosion breaks blocks but throws out no particles.
-// Each tick returns false once there is nothing left to draw.
+// Each tick returns false once there is nothing left to draw; `blastOver` is
+// true from when the creeper's gone and its large explosions are too, with only
+// its poof and smoke left drifting off.
 export function creeperWorld(level, { walk = true, effects = true, random = Math.random } = {}) {
   const { player, route, resistanceAt, breakBlocks } = level;
   const start = walk ? route[0] : route.at(-1);
@@ -412,6 +414,9 @@ export function creeperWorld(level, { walk = true, effects = true, random = Math
     get before() {
       return before;
     },
+    get blastOver() {
+      return !creeper.alive && !emitter && !blockParticles && !particles.some(({ kind }) => kind === "explosion");
+    },
     tick() {
       before = { ...creeper };
       // ParticleEngine ticks the particles there are, then adds this tick's new ones.
@@ -538,17 +543,46 @@ export function firstRoute(world) {
   ];
 }
 
-// Every later creeper's: it spawns on one of the world's ledges, and strolls
-// back and forth along it in front of the letters before it stops, with its
-// feet over the ledge all the way. It favours ledges with room to stroll, up to
-// a stroll's length: a ledge it can't walk along at all is the least likely.
+// How many of the world's standing blocks a blast at `center` would break, as a
+// ray of its average power sees them, going straight to each block's nearest
+// point: it loses ServerExplosion's 0.225 for each 0.3-block step through the
+// air, then the first step's worth of the block's own resistance.
+export function blocksInReach(world, center) {
+  return world.solidsOf().filter(({ block, min, max }) => {
+    if (!world.isStanding(block)) return false;
+    const distance = Math.hypot(...center.map((c, axis) => c - clamp(c, min[axis], max[axis])));
+    return EXPLOSION_RADIUS - (distance / 0.3) * 0.225 - (BLAST_RESISTANCE[block.block] + 0.3) * 0.3 > 0;
+  }).length;
+}
+
+// Where along a ledge a creeper's feet can be, half a block apart.
+const SPOT_SPACING = 0.5;
+
+// Every later creeper's: it strolls back and forth along one of the world's
+// ledges in front of the letters, with its feet over the ledge all the way, and
+// stops likeliest where its blast has the most to break. Each spot its feet can stop on
+// is as likely as the blocks it would break there; once nothing is left in
+// reach anywhere, every spot is as likely as the next. A ledge with more room
+// has more spots, so a ledge it can't walk along at all is the least likely.
+// The route is walked from that spot outward and then reversed, so it ends there.
 export function spawnedRoute(world, random = Math.random) {
   const half = (CREEPER_WIDTH / 2) * CREEPER_SCALE;
-  const ledges = world.ledges().map((ledge) => ({ ...ledge, low: ledge.from + half, high: ledge.to - half }));
-  const likelihood = ({ low, high }) => Math.min(high - low, STROLL);
-  let pick = random() * ledges.reduce((sum, ledge) => sum + likelihood(ledge), 0);
-  const { top, low, high } = ledges.find((ledge) => (pick -= likelihood(ledge)) < 0) ?? ledges.at(-1);
-  const xs = [lerp(random(), low, high)];
+  const spots = world.ledges().flatMap(({ top, from, to }) => {
+    const ledge = { top, low: from + half, high: to - half };
+    if (ledge.high <= ledge.low) return [{ ledge, x: (from + to) / 2 }];
+    const count = Math.floor((ledge.high - ledge.low) / SPOT_SPACING) + 1;
+    const step = (ledge.high - ledge.low) / Math.max(count - 1, 1);
+    return Array.from({ length: count }, (_, i) => ({ ledge, x: ledge.low + i * step }));
+  });
+  for (const spot of spots) {
+    const { x, y, z } = standingOn(spot.x, spot.ledge.top, IN_FRONT);
+    spot.weight = blocksInReach(world, [x, y, z]);
+  }
+  const weight = spots.some(({ weight }) => weight > 0) ? (spot) => spot.weight : () => 1;
+  let pick = random() * spots.reduce((sum, spot) => sum + weight(spot), 0);
+  const end = spots.find((spot) => (pick -= weight(spot)) < 0) ?? spots.findLast((spot) => weight(spot) > 0);
+  const { top, low, high } = end.ledge;
+  const xs = [end.x];
   for (let i = 0; i < STROLLS; i++) {
     const at = xs.at(-1);
     const far = lerp(random(), 1, STROLL);
@@ -558,7 +592,7 @@ export function spawnedRoute(world, random = Math.random) {
     const direction = room(way) >= room(-way) || room(way) >= far ? way : -way;
     xs.push(clamp(at + direction * far, low, high));
   }
-  return xs.map((x) => standingOn(x, top, IN_FRONT));
+  return xs.reverse().map((x) => standingOn(x, top, IN_FRONT));
 }
 
 // --- Drawing ---------------------------------------------------------------
@@ -699,8 +733,8 @@ function buildLogo(logo, data) {
 }
 
 // Lets a creeper out of `target`, the M's centre block in the logo's targets,
-// and resolves once its explosion has cleared: the first by the M, each later
-// one spawned on a ledge. With `walk` false it is already standing where its
+// and resolves once its blast is over, leaving its smoke to clear on its own:
+// the first by the M, each later one spawned on a ledge. With `walk` false it is already standing where its
 // route ends, and makes no flash, swell or smoke on its way out.
 export async function releaseCreeper(target, { walk }) {
   const logo = target.closest(".logo");
@@ -824,7 +858,11 @@ export async function releaseCreeper(target, { walk }) {
     drawParticles(t);
   };
 
-  await new Promise((done) => {
+  const clear = () => {
+    root.remove();
+    for (const { element: drawn } of drawnParticles.values()) drawn.remove();
+  };
+  await new Promise((over) => {
     let last;
     let behind = 0;
     draw(1);
@@ -836,12 +874,11 @@ export async function releaseCreeper(target, { walk }) {
         behind -= TICK_MS;
         going = world.tick();
       }
-      if (!going) return done();
+      if (world.blastOver) over();
+      if (!going) return clear();
       draw(behind / TICK_MS);
       requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);
   });
-  root.remove();
-  for (const { element: drawn } of drawnParticles.values()) drawn.remove();
 }
