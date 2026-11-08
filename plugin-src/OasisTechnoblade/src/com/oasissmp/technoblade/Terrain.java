@@ -11,9 +11,9 @@ interface Terrain {
         FLOOR,
         /** Taller than a block, as fences and walls are, or past the world border: no way through or onto. */
         WALL,
-        /** Water a pig can swim in, kelp and seagrass included. */
+        /** Water a pig can swim in, kelp and seagrass included, but not a waterfall. */
         WATER,
-        /** Lava, fire, powder snow, or a block that hurts, such as magma or cactus. */
+        /** Lava, fire, powder snow, falling water, a bubble column, or a block that hurts, such as magma or cactus. */
         DANGER
     }
 

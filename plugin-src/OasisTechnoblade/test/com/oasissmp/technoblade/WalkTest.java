@@ -131,6 +131,19 @@ public final class WalkTest {
         List<Pos> intoWater = Walk.steps(new Blocks(-10, -8).with(Terrain.Cell.FLOOR, pillar), onPillar);
         check(failures, intoWater.contains(new Pos(1, -8, 0)), "a long drop into water isn't reachable: " + intoWater);
 
+        // Open water at y 1 and 2 over ground at y 0, frozen over at y 3 across a 7x7 square.
+        Blocks underIce = new Blocks(0, 3);
+        for (int x = -3; x <= 3; x++) {
+            for (int z = -3; z <= 3; z++) {
+                underIce.with(Terrain.Cell.FLOOR, new Pos(x, 3, z));
+            }
+        }
+        check(failures, Walk.trapped(underIce, Walk.start(underIce, new Pos(0, 1, 0)), THRESHOLD),
+                "water under ice, with no air to float in, counted as room");
+        check(failures, Walk.start(new Blocks(0, 3).with(Terrain.Cell.FLOOR, new Pos(0, 1, 0)), new Pos(0, 1, 0))
+                        .equals(new Pos(0, 3, 0)),
+                "a pig with its feet in a slab under water doesn't start at the surface");
+
         Blocks lava = new Blocks(0);
         for (int x = -3; x <= 3; x++) {
             for (int z = -3; z <= 3; z++) {

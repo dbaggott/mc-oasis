@@ -323,7 +323,9 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
             return;
         }
         Location from = pig.getLocation();
-        if (pos(from).equals(noExitFrom)) {
+        // Where the trap check starts from, which a pig bobbing on water doesn't move off.
+        Pos at = Walk.start(new WorldTerrain(pig.getWorld()), pos(from));
+        if (at.equals(noExitFrom)) {
             return;
         }
         pig.eject();
@@ -335,7 +337,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         if (exit.isEmpty()) {
             getLogger().warning("Technoblade is trapped at " + describe(from)
                     + " and no way out was found nearby; /technoblade respawn <x> <z> moves it");
-            noExitFrom = pos(from);
+            noExitFrom = at;
             return;
         }
         effects(from);

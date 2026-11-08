@@ -5,6 +5,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.Levelled;
 import org.bukkit.block.data.Waterlogged;
 import org.bukkit.util.BoundingBox;
 
@@ -16,13 +17,14 @@ final class WorldTerrain implements Terrain {
 
     // Water, and the blocks that only ever stand in it.
     private static final Set<Material> WATER = Set.of(
-            Material.WATER, Material.BUBBLE_COLUMN,
-            Material.KELP, Material.KELP_PLANT, Material.SEAGRASS, Material.TALL_SEAGRASS);
+            Material.WATER, Material.KELP, Material.KELP_PLANT, Material.SEAGRASS, Material.TALL_SEAGRASS);
+    // Water's level from this up is falling water, which a pig can't swim up.
+    private static final int FALLING = 8;
     // Blocks with no collision, or that a pig can stand on, that still hurt or hold it.
     private static final Set<Material> DANGEROUS = Set.of(
             Material.MAGMA_BLOCK, Material.CACTUS, Material.CAMPFIRE, Material.SOUL_CAMPFIRE,
             Material.FIRE, Material.SOUL_FIRE, Material.POWDER_SNOW, Material.SWEET_BERRY_BUSH,
-            Material.WITHER_ROSE, Material.POINTED_DRIPSTONE, Material.COBWEB,
+            Material.WITHER_ROSE, Material.POINTED_DRIPSTONE, Material.COBWEB, Material.BUBBLE_COLUMN,
             Material.NETHER_PORTAL, Material.END_PORTAL, Material.END_GATEWAY);
 
     private final World world;
@@ -44,7 +46,8 @@ final class WorldTerrain implements Terrain {
         }
         Block block = world.getBlockAt(x, y, z);
         if (WATER.contains(block.getType())) {
-            return Cell.WATER;
+            return block.getBlockData() instanceof Levelled water && water.getLevel() >= FALLING
+                    ? Cell.DANGER : Cell.WATER;
         }
         if (block.isLiquid() || DANGEROUS.contains(block.getType())) {
             return Cell.DANGER;

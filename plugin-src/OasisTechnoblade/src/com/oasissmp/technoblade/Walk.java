@@ -13,15 +13,18 @@ import java.util.function.Predicate;
  * Where a pig can stand and where it can walk or swim to from there, over a
  * {@link Terrain}. A position is the block a pig's feet are in. In water that
  * is the top water block of its column, where a pig floats, so a pool counts
- * its surface, not its depth.
+ * its surface, not its depth; water with no air above it, under ice or a roof,
+ * is no room at all.
  */
 final class Walk {
 
     /** The most a pig can fall onto ground without taking damage. */
     static final int MAX_DROP = 3;
+    /** The longest fall into water that is followed, which costs a lookup per block fallen. */
+    static final int MAX_FALL = 32;
 
-    // How far up a column of water is followed to its surface.
-    private static final int MAX_RISE = 384;
+    // A column of water is followed up to its surface no further than the overworld is tall.
+    private static final int MAX_DEPTH = 384;
 
     private static final int[][] SIDES = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
 
@@ -45,20 +48,21 @@ final class Walk {
      * slab, carpet or farmland.
      */
     static Pos start(Terrain terrain, Pos feet) {
+        Pos start = feet;
         Terrain.Cell cell = terrain.at(feet);
-        if (cell == Terrain.Cell.WATER) {
-            return surface(terrain, feet);
+        if (cell != Terrain.Cell.OPEN && cell != Terrain.Cell.WATER) {
+            start = feet.above();
+        } else if (cell == Terrain.Cell.OPEN && terrain.at(feet.below()) == Terrain.Cell.WATER) {
+            start = feet.below();
         }
-        if (cell != Terrain.Cell.OPEN) {
-            return feet.above();
-        }
-        return terrain.at(feet.below()) == Terrain.Cell.WATER ? feet.below() : feet;
+        return terrain.at(start) == Terrain.Cell.WATER ? surface(terrain, start) : start;
     }
 
     /**
      * The positions a pig at {@code from} can reach in one move to each side:
      * up onto a block if there's room to jump, level, down a drop of at most
-     * {@value #MAX_DROP} onto ground or any drop into water, or swimming.
+     * {@value #MAX_DROP} onto ground or of up to {@value #MAX_FALL} into water,
+     * or swimming to water with air above it.
      */
     static List<Pos> steps(Terrain terrain, Pos from) {
         List<Pos> steps = new ArrayList<>();
@@ -66,7 +70,10 @@ final class Walk {
             Pos next = from.offset(side[0], 0, side[1]);
             Terrain.Cell cell = terrain.at(next);
             if (cell == Terrain.Cell.WATER) {
-                steps.add(surface(terrain, next));
+                Pos surface = surface(terrain, next);
+                if (terrain.at(surface.above()) == Terrain.Cell.OPEN) {
+                    steps.add(surface);
+                }
             } else if (cell == Terrain.Cell.FLOOR) {
                 if (terrain.at(from.above()) == Terrain.Cell.OPEN && safe(terrain, next.above())) {
                     steps.add(next.above());
@@ -124,18 +131,18 @@ final class Walk {
     // The top water block of the column of water at pos.
     private static Pos surface(Terrain terrain, Pos pos) {
         Pos surface = pos;
-        for (int rise = 0; rise < MAX_RISE && terrain.at(surface.above()) == Terrain.Cell.WATER; rise++) {
+        for (int rise = 0; rise < MAX_DEPTH && terrain.at(surface.above()) == Terrain.Cell.WATER; rise++) {
             surface = surface.above();
         }
         return surface;
     }
 
-    // Walking into an open block and falling until something is underneath: ground, or water at any depth.
+    // Walking into an open block and falling until something is underneath: ground, or water.
     private static Optional<Pos> landing(Terrain terrain, Pos from, Pos next) {
         Pos landing = next;
         while (terrain.at(landing.below()) == Terrain.Cell.OPEN) {
             landing = landing.below();
-            if (from.y() - landing.y() > MAX_RISE) {
+            if (from.y() - landing.y() >= MAX_FALL) {
                 return Optional.empty();
             }
         }
