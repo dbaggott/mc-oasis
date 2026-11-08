@@ -294,15 +294,16 @@ test("a spawned creeper stops where its blast has something to break", () => {
   const random = () => ((n = (n * 1103515245 + 12345) % 2147483648) / 2147483648);
   for (let i = 0; i < 200; i++) {
     const { x, y, z } = spawnedRoute(world, random).at(-1);
-    assert.ok(blocksInReach(world, [x, y, z]) > 0, `it stopped at ${x}, ${y} with nothing in reach`);
+    const standing = world.solidsOf().filter(({ block }) => world.isStanding(block));
+    assert.ok(blocksInReach(world, [x, y, z], standing) > 0, `it stopped at ${x}, ${y} with nothing in reach`);
   }
 });
 
 test("a blast's reach is sandstone 3 blocks off and prismarine 1 block off, never bedrock", () => {
   const world = logo();
   const reaches = (find, distance) => {
-    const { block, min, max } = world.solidOf(find);
-    return blocksInReach({ solidsOf: () => [{ block, min, max }], isStanding: () => true }, [(min[0] + max[0]) / 2, min[1] + 0.5, distance]) > 0;
+    const solid = world.solidOf(find);
+    return blocksInReach(world, [(solid.min[0] + solid.max[0]) / 2, solid.min[1] + 0.5, distance], [solid]) > 0;
   };
   const sandstone = (block) => block.block === "sandstone";
   const prismarine = (block) => block.block === "prismarine";
@@ -311,6 +312,23 @@ test("a blast's reach is sandstone 3 blocks off and prismarine 1 block off, neve
   const centre = blockAt(world, ({ creeperStart }) => creeperStart);
   world.breakBlocks([centre]);
   assert.ok(!reaches(({ creeperStart }) => creeperStart, 0.1));
+});
+
+test("a blast's reach stops at the prismarine in its way", () => {
+  // A row of sandstone, a block deep, with a block of prismarine or of air to
+  // its left, and the blast half a block left of that.
+  const sandstone = { block: { block: "sandstone" }, min: [1, 0, -1], max: [2, 1, 0] };
+  const row = (between) => ({
+    resistanceAt(x, y, z) {
+      const inside = y >= 0 && y < 1 && z >= -1 && z < 0;
+      if (inside && x >= 1 && x < 2) return { key: sandstone.block, place: sandstone.block, resistance: BLAST_RESISTANCE.sandstone };
+      if (inside && x >= 0 && x < 1 && between) return { key: "between", place: "between", resistance: BLAST_RESISTANCE[between] };
+      return { key: "air", place: "air", resistance: null };
+    },
+  });
+  const blast = [-0.5, 0.5, -0.5];
+  assert.equal(blocksInReach(row(null), blast, [sandstone]), 1);
+  assert.equal(blocksInReach(row("prismarine"), blast, [sandstone]), 0);
 });
 
 test("enough creepers break most of the logo", () => {

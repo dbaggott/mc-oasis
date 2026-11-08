@@ -6,8 +6,9 @@
 // where a creeper could stand in front of the logo, on the ground or on top of a
 // letter's block, strolls back and forth along it and blows up there, likelier
 // where its blast has more to break. Every step is the game's: a tick at a
-// time, by its numbers, each named for the class it comes from. Whatever the explosion breaks stays broken until the page is loaded
-// again; under the M's centre block is bedrock, which no explosion breaks.
+// time, by its numbers, each named for the class it comes from. Whatever the
+// explosion breaks stays broken until the page is loaded again; under the M's
+// centre block is bedrock, which no explosion breaks.
 //
 // The world is measured in blocks — x right, y up, z toward the viewer, the
 // ground at y = 0 along the foot of "SMP", and the letters' faces at z = 0. The
@@ -162,23 +163,32 @@ export function blastedPlaces(center, radius, resistanceAt, random = Math.random
     for (let yy = 0; yy < 16; yy++) {
       for (let zz = 0; zz < 16; zz++) {
         if (xx !== 0 && xx !== 15 && yy !== 0 && yy !== 15 && zz !== 0 && zz !== 15) continue;
-        const [dx, dy, dz] = normalize([(xx / 15) * 2 - 1, (yy / 15) * 2 - 1, (zz / 15) * 2 - 1]);
-        let power = radius * (0.7 + random() * 0.6);
-        let [x, y, z] = center;
-        while (power > 0) {
-          const { key, place, resistance } = resistanceAt(x, y, z);
-          if (resistance !== null) power -= (resistance + 0.3) * 0.3;
-          if (power > 0) places.set(key, place);
-          x += dx * 0.3;
-          y += dy * 0.3;
-          z += dz * 0.3;
-          power -= 0.22500001;
-        }
+        const direction = normalize([(xx / 15) * 2 - 1, (yy / 15) * 2 - 1, (zz / 15) * 2 - 1]);
+        blastRay(center, direction, radius * (0.7 + random() * 0.6), resistanceAt, (key, place) => places.set(key, place));
       }
     }
   }
   return places;
 }
+
+// One of ServerExplosion's rays, from `center` along the unit `direction` with
+// `power`: `reached` has each point it reaches with power to spare. It goes no
+// further than `limit` blocks.
+function blastRay(center, [dx, dy, dz], power, resistanceAt, reached, limit = Infinity) {
+  let [x, y, z] = center;
+  for (let travelled = 0; power > 0 && travelled <= limit; travelled += 0.3) {
+    const { key, place, resistance } = resistanceAt(x, y, z);
+    if (resistance !== null) power -= (resistance + 0.3) * 0.3;
+    if (power > 0) reached(key, place);
+    x += dx * 0.3;
+    y += dy * 0.3;
+    z += dz * 0.3;
+    power -= 0.22500001;
+  }
+}
+
+// How far a ray of `power` can go through air.
+const rayReach = (power) => (power / 0.22500001) * 0.3;
 
 // Particle.tick: ages a particle and moves it, with the ground at y = 0
 // stopping it. False once it is gone.
@@ -540,15 +550,21 @@ export function firstRoute(world) {
   ];
 }
 
-// How many of the world's standing blocks a blast at `center` would break, as a
-// ray of its average power sees them, going straight to each block's nearest
-// point: it loses ServerExplosion's 0.225 for each 0.3-block step through the
-// air, then the first step's worth of the block's own resistance.
-export function blocksInReach(world, center) {
-  return world.solidsOf().filter(({ block, min, max }) => {
-    if (!world.isStanding(block)) return false;
-    const distance = Math.hypot(...center.map((c, axis) => c - clamp(c, min[axis], max[axis])));
-    return EXPLOSION_RADIUS - (distance / 0.3) * 0.225 - (BLAST_RESISTANCE[block.block] + 0.3) * 0.3 > 0;
+// How many of `solids`, the world's standing blocks, a blast at `center` would
+// break, as a ray of its average power sees them, aimed at the point of each
+// block nearest the blast, half a step inside it, through whatever stands in
+// between.
+export function blocksInReach(world, center, solids) {
+  const reach = rayReach(EXPLOSION_RADIUS);
+  return solids.filter(({ block, min, max }) => {
+    const aim = center.map((c, axis) => clamp(c, min[axis] + 0.15, max[axis] - 0.15));
+    const toward = aim.map((a, axis) => a - center[axis]);
+    const distance = Math.hypot(...toward);
+    if (distance > reach) return false;
+    let hit = false;
+    const direction = distance > 0 ? toward.map((c) => c / distance) : [0, 0, 1];
+    blastRay(center, direction, EXPLOSION_RADIUS, world.resistanceAt, (key) => (hit ||= key === block), distance + 0.3);
+    return hit;
   }).length;
 }
 
@@ -566,14 +582,15 @@ export function spawnedRoute(world, random = Math.random) {
   const half = (CREEPER_WIDTH / 2) * CREEPER_SCALE;
   const spots = world.ledges().flatMap(({ top, from, to }) => {
     const ledge = { top, low: from + half, high: to - half };
-    if (ledge.high <= ledge.low) return [{ ledge, x: (from + to) / 2 }];
-    const count = Math.floor((ledge.high - ledge.low) / SPOT_SPACING) + 1;
-    const step = (ledge.high - ledge.low) / Math.max(count - 1, 1);
-    return Array.from({ length: count }, (_, i) => ({ ledge, x: ledge.low + i * step }));
+    const room = Math.max(0, ledge.high - ledge.low);
+    const count = Math.floor(room / SPOT_SPACING) + 1;
+    const middle = (from + to) / 2;
+    return Array.from({ length: count }, (_, i) => ({ ledge, x: count === 1 ? middle : ledge.low + (i * room) / (count - 1) }));
   });
+  const standing = world.solidsOf().filter(({ block }) => world.isStanding(block));
   for (const spot of spots) {
     const { x, y, z } = standingOn(spot.x, spot.ledge.top, IN_FRONT);
-    spot.weight = blocksInReach(world, [x, y, z]);
+    spot.weight = blocksInReach(world, [x, y, z], standing);
   }
   const weight = spots.some(({ weight }) => weight > 0) ? (spot) => spot.weight : () => 1;
   let pick = random() * spots.reduce((sum, spot) => sum + weight(spot), 0);
@@ -731,8 +748,9 @@ function buildLogo(logo, data) {
 
 // Lets a creeper out of `target`, the M's centre block in the logo's targets,
 // and resolves once its blast is over, leaving its smoke to clear on its own:
-// the first by the M, each later one spawned on a ledge. With `walk` false it is already standing where its
-// route ends, and makes no flash, swell or smoke on its way out.
+// the first by the M, each later one spawned on a ledge. With `walk` false it
+// is already standing where its route ends, and makes no flash, swell or smoke
+// on its way out.
 export async function releaseCreeper(target, { walk }) {
   const logo = target.closest(".logo");
   const effects = walk;
