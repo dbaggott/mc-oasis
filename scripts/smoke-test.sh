@@ -529,7 +529,7 @@ technoblade_at() { sed -n 's/.* is at \([0-9]*\) \([0-9]*\) \([0-9]*\) in minecr
 technoblade_count() {
   local reply
   reply="$(rcon 'execute if entity @e[type=pig,tag=technoblade]')"
-  if [[ "$reply" =~ count:\ ([0-9]+) ]]; then echo "${BASH_REMATCH[1]}"; else echo 0; fi
+  if [[ "$reply" =~ Count:\ ([0-9]+) ]]; then echo "${BASH_REMATCH[1]}"; else echo 0; fi
 }
 reply="$(technoblade)"
 first_uuid="$(technoblade_uuid "$reply")"
