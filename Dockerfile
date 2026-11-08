@@ -210,8 +210,10 @@ COPY --from=libertybans-addons /out/ /plugins/
 # TAB's turns on its spectator fix, so a player in spectator doesn't show as
 # one in non-ops' tab lists, and puts each player's LuckPerms prefix before
 # their name in the tab list and over their head.
-# OasisFilter's are its word lists, OasisRules' the server rules, and
-# OasisRegions' the WorldGuard regions it sets up.
+# OasisFilter's are its word lists, OasisRules' the server rules,
+# OasisRegions' the WorldGuard regions it sets up, and OasisSpawn's the spawn
+# it pastes into a new world on the seed spawn was built in, with that seed's
+# hash: the seed itself stays out of this public repo.
 # Geyser-Spigot's is MCXboxBroadcast's, under the extension's id in Geyser's
 # extensions/: the file the pinned build generates, with expiry off, so a
 # console player who stops playing for a while stays on its friend list. Its

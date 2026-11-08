@@ -22,6 +22,7 @@ server-icon.png          the 64x64 server-list icon
 artifacts.lock           every third-party jar and datapack baked in, and the libraries the repo's own plugins compile against, with each one's version, URL and sha256
 plugins/<Name>/          config files the repo owns for a plugin, copied over the plugin's own at every start
 plugins/LuckPerms/yaml-storage/  the permission groups and tracks; which group each player is in is set in game
+plugins/OasisSpawn/      spawn as built on the live server, spawn.schem, and the SHA-256 of the seed it was built in; OasisSpawn pastes it into a newly generated world on that seed, so spawn comes back on its own
 data/                    server config files the repo owns, copied over the same paths under the server's /data at every start
 datapacks/<name>/        the repo's own datapacks, each zipped as <name>.zip in the image
 plugin-src/<Name>/       the repo's own plugins, each a plugin.yml and Java sources under src/, compiled into <Name>.jar in the image; tests under test/ run at build

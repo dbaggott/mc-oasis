@@ -1,0 +1,6 @@
+name: OasisSpawn
+version: 1.0.0
+main: com.oasissmp.spawn.OasisSpawn
+api-version: '26.3'
+description: Pastes the built spawn into a newly generated world on the seed it was captured in
+depend: [WorldEdit]

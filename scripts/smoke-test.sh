@@ -103,6 +103,16 @@ if ! grep --quiet --fixed-strings '[StringDupeAgent] Tripwire string duping rest
 fi
 echo "tripwire string duping restored"
 
+# OasisSpawn leaves the throwaway world's spawn alone: its random seed isn't the
+# one plugins/OasisSpawn/spawn.schem was captured in. The paste itself takes
+# that seed, which a public test can't have.
+if ! grep --quiet --fixed-strings "[OasisSpawn] Not pasting spawn: the world's seed isn't" <<<"$logs"; then
+  grep --fixed-strings '[OasisSpawn]' <<<"$logs" || true
+  echo "error: OasisSpawn didn't skip the throwaway world for its seed" >&2
+  exit 1
+fi
+echo "OasisSpawn skipped the throwaway world's spawn"
+
 # Geyser takes Bedrock players over NetherNet, with its own signaling on the
 # Bedrock port, from the Dockerfile's -DgeyserTransport rather than its config:
 # checked again below after a restart with `raknet` in the config. Geyser logs
