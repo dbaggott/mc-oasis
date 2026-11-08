@@ -34,10 +34,10 @@ export function requestBody(request, build) {
     `request:  ${request.id}`,
     `api:      ${build.commit ?? "(not a built image)"}`,
   ];
-  // The whitelist takes a Bedrock player by Floodgate UUID, not gamertag
+  // The allowlist takes a Bedrock player by Floodgate UUID, not gamertag
   // (apps/mc-oasis/variables.tf in dbaggott/infrastructure).
   if (editionOf(request.devices) === "bedrock") {
-    lines.push("", "Bedrock: whitelist by Floodgate UUID, from the gamertag's XUID.");
+    lines.push("", "Bedrock: allowlist by Floodgate UUID, from the gamertag's XUID.");
   } else {
     lines.push(
       "",

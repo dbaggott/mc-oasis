@@ -11,7 +11,7 @@ lives elsewhere.
 ## No player data in this repo
 
 The repo is public. Usernames, gamertags, UUIDs and anything else that identifies a player never go here:
-not in config, comments, tests or examples. The whitelist and ops list are managed privately and handed to
+not in config, comments, tests or examples. The allowlist and ops list are managed privately and handed to
 the container when it starts.
 
 ## Layout

@@ -43,7 +43,7 @@ export const GRADES = {
   12: "12th grade",
 };
 
-// A Java username, as the server's whitelist takes it (apps/mc-oasis in
+// A Java username, as the server's allowlist takes it (apps/mc-oasis in
 // dbaggott/infrastructure validates the same pattern).
 export const JAVA_NAME_PATTERN = /^[A-Za-z0-9_]{3,16}$/;
 
