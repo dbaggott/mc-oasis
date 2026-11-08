@@ -378,9 +378,7 @@ export function creeperWorld(level, { walk = true, effects = true, random = Math
         emitter = { center, age: 0 };
         blockParticles = { center, count: Math.min(places.size, 512) };
       }
-      return true;
     }
-    return false;
   }
 
   // HugeExplosionSeedParticle.tick: for 8 ticks, 6 explosions a tick, scattered
@@ -421,12 +419,11 @@ export function creeperWorld(level, { walk = true, effects = true, random = Math
       before = { ...creeper };
       // ParticleEngine ticks the particles there are, then adds this tick's new ones.
       for (let i = particles.length - 1; i >= 0; i--) if (!tickParticle(particles[i])) particles.splice(i, 1);
-      let exploded = false;
-      if (creeper.alive) exploded = tickCreeper();
-      if (!exploded) {
-        if (emitter) tickEmitter();
-        if (blockParticles) throwBlockParticles();
-      }
+      if (creeper.alive) tickCreeper();
+      // The seed's first explosions come on the tick the blocks break, not the
+      // game's tick after, so that nothing is seen gone before the blast.
+      if (emitter) tickEmitter();
+      if (blockParticles) throwBlockParticles();
       return creeper.alive || emitter !== null || blockParticles !== null || particles.length > 0;
     },
   };

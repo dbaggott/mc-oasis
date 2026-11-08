@@ -143,6 +143,17 @@ test("it stops, burns a 30-tick fuse, and its explosion sets off 48 large explos
   assert.ok(smoke.size > 0, "no poof or smoke thrown out");
 });
 
+test("the blast's first explosions show on the tick its blocks break", () => {
+  const broken = [];
+  const world = creeperWorld(level(broken));
+  for (let ticks = 0; world.creeper.alive; ticks++) {
+    world.tick();
+    assert.ok(ticks < 400, "it never blew up");
+  }
+  assert.ok(broken.length > 0, "it broke nothing");
+  assert.equal(world.particles.filter(({ kind }) => kind === "explosion").length, 6);
+});
+
 test("its blast is over once its large explosions are, before its smoke clears", () => {
   const world = creeperWorld(level());
   let ticks = 0;
