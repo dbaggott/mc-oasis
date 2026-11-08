@@ -3,5 +3,5 @@
 # a placement finds no safe spot nearby. The pig goes on the surface of the
 # column.
 #
-# A placeholder on the spawn island, until a spot is picked in game.
+# On the spawn island: Technoblade swims off it to the mainland in its own time.
 -480 880
