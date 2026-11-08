@@ -32,13 +32,13 @@ public final class OasisSpawn extends JavaPlugin {
     private static final String WORLD = "world";
     private static final String SCHEMATIC = "spawn.schem";
     private static final String SEED_HASH = "spawn.seed-sha256";
-    private static final String MARKER = "oasis-spawn-pasted";
+    private static final String MARKER = "oasis-spawn-decided";
 
     /**
      * Lighting, and registering points of interest (beds, bells, job sites,
-     * portals), which changes no block; {@code none()} also keeps sending
-     * the changes to players, as every set does. Neighbor and shape updates stay off,
-     * so every block is set in exactly the state captured, the pedestal's
+     * portals), which changes no block; {@code none()} also keeps sending the
+     * changes to players, as every set does. Neighbor and shape updates stay
+     * off, so every block is set in exactly the state captured, the pedestal's
      * debug-stick states included, rather than reconnected or broken.
      */
     static final SideEffectSet PASTE_SIDE_EFFECTS = SideEffectSet.none()
@@ -68,6 +68,9 @@ public final class OasisSpawn extends JavaPlugin {
         }
         if (decision == SpawnDecision.PASTE) {
             paste(world);
+            // Before the marker, so a start that dies before its first autosave
+            // pastes again rather than leaving a marker for a paste that was lost.
+            world.save(true);
         }
         try {
             Files.writeString(marker, decision.name() + "\n");
@@ -98,6 +101,8 @@ public final class OasisSpawn extends JavaPlugin {
         try (EditSession session = WorldEdit.getInstance().newEditSessionBuilder()
                 .world(BukkitAdapter.adapt(world)).maxBlocks(-1).build()) {
             session.setSideEffectApplier(PASTE_SIDE_EFFECTS);
+            // Nothing undoes the paste, and its history would hold every block of the cuboid.
+            session.setTrackingHistory(false);
             Operations.complete(new ClipboardHolder(clipboard).createPaste(session)
                     .to(clipboard.getOrigin())
                     .ignoreAirBlocks(false)
