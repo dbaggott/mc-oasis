@@ -94,6 +94,15 @@ if ((${#failed[@]} > 0)); then
 fi
 echo "every plugin in artifacts.lock and plugin-src enabled"
 
+# The agent prints this once it has rewritten the class. A Paper build whose
+# class it no longer recognises loads unchanged, and starts without errors.
+if ! grep --quiet --fixed-strings '[StringDupeAgent] Tripwire string duping restored' <<<"$logs"; then
+  grep --fixed-strings '[StringDupeAgent]' <<<"$logs" || true
+  echo "error: the string dupe agent didn't patch TripWireHookBlock" >&2
+  exit 1
+fi
+echo "tripwire string duping restored"
+
 # Geyser takes Bedrock players over NetherNet, with its own signaling on the
 # Bedrock port, from the Dockerfile's -DgeyserTransport rather than its config:
 # checked again below after a restart with `raknet` in the config. Geyser logs

@@ -52,6 +52,14 @@ RUN set -e; mkdir /out; cd /repo/plugin-src; for plugin in */; do \
       jar --create --file "/out/${plugin}.jar" -C "/classes/${plugin}" .; \
     done
 
+# The repo's Java agent, string-dupe-agent/: it rewrites one vanilla check as
+# the server loads the class, which no plugin can. Its class comment says what
+# and why.
+FROM eclipse-temurin:25-jdk-alpine@sha256:3fd2d245c4e0eba615fe366a71b8bd25f5db7104f53e4026b24bf508b880bd2a AS repo-agent
+COPY string-dupe-agent/ /agent/
+RUN javac --release 25 -Xlint:all -Werror -d /classes $(find /agent/src -name '*.java') \
+    && jar --create --file /string-dupe-agent.jar --manifest /agent/MANIFEST.MF -C /classes .
+
 # LibertyBans' LuckPerms exemption add-on, taken from inside the pinned
 # LibertyBans jar so it is always the version of the plugin it runs in, under
 # the name LibertyBans' own `addon install` gives it.
@@ -83,7 +91,8 @@ ENV MEMORY=6G \
 # Bedrock clients no longer speak it. Signaling stays Geyser's default, built
 # in on the Bedrock port over TCP. JVM_OPTS rather than JVM_DD_OPTS, which the
 # host replaces (mc-oasis-boot in dbaggott/infrastructure's apps/mc-oasis).
-ENV JVM_OPTS=-DgeyserTransport=nethernet
+# The agent, built in the repo-agent stage, puts back tripwire string duping.
+ENV JVM_OPTS="-DgeyserTransport=nethernet -javaagent:/opt/string-dupe-agent.jar"
 
 # Access control. The whitelist is only as good as online-mode, which makes
 # Mojang (and Xbox Live, through Floodgate) prove who a player is. SYNCHRONIZE
@@ -185,6 +194,7 @@ scoreboard players set introduced bac_settings 1\n\
 scoreboard players set intro_msg bac_settings 0"
 
 COPY build/artifacts/server.jar /opt/server.jar
+COPY --from=repo-agent /string-dupe-agent.jar /opt/string-dupe-agent.jar
 COPY build/artifacts/plugins/ /plugins/
 # The repo's own plugins, built in the repo-plugins stage.
 COPY --from=repo-plugins /out/ /plugins/
