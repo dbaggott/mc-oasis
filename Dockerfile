@@ -94,7 +94,7 @@ ENV MEMORY=6G \
 # The agent, built in the repo-agent stage, puts back tripwire string duping.
 ENV JVM_OPTS="-DgeyserTransport=nethernet -javaagent:/opt/string-dupe-agent.jar"
 
-# Access control. The whitelist is only as good as online-mode, which makes
+# Access control. The allowlist is only as good as online-mode, which makes
 # Mojang (and Xbox Live, through Floodgate) prove who a player is. SYNCHRONIZE
 # makes the host-supplied lists authoritative: in-game /whitelist and /op
 # changes are replaced at the next start.
