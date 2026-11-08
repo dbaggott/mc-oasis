@@ -203,7 +203,9 @@ COPY --from=libertybans-addons /out/ /plugins/
 # OasisFilter's are its word lists, OasisRules' the server rules,
 # OasisRegions' the WorldGuard regions it sets up, and OasisSpawn's the spawn
 # it pastes into a new world on the seed spawn was built in, with that seed's
-# hash: the seed itself stays out of this public repo.
+# hash: the seed itself stays out of this public repo. OasisTechnoblade's is the
+# column where Technoblade first spawns. Its record of which pig is Technoblade
+# is written beside that on the world volume, and the image never carries one.
 # Geyser-Spigot's is MCXboxBroadcast's, under the extension's id in Geyser's
 # extensions/: the file the pinned build generates, with expiry off, so a
 # console player who stops playing for a while stays on its friend list. Its
