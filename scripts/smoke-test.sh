@@ -571,7 +571,12 @@ fi
 # is until it is inside them.
 trapped_at=""
 for _ in 1 2 3; do
-  read -r x y z <<<"$(technoblade_at "$(technoblade)")"
+  reply="$(technoblade)"
+  read -r x y z <<<"$(technoblade_at "$reply")"
+  if [[ -z "$z" ]]; then
+    echo "error: /technoblade didn't report where Technoblade is now: '${reply}'" >&2
+    exit 1
+  fi
   rcon fill $((x - 1)) "$y" $((z - 1)) $((x + 1)) $((y + 1)) $((z - 1)) minecraft:stone >/dev/null
   rcon fill $((x - 1)) "$y" $((z + 1)) $((x + 1)) $((y + 1)) $((z + 1)) minecraft:stone >/dev/null
   rcon fill $((x - 1)) "$y" "$z" $((x - 1)) $((y + 1)) "$z" minecraft:stone >/dev/null

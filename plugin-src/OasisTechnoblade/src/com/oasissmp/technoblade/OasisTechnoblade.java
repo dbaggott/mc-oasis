@@ -15,6 +15,7 @@ import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -24,6 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.logging.Level;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -94,7 +96,8 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
     private GoalKey<Pig> roamKey;
     private boolean spawning;
     private BukkitTask retry;
-    private boolean reportedNoExit;
+    // Where the pig was last found trapped with no way out, so the search isn't repeated there.
+    private Pos noExitFrom;
 
     @Override
     public void onEnable() {
@@ -102,9 +105,13 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         roamKey = GoalKey.of(Pig.class, new NamespacedKey(this, "roam"));
         try {
             firstSpawn = FirstSpawn.load(getDataFolder().toPath());
+        } catch (IOException e) {
+            throw new UncheckedIOException("Couldn't read " + FirstSpawn.FILE_NAME, e);
+        }
+        try {
             record = PigRecord.load(recordFile).orElse(null);
         } catch (IOException e) {
-            throw new UncheckedIOException("Couldn't read OasisTechnoblade's files", e);
+            throw new UncheckedIOException("Couldn't read " + recordFile, e);
         } catch (IllegalArgumentException e) {
             // Placing a new pig is the way back: the old one is a duplicate when it loads.
             getLogger().warning("Couldn't read " + recordFile + ", so a new Technoblade is placed: " + e.getMessage());
@@ -146,7 +153,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         return record != null && entity != null && entity.getUniqueId().equals(record.pig());
     }
 
-    // WorldGuard, at HIGH, cancels plugin spawns in a region that denies mob spawning.
+    // WorldGuard's spawn listener, at HIGH, can cancel plugin spawns in a region that denies mob spawning.
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onSpawn(CreatureSpawnEvent event) {
         if (spawning && isTechnoblade(event.getEntity())) {
@@ -163,21 +170,23 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onDeathDrops(EntityDeathEvent event) {
-        if (isTechnoblade(event.getEntity())) {
-            event.getDrops().clear();
-            event.setDroppedExp(0);
-        }
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDeath(EntityDeathEvent event) {
         if (!isTechnoblade(event.getEntity())) {
             return;
         }
+        event.getDrops().clear();
+        event.setDroppedExp(0);
         Player killer = event.getEntity().getKiller();
         if (killer != null) {
             punish(killer);
+        }
+    }
+
+    // Only once no plugin can still cancel the death.
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onDied(EntityDeathEvent event) {
+        if (!isTechnoblade(event.getEntity())) {
+            return;
         }
         UUID dead = event.getEntity().getUniqueId();
         Location where = event.getEntity().getLocation();
@@ -252,9 +261,14 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         if (pig.isEmpty() && spot.isPresent()) {
             pig = spawn(firstSpawnSurface());
         }
-        if (pig.isEmpty()) {
+        if (pig.isEmpty() && loaded().isPresent()) {
+            getLogger().severe("Couldn't place Technoblade near " + describe(target)
+                    + " or on the first-spawn column, so Technoblade " + record.pig() + " stays where it is");
+        } else if (pig.isEmpty()) {
             getLogger().severe("Couldn't place Technoblade near " + describe(target)
                     + " or on the first-spawn column; trying the first-spawn column again every minute");
+            // With no record, a restart places a pig too, which a retry timer wouldn't survive.
+            clearRecord();
             if (retry == null) {
                 retry = getServer().getScheduler().runTaskTimer(this, () -> spawn(firstSpawnSurface()),
                         RETRY_TICKS, RETRY_TICKS);
@@ -263,8 +277,13 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         return pig;
     }
 
-    // Recorded before it enters the world, so it isn't taken for a duplicate and WorldGuard's cancel is undone.
+    /**
+     * Spawns and records a pig at {@code spot}. It is recorded before it enters
+     * the world, so it isn't taken for a duplicate and WorldGuard's cancel is
+     * undone; if it doesn't stay, the record goes back to what it was.
+     */
     private Optional<Pig> spawn(Location spot) {
+        Optional<PigRecord> previous = Optional.ofNullable(record);
         spawning = true;
         Pig pig;
         try {
@@ -281,6 +300,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
             spawning = false;
         }
         if (!pig.isValid()) {
+            previous.ifPresentOrElse(this::saveRecord, this::clearRecord);
             return Optional.empty();
         }
         getLogger().info("Placed Technoblade " + pig.getUniqueId() + " at " + describe(spot));
@@ -299,7 +319,11 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         Pig pig = loaded.get();
         recordWhere(pig);
         if (!trapped(pig, suffocating)) {
-            reportedNoExit = false;
+            noExitFrom = null;
+            return;
+        }
+        Location from = pig.getLocation();
+        if (pos(from).equals(noExitFrom)) {
             return;
         }
         pig.eject();
@@ -307,14 +331,11 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         if (pig.isLeashed()) {
             pig.setLeashHolder(null);
         }
-        Location from = pig.getLocation();
         Optional<Location> exit = exit(from);
         if (exit.isEmpty()) {
-            if (!reportedNoExit) {
-                getLogger().warning("Technoblade is trapped at " + describe(from)
-                        + " and no way out was found nearby; /technoblade respawn <x> <z> moves it");
-                reportedNoExit = true;
-            }
+            getLogger().warning("Technoblade is trapped at " + describe(from)
+                    + " and no way out was found nearby; /technoblade respawn <x> <z> moves it");
+            noExitFrom = pos(from);
             return;
         }
         effects(from);
@@ -351,14 +372,11 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         Terrain terrain = new WorldTerrain(world);
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for (int tries = 0; tries < EXIT_TRIES; tries++) {
-            double angle = random.nextDouble(2 * Math.PI);
-            int distance = random.nextInt(EXIT_MIN_DISTANCE, SEARCH_RADIUS + 1);
-            int x = from.getBlockX() + (int) Math.round(Math.cos(angle) * distance);
-            int z = from.getBlockZ() + (int) Math.round(Math.sin(angle) * distance);
-            if (tries < EXIT_LOADED_TRIES && !world.isChunkLoaded(x >> 4, z >> 4)) {
+            Pos column = pos(from).randomColumn(EXIT_MIN_DISTANCE, SEARCH_RADIUS, random);
+            if (tries < EXIT_LOADED_TRIES && !world.isChunkLoaded(column.x() >> 4, column.z() >> 4)) {
                 continue;
             }
-            Location spot = surface(world, x, z);
+            Location spot = surface(world, column.x(), column.z());
             if (isWayOut(world, terrain, pos(spot))) {
                 return Optional.of(spot);
             }
@@ -467,12 +485,22 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
                 pos(pig.getLocation()), Instant.now()));
     }
 
+    // The record in memory is what the plugin goes by; the file only carries it across a restart.
     private void saveRecord(PigRecord changed) {
         record = changed;
         try {
             changed.save(recordFile);
         } catch (IOException e) {
-            throw new UncheckedIOException("Couldn't save " + recordFile, e);
+            getLogger().log(Level.SEVERE, "Couldn't save " + recordFile + "; after a restart it names an older pig", e);
+        }
+    }
+
+    private void clearRecord() {
+        record = null;
+        try {
+            Files.deleteIfExists(recordFile);
+        } catch (IOException e) {
+            getLogger().log(Level.SEVERE, "Couldn't delete " + recordFile + "; after a restart it names an older pig", e);
         }
     }
 

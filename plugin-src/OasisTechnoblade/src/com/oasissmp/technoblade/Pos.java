@@ -1,5 +1,7 @@
 package com.oasissmp.technoblade;
 
+import java.util.random.RandomGenerator;
+
 /** A block position in one world. */
 record Pos(int x, int y, int z) {
 
@@ -13,6 +15,13 @@ record Pos(int x, int y, int z) {
 
     Pos below() {
         return offset(0, -1, 0);
+    }
+
+    /** A random column {@code min} to {@code max} blocks away across, at this height. */
+    Pos randomColumn(int min, int max, RandomGenerator random) {
+        double angle = random.nextDouble(2 * Math.PI);
+        int distance = random.nextInt(min, max + 1);
+        return offset((int) Math.round(Math.cos(angle) * distance), 0, (int) Math.round(Math.sin(angle) * distance));
     }
 
     @Override

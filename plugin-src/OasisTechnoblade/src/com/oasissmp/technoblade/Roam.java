@@ -71,17 +71,14 @@ final class Roam implements Goal<Pig> {
 
     // The top of a loaded column inside the border: on the water if it's water, never in lava.
     private Location pickTarget() {
-        ThreadLocalRandom random = ThreadLocalRandom.current();
-        double angle = random.nextDouble(2 * Math.PI);
-        int distance = random.nextInt(MIN_DISTANCE, MAX_DISTANCE + 1);
         Location from = pig.getLocation();
         World world = pig.getWorld();
-        int x = from.getBlockX() + (int) Math.round(Math.cos(angle) * distance);
-        int z = from.getBlockZ() + (int) Math.round(Math.sin(angle) * distance);
-        if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+        Pos column = new Pos(from.getBlockX(), from.getBlockY(), from.getBlockZ())
+                .randomColumn(MIN_DISTANCE, MAX_DISTANCE, ThreadLocalRandom.current());
+        if (!world.isChunkLoaded(column.x() >> 4, column.z() >> 4)) {
             return null;
         }
-        Block top = world.getHighestBlockAt(x, z, HeightMap.MOTION_BLOCKING);
+        Block top = world.getHighestBlockAt(column.x(), column.z(), HeightMap.MOTION_BLOCKING_NO_LEAVES);
         if (top.getType() == Material.LAVA) {
             return null;
         }

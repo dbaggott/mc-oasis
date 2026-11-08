@@ -33,7 +33,7 @@ public final class WalkTest {
             return this;
         }
 
-        // A ring of cells at height y around the square from (x1, z1) to (x2, z2), exclusive.
+        // Cells at height y on the edge of the square from (x1, z1) to (x2, z2), corners included.
         Blocks ring(Cell cell, int y, int x1, int z1, int x2, int z2) {
             for (int x = x1; x <= x2; x++) {
                 for (int z = z1; z <= z2; z++) {
