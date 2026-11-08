@@ -110,7 +110,7 @@ ENV ONLINE_MODE=true \
 ENV ICON=/server-icon.png \
     OVERRIDE_ICON=true
 
-ENV MOTD="§bThe Oasis SMP" \
+ENV MOTD="§bThe OASIS School SMP" \
     DIFFICULTY=normal \
     MAX_PLAYERS=20 \
     VIEW_DISTANCE=20 \
