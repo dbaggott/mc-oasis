@@ -25,6 +25,7 @@ plugins/LuckPerms/yaml-storage/  the permission groups and tracks; which group e
 data/                    server config files the repo owns, copied over the same paths under the server's /data at every start
 datapacks/<name>/        the repo's own datapacks, each zipped as <name>.zip in the image
 plugin-src/<Name>/       the repo's own plugins, each a plugin.yml and Java sources under src/, compiled into <Name>.jar in the image; tests under test/ run at build
+string-dupe-agent/       a Java agent the server starts with, which puts back tripwire string duping; its class comment says how
 scripts/
   fetch-artifacts.sh     downloads everything in artifacts.lock and verifies each sha256
   smoke-test.sh          starts a built image on a throwaway world; checks every plugin and datapack loads and every config setting applies
@@ -71,6 +72,9 @@ fails CI, pin its line back by hand in that PR, or the day's Geyser bump is held
 run proposes that release again, so this repeats daily until one passes. When a Bedrock
 client update has locked players out before a build is 48 hours old, run it from the Actions tab with
 `skip_wait` checked.
+
+A Paper build can change the vanilla method `string-dupe-agent/` rewrites. If the agent no longer recognises it,
+the smoke test fails on the agent's check, and the matcher in `StringDupeAgent.java` follows the new code.
 
 Changing the Minecraft version also means changing `VERSION` in the `Dockerfile` to match the new Paper
 jar, and the formats in each `datapacks/*/pack.mcmeta` to the new version's data pack format.
