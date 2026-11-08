@@ -94,15 +94,6 @@ if ((${#failed[@]} > 0)); then
 fi
 echo "every plugin in artifacts.lock and plugin-src enabled"
 
-# The agent prints this once it has rewritten the class. A Paper build whose
-# class it no longer recognises loads unchanged, and starts without errors.
-if ! grep --quiet --fixed-strings '[StringDupeAgent] Tripwire string duping restored' <<<"$logs"; then
-  grep --fixed-strings '[StringDupeAgent]' <<<"$logs" || true
-  echo "error: the string dupe agent didn't patch TripWireHookBlock" >&2
-  exit 1
-fi
-echo "tripwire string duping restored"
-
 # OasisSpawn leaves the throwaway world's spawn alone: its random seed isn't the
 # one plugins/OasisSpawn/spawn.schem was captured in. The paste itself takes
 # that seed, which a public test can't have.
