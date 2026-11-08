@@ -1,0 +1,10 @@
+name: OasisTechnoblade
+version: 1.0.0
+main: com.oasissmp.technoblade.OasisTechnoblade
+api-version: '26.3'
+description: Technoblade, the one pig in the overworld that never stays dead, and /technoblade for staff
+depend: [WorldGuard, WorldEdit]
+permissions:
+  oasistechnoblade.manage:
+    description: See where Technoblade is and place a new one with /technoblade
+    default: false

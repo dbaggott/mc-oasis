@@ -211,7 +211,9 @@ COPY --from=libertybans-addons /out/ /plugins/
 # one in non-ops' tab lists, and puts each player's LuckPerms prefix before
 # their name in the tab list and over their head.
 # OasisFilter's are its word lists, OasisRules' the server rules, and
-# OasisRegions' the WorldGuard regions it sets up.
+# OasisRegions' the WorldGuard regions it sets up, and OasisTechnoblade's the
+# column where Technoblade first spawns. Its record of which pig is Technoblade
+# is written beside that on the world volume, and the image never carries one.
 # Geyser-Spigot's is MCXboxBroadcast's, under the extension's id in Geyser's
 # extensions/: the file the pinned build generates, with expiry off, so a
 # console player who stops playing for a while stays on its friend list. Its

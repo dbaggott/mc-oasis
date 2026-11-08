@@ -1,0 +1,7 @@
+# The overworld column, as `x z`, where OasisTechnoblade places Technoblade
+# when it has no pig recorded, as on a new world. It is also the fallback when
+# a placement finds no safe spot nearby. The pig goes on the surface of the
+# column.
+#
+# A placeholder on the spawn island, until a spot is picked in game.
+-480 880

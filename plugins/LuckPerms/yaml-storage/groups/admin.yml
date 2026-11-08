@@ -48,6 +48,7 @@ permissions:
 - minecraft.command.teleport
 - oasisegg.locate
 - oasisfilter.notify
+- oasistechnoblade.manage
 - oasisvoice.admin-group
 - weight.9
 parents:

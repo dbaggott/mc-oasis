@@ -515,6 +515,104 @@ until reply="$(rcon egg)" && [[ "$reply" == *"$placed, as of "*", when its chunk
 done
 echo "/egg finds eggs in loaded and unloaded chunks"
 
+# OasisTechnoblade keeps one pig, Technoblade, which respawns where it dies,
+# never has a second, and teleports out of a trap. The first spawn's column has
+# random terrain in this world, so the pig is moved onto a platform pinned
+# above any terrain, inside forceloaded chunks so selectors see it, and wider
+# than the plugin's 48-block searches from near its centre. Positive
+# coordinates: rcon-cli reads a leading `-` as a flag. Replies are colored, so
+# their color codes are dropped.
+technoblade() { rcon technoblade | sed 's/\x1b\[[0-9;]*m//g'; }
+technoblade_uuid() { sed -n 's/^Technoblade \([0-9a-f-]\{36\}\) .*/\1/p' <<<"$1"; }
+# The pig's block position, from a reply saying where it is now, as `x y z`.
+technoblade_at() { sed -n 's/.* is at \([0-9]*\) \([0-9]*\) \([0-9]*\) in minecraft:overworld\.$/\1 \2 \3/p' <<<"$1"; }
+technoblade_count() {
+  local reply
+  reply="$(rcon 'execute if entity @e[type=pig,tag=technoblade]')"
+  if [[ "$reply" =~ count:\ ([0-9]+) ]]; then echo "${BASH_REMATCH[1]}"; else echo 0; fi
+}
+reply="$(technoblade)"
+first_uuid="$(technoblade_uuid "$reply")"
+if [[ -z "$first_uuid" ]]; then
+  echo "error: /technoblade reports no recorded pig after start: '${reply}'" >&2
+  exit 1
+fi
+rcon forceload add 4896 4896 5104 5104 >/dev/null
+deadline=$((SECONDS + 120))
+until [[ "$(rcon fill 4910 300 4910 5090 300 5090 minecraft:stone)" == *"Successfully filled"* ]]; do
+  if ((SECONDS >= deadline)); then
+    echo "error: couldn't fill the Technoblade platform within 120s of forceloading it" >&2
+    exit 1
+  fi
+  sleep 2
+done
+rcon technoblade respawn 5000 5000 >/dev/null
+reply="$(technoblade)"
+pig_uuid="$(technoblade_uuid "$reply")"
+if [[ "$(technoblade_count)" != 1 || "$pig_uuid" == "$first_uuid" || "$(technoblade_at "$reply")" != *" 301 "* ]]; then
+  echo "error: after respawn there isn't exactly one new Technoblade on the platform at y 301 ($(technoblade_count) found): '${reply}'" >&2
+  exit 1
+fi
+rcon 'kill @e[type=pig,tag=technoblade]' >/dev/null
+deadline=$((SECONDS + 10))
+until reply="$(technoblade)" && [[ "$(technoblade_count)" == 1 && "$(technoblade_uuid "$reply")" != "$pig_uuid" ]]; do
+  if ((SECONDS >= deadline)); then
+    echo "error: Technoblade wasn't replaced by one new pig within 10s of being killed ($(technoblade_count) found): '${reply}'" >&2
+    exit 1
+  fi
+  sleep 1
+done
+if ! grep --quiet --fixed-strings 'Technoblade never dies.' <<<"$(docker logs "$name" 2>&1)"; then
+  echo "error: Technoblade's death wasn't announced with 'Technoblade never dies.'" >&2
+  exit 1
+fi
+# A 1x1 cell, walls two high on each side of the block the pig is in. It may
+# walk off before the walls are up, so they are built again around wherever it
+# is until it is inside them.
+trapped_at=""
+for _ in 1 2 3; do
+  read -r x y z <<<"$(technoblade_at "$(technoblade)")"
+  rcon fill $((x - 1)) "$y" $((z - 1)) $((x + 1)) $((y + 1)) $((z - 1)) minecraft:stone >/dev/null
+  rcon fill $((x - 1)) "$y" $((z + 1)) $((x + 1)) $((y + 1)) $((z + 1)) minecraft:stone >/dev/null
+  rcon fill $((x - 1)) "$y" "$z" $((x - 1)) $((y + 1)) "$z" minecraft:stone >/dev/null
+  rcon fill $((x + 1)) "$y" "$z" $((x + 1)) $((y + 1)) "$z" minecraft:stone >/dev/null
+  if [[ "$(technoblade_at "$(technoblade)")" == "$x $y $z" ]]; then
+    trapped_at="$x $y $z"
+    break
+  fi
+done
+if [[ -z "$trapped_at" ]]; then
+  echo "error: couldn't box Technoblade in: it kept walking off" >&2
+  exit 1
+fi
+trapped_logged="Technoblade teleported out of a trap at ${trapped_at} in minecraft:overworld"
+deadline=$((SECONDS + 30))
+until reply="$(technoblade)" && read -r px _ pz <<<"$(technoblade_at "$reply")" \
+  && [[ -n "$px" ]] && ((px < x - 1 || px > x + 1 || pz < z - 1 || pz > z + 1)) \
+  && grep --quiet --fixed-strings "$trapped_logged" <<<"$(docker logs "$name" 2>&1)"; do
+  if ((SECONDS >= deadline)); then
+    echo "error: Technoblade didn't teleport out of a box at ${trapped_at} within 30s: '${reply}'" >&2
+    exit 1
+  fi
+  sleep 2
+done
+pig_uuid="$(technoblade_uuid "$reply")"
+rcon 'summon minecraft:pig 5020 301 5020 {Tags:["technoblade"]}' >/dev/null
+deadline=$((SECONDS + 10))
+until [[ "$(technoblade_count)" == 1 ]]; do
+  if ((SECONDS >= deadline)); then
+    echo "error: a summoned pig tagged technoblade wasn't removed within 10s ($(technoblade_count) found)" >&2
+    exit 1
+  fi
+  sleep 1
+done
+if [[ "$(technoblade_uuid "$(technoblade)")" != "$pig_uuid" ]]; then
+  echo "error: summoning a second pig tagged technoblade changed which pig is Technoblade: '$(technoblade)'" >&2
+  exit 1
+fi
+rcon forceload remove all >/dev/null
+echo "Technoblade respawns once when killed, teleports out of a trap, and has no duplicates"
+
 # The world borders, by width; `worldborder get` doesn't report the center.
 # Every `worldborder set` line has to parse, so a reworded one fails here
 # instead of going unchecked.
@@ -740,6 +838,12 @@ if ! docker exec --user 1000 "$name" test -e "$xbox_token_cache"; then
   exit 1
 fi
 echo "MCXboxBroadcast's sign-in survives a restart"
+# OasisTechnoblade's record of which pig is Technoblade, which the image doesn't ship.
+if ! docker exec --user 1000 "$name" grep --quiet --fixed-strings "$pig_uuid" /data/plugins/OasisTechnoblade/pig.txt; then
+  echo "error: OasisTechnoblade's record of Technoblade ${pig_uuid} didn't survive a restart" >&2
+  exit 1
+fi
+echo "Technoblade's record survives a restart"
 
 # Geyser is still on NetherNet with `raknet` in its config, which it left as is.
 check_geyser_nethernet "$restarted_at" || exit 1
