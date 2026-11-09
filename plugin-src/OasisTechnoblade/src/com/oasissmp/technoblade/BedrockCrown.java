@@ -1,6 +1,7 @@
 package com.oasissmp.technoblade;
 
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 import org.geysermc.geyser.api.GeyserApi;
@@ -29,6 +30,7 @@ final class BedrockCrown {
     private final Logger logger;
     // Set on Geyser's thread when it enables, read on its network threads.
     private volatile GeyserBooleanEntityProperty crowned;
+    private final AtomicBoolean warnedUndefined = new AtomicBoolean();
 
     private BedrockCrown(Predicate<UUID> isTechnoblade, Logger logger) {
         this.isTechnoblade = isTechnoblade;
@@ -61,6 +63,9 @@ final class BedrockCrown {
         }
         GeyserBooleanEntityProperty property = crowned;
         if (property == null) {
+            if (warnedUndefined.getAndSet(true)) {
+                return;
+            }
             logger.severe("Geyser never asked for entity properties, so Bedrock players see Technoblade"
                     + " without its crown");
             return;

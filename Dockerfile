@@ -140,21 +140,6 @@ ENV MOTD="§bThe OASIS School SMP" \
     VIEW_DISTANCE=20 \
     SIMULATION_DISTANCE=15
 
-# The Java resource pack, resourcepack/, which paints Technoblade's crown on
-# its pig variant, is required: a player who declines it is disconnected. It is served by the
-# website, named by its SHA-1, so the build takes that SHA-1, as
-# scripts/java-pack.sh prints it, and fails without one. The site release that
-# carries the pack has to be deployed before an image naming it (README,
-# "Changing the resource pack"). Geyser accepts the pack for Bedrock players,
-# who get resourcepack-bedrock/ instead.
-ARG RESOURCE_PACK_SHA1
-RUN echo "${RESOURCE_PACK_SHA1}" | grep --quiet --extended-regexp '^[0-9a-f]{40}$' \
-    || { echo "build with --build-arg RESOURCE_PACK_SHA1=\"\$(scripts/java-pack.sh build/resourcepack)\"" >&2; exit 1; }
-ENV RESOURCE_PACK="https://www.oasis-smp.com/assets/oasis-pack-${RESOURCE_PACK_SHA1}.zip" \
-    RESOURCE_PACK_SHA1="${RESOURCE_PACK_SHA1}" \
-    RESOURCE_PACK_ENFORCE=true \
-    RESOURCE_PACK_PROMPT="{\"text\":\"This adds components necessary for playing on OASIS SMP\"}"
-
 # Spawn is protected by the WorldGuard region in plugins/OasisRegions/regions.txt,
 # so vanilla's square of op-only blocks around it is off.
 ENV SPAWN_PROTECTION=0
@@ -267,6 +252,21 @@ COPY data/ /config/
 COPY build/artifacts/datapacks/ /datapacks/
 COPY --from=repo-datapacks /out/ /datapacks/
 COPY server-icon.png /server-icon.png
+
+# The Java resource pack, resourcepack/, which paints Technoblade's crown on
+# its pig variant, is required: a player who declines it is disconnected. It is served by the
+# website, named by its SHA-1, so the build takes that SHA-1, as
+# scripts/java-pack.sh prints it, and fails without one. The site release that
+# carries the pack has to be deployed before an image naming it (README,
+# "Changing the resource pack"). Geyser accepts the pack for Bedrock players,
+# who get resourcepack-bedrock/ instead. Last, so a new pack rebuilds only this.
+ARG RESOURCE_PACK_SHA1
+RUN echo "${RESOURCE_PACK_SHA1}" | grep --quiet --extended-regexp '^[0-9a-f]{40}$' \
+    || { echo "build with --build-arg RESOURCE_PACK_SHA1=\"\$(scripts/java-pack.sh build/resourcepack)\"" >&2; exit 1; }
+ENV RESOURCE_PACK="https://www.oasis-smp.com/assets/oasis-pack-${RESOURCE_PACK_SHA1}.zip" \
+    RESOURCE_PACK_SHA1="${RESOURCE_PACK_SHA1}" \
+    RESOURCE_PACK_ENFORCE=true \
+    RESOURCE_PACK_PROMPT="{\"text\":\"This adds components necessary for playing on OASIS SMP\"}"
 
 # The copy over /data/plugins adds and replaces files but never deletes them,
 # so LuckPerms' group and track folders and OasisFilter's word lists on the

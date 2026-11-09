@@ -95,10 +95,12 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
     private static final int EXIT_LOADED_TRIES = 24;
     // Vanilla's priority for a pig's random stroll, which Roam replaces.
     private static final int ROAM_PRIORITY = 6;
+    private static final int TEND_TICKS = 20;
 
     private Path recordFile;
-    // The crowned pig variant, looked up once.
+    // The crowned pig variant, looked up until found.
     private Pig.Variant crowned;
+    private boolean warnedNoVariant;
     private FirstSpawn firstSpawn;
     // Volatile: BedrockCrown reads it on Geyser's threads.
     private volatile PigRecord record;
@@ -110,11 +112,17 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
 
     @Override
     public void onLoad() {
-        if (getServer().getPluginManager().getPlugin("Geyser-Spigot") != null) {
+        if (getServer().getPluginManager().getPlugin("Geyser-Spigot") == null) {
+            return;
+        }
+        try {
             BedrockCrown.register(this, pig -> {
                 PigRecord current = record;
                 return current != null && current.pig().equals(pig);
             }, getLogger());
+        } catch (RuntimeException | LinkageError e) {
+            // A Geyser that failed to load, or one whose API changed: everything but the Bedrock crown still works.
+            getLogger().log(Level.SEVERE, "Couldn't set up Technoblade's crown for Bedrock players", e);
         }
     }
 
@@ -160,7 +168,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
             }
         });
         getServer().getScheduler().runTaskTimer(this, () -> checkTrap(false), TRAP_CHECK_TICKS, TRAP_CHECK_TICKS);
-        getServer().getScheduler().runTaskTimer(this, this::tend, 1, 1);
+        getServer().getScheduler().runTaskTimer(this, this::tend, TEND_TICKS, TEND_TICKS);
     }
 
     @Override
@@ -333,7 +341,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         return Optional.of(pig);
     }
 
-    // Every tick the pig is loaded, since a name or variant can be set on it by commands.
+    // Every second the pig is loaded, since a name or variant can be set on it by commands.
     private void tend() {
         loaded().ifPresent(pig -> {
             unname(pig);
@@ -350,13 +358,14 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
     private void crownHead(Pig pig) {
         if (crowned == null) {
             crowned = RegistryAccess.registryAccess().getRegistry(RegistryKey.PIG_VARIANT).get(CROWNED);
-            if (crowned == null) {
+        }
+        if (crowned == null) {
+            if (!warnedNoVariant) {
                 getLogger().severe("No pig variant " + CROWNED.asString()
                         + ", so Java players see Technoblade without its crown; is the datapack missing?");
-                crowned = pig.getVariant();
+                warnedNoVariant = true;
             }
-        }
-        if (pig.getVariant() != crowned) {
+        } else if (!crowned.equals(pig.getVariant())) {
             pig.setVariant(crowned);
         }
         if (pig.canBreed()) {

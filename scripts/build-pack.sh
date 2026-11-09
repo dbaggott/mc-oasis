@@ -1,8 +1,8 @@
 #!/bin/sh
 # Zips a resource pack directory so the same files always give the same bytes:
 # entries in sorted order, every timestamp 1980-01-01, every file mode 0644,
-# and no compression, which would leave the bytes to the zlib build. Dotfiles,
-# such as a .DS_Store Finder leaves, are left out.
+# and no compression, which would leave the bytes to the zlib build. Dotfiles
+# and dot-directories, such as a .DS_Store Finder leaves, are left out.
 #
 #   scripts/build-pack.sh <pack dir> <zip>
 #
@@ -24,12 +24,15 @@ import sys
 import zipfile
 
 src, out = sys.argv[1], sys.argv[2]
-files = sorted(
-    os.path.relpath(os.path.join(root, name), src).replace(os.sep, "/")
-    for root, _, names in os.walk(src)
-    for name in names
-    if not name.startswith(".")
-)
+files = []
+for root, dirs, names in os.walk(src):
+    dirs[:] = [d for d in dirs if not d.startswith(".")]
+    files += [
+        os.path.relpath(os.path.join(root, name), src).replace(os.sep, "/")
+        for name in names
+        if not name.startswith(".")
+    ]
+files.sort()
 with zipfile.ZipFile(out, "w", zipfile.ZIP_STORED) as pack:
     for name in files:
         entry = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
