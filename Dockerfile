@@ -21,8 +21,8 @@ RUN mkdir /out && cd /src && for pack in */; do \
     done
 
 # The Bedrock resource pack, resourcepack-bedrock/, zipped as Geyser takes it:
-# Technoblade's crown for Bedrock players, an item display riding the pig drawn
-# by the GeyserDisplayEntity extension. The Java pack hides that display.
+# Technoblade's crown for Bedrock players, modelled on the head of any pig
+# OasisTechnoblade marks through Geyser.
 FROM python:3.14-alpine@sha256:f6a589d43c42b9e7f7dc67a12d37132491f362859a5d750607710cc56da3bc72 AS bedrock-pack
 COPY scripts/build-pack.sh /build-pack.sh
 COPY resourcepack-bedrock/ /src/
@@ -38,21 +38,25 @@ RUN mkdir /out && sh /build-pack.sh /src /out/oasis.mcpack
 # path, for archive and scripting support, that aren't here and aren't needed.
 FROM eclipse-temurin:25-jdk-alpine@sha256:3fd2d245c4e0eba615fe366a71b8bd25f5db7104f53e4026b24bf508b880bd2a AS repo-plugins
 COPY build/artifacts/libraries/ /libraries/
+# Geyser's API, for OasisTechnoblade's Bedrock crown, from the Geyser jar the
+# server runs, so the two always match. Last on the class path, so nothing
+# else Geyser bundles stands in for a library in artifacts.lock.
+COPY build/artifacts/plugins/Geyser-Spigot.jar /geyser/
 COPY plugin-src/ /repo/plugin-src/
 COPY plugins/ /repo/plugins/
 RUN set -e; mkdir /out; cd /repo/plugin-src; for plugin in */; do \
       [ -d "$plugin" ] || continue; \
       plugin="${plugin%/}"; \
       mkdir -p "/classes/${plugin}"; \
-      javac --release 25 -Xlint:all,-classfile,-path -Werror -cp '/libraries/*' \
+      javac --release 25 -Xlint:all,-classfile,-path -Werror -cp '/libraries/*:/geyser/*' \
         -d "/classes/${plugin}" $(find "${plugin}/src" -name '*.java'); \
       if [ -d "${plugin}/test" ]; then \
         mkdir -p "/test-classes/${plugin}"; \
-        javac --release 25 -Xlint:all,-classfile,-path -Werror -cp "/classes/${plugin}:/libraries/*" \
+        javac --release 25 -Xlint:all,-classfile,-path -Werror -cp "/classes/${plugin}:/libraries/*:/geyser/*" \
           -d "/test-classes/${plugin}" $(find "${plugin}/test" -name '*.java'); \
         for test in $(cd "${plugin}/test" && find . -name '*Test.java'); do \
           test="${test#./}"; \
-          (cd /repo && java -cp "/test-classes/${plugin}:/classes/${plugin}:/libraries/*" \
+          (cd /repo && java -cp "/test-classes/${plugin}:/classes/${plugin}:/libraries/*:/geyser/*" \
             "$(echo "${test%.java}" | tr / .)"); \
         done; \
       fi; \
@@ -249,8 +253,7 @@ COPY --from=bedrock-pack /out/ /plugins/Geyser-Spigot/packs/
 # extensions/: the file the pinned build generates, with expiry off, so a
 # console player who stops playing for a while stays on its friend list. Its
 # Xbox sign-in, cache.json beside it, is never in the image and stays on the
-# world volume. Beside it, GeyserDisplayEntity's mapping for the crown, and in
-# Geyser's custom_mappings/ the Bedrock item the crown's item model becomes.
+# world volume.
 COPY plugins/ /plugins/
 COPY data/ /config/
 COPY build/artifacts/datapacks/ /datapacks/

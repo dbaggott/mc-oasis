@@ -4,14 +4,14 @@
     "name": "Oasis SMP",
     "description": "Technoblade's crown, from Hohigamer's Technoblade Pig Crown (MIT)",
     "uuid": "2cbfe075-d903-4952-9301-d202a378d80c",
-    "version": [1, 0, 1],
+    "version": [1, 0, 2],
     "min_engine_version": [1, 21, 0]
   },
   "modules": [
     {
       "type": "resources",
       "uuid": "42ed2ee2-073a-44ab-91b8-dcdc86e6d05a",
-      "version": [1, 0, 1]
+      "version": [1, 0, 2]
     }
   ]
 }

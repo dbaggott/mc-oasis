@@ -1,9 +1,0 @@
-{
-  "resource_pack_name": "oasis",
-  "texture_name": "atlas.items",
-  "texture_data": {
-    "oasis_technoblade_crown": {
-      "textures": "textures/oasis/technoblade_crown"
-    }
-  }
-}

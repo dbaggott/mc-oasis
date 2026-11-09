@@ -1,4 +1,10 @@
-Technoblade's crown
+Technoblade's crown, modelled on the pig's head
+
+entity/pig.entity.json is Minecraft Bedrock's own pig client entity, from
+Mojang's bedrock-samples (https://github.com/Mojang/bedrock-samples, commit
+15701fa9c13923f12662984c32c124327e40e3d3, resource_pack/entity/pig.entity.json),
+with the crown's material, texture, geometry and render controller added.
+Mojang's files are under the Minecraft EULA.
 
 The crown's shape and texture come from "Technoblade Pig Crown" by Hohigamer,
 version 1.10, published under the MIT License:
@@ -10,8 +16,9 @@ That pack draws the crown on a pig's head with OptiFine's custom entity
 models. Here its 32 boxes, from assets/minecraft/optifine/cem/pig2.jem, are
 re-expressed as a Bedrock geometry, and the parts of
 assets/minecraft/textures/entity/pig/pig_crown.png they use are packed into
-one texture, technoblade_crown.png. The positions are moved so the crown sits
-on the pig's head, measured from the pig's own origin, at its feet.
+one texture, technoblade_crown.png. The boxes are placed in the Bedrock pig
+model's own space, on a bone under its head bone, so the crown moves with the
+head.
 
 MIT License
 

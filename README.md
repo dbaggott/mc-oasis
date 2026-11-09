@@ -28,8 +28,7 @@ datapacks/<name>/        the repo's own datapacks, each zipped as <name>.zip in 
 plugin-src/<Name>/       the repo's own plugins, each a plugin.yml and Java sources under src/, compiled into <Name>.jar in the image; tests under test/ run at build
 hook-dupe-agent/         a Java agent the server starts with, which puts back tripwire hook duping; its class comment says how; tests under test/ run at build
 resourcepack/            the Java resource pack every player is required to take: Technoblade's crown, painted on the pig variant in datapacks/80-oasis-technoblade/; CREDITS.txt says where it comes from
-resourcepack-bedrock/    a 3D crown for Bedrock players, riding the pig as an item display, as a pack Geyser sends them; GeyserDisplayEntity draws it, and the Java pack hides it
-plugins/Geyser-Spigot/custom_mappings/  the Bedrock item Geyser shows for the crown's Java item model
+resourcepack-bedrock/    the Bedrock pack Geyser sends every Bedrock player: Technoblade's crown, modelled on the head of the pig OasisTechnoblade marks; CREDITS.txt says where it comes from
 scripts/
   fetch-artifacts.sh     downloads everything in artifacts.lock and verifies each sha256
   smoke-test.sh          starts a built image on a throwaway world; checks every plugin and datapack loads and every config setting applies
@@ -58,11 +57,18 @@ there. To play on a local server with the pack, serve the pack yourself and poin
 
 ```bash
 python3 -m http.server --directory build/resourcepack 8000 &
-docker run --rm -it -p 25565:25565 -p 19132:19132/udp -e WHITELIST=<you> -e OPS=<you> \
+docker run --rm -it -p 25565:25565 -p 19132:19132/udp -p 19132:19132/tcp -v mc-oasis-local:/data \
+  -e WHITELIST=<you> -e OPS=<you> \
   -e RESOURCE_PACK="http://localhost:8000/oasis-pack-$(scripts/java-pack.sh build/resourcepack).zip" mc-oasis:local
 ```
 
-The client fetches the pack, so `localhost` is the machine the game runs on.
+The client fetches the pack, so `localhost` is the machine the game runs on. Use the machine's LAN address instead
+for a client on another device.
+
+Bedrock players reach a local server only once Geyser advertises an address they can get to: inside Docker it offers
+the container's own. After the first start, set `advertise-addresses` under `bedrock.signaling` in
+`plugins/Geyser-Spigot/config.yml` on the volume to `["<this machine's LAN address>"]`, and start it again. The
+server's 6 GB heap may not fit Docker's memory on a laptop; `-e MEMORY=2G` shrinks it.
 
 The smoke test needs Docker and `jq`.
 
@@ -84,10 +90,9 @@ where they give one (the Paper and GeyserMC download APIs both do, and GitHub's 
 asset's as its `digest`). Otherwise download the file and hash
 it yourself. A mismatch fails the build.
 
-GeyserDisplayEntity, the extension that shows Bedrock players Technoblade's crown, reaches into Geyser's internals, so a
-Geyser build can break it. It is optional: when a Geyser bump fails CI on it, take its `extension` and `bedrockpack` lines
-out of `artifacts.lock`, and its case out of the smoke test's extension check, rather than hold Geyser back. Bedrock
-players lose the crown until a fixed release is pinned again, and can still join.
+OasisTechnoblade compiles against the Geyser jar in `artifacts.lock`, for the entity property that puts Technoblade's
+crown on its head for Bedrock players, and the smoke test checks Geyser took the property. A Geyser bump that changes
+that API fails the build or the smoke test.
 
 Geyser, Floodgate and the MCXboxBroadcast extension are bumped for you: the Bump Bedrock workflow opens a PR on
 `bump/bedrock` daily when there is a newer build, which merges itself once CI passes. If an extension release
@@ -129,6 +134,12 @@ Bedrock players get `resourcepack-bedrock/` from Geyser instead. Raise the `vers
 module alike) whenever anything in it changes: Bedrock clients keep a pack they already have at the same version.
 
 Java players see the crown painted on the pig variant `oasis:technoblade`, which `datapacks/80-oasis-technoblade/`
-defines and `resourcepack/` textures; Bedrock players see a 3D crown from an MIT-licensed pack, whose notice
-`resourcepack-bedrock/CREDITS.txt` carries and has to keep. `resourcepack/CREDITS.txt` says where the painted crown
-comes from.
+defines and `resourcepack/` textures. Bedrock players see a 3D crown on any pig whose Bedrock entity property
+`oasis:crowned` is set, which OasisTechnoblade sets on Technoblade alone. The crown comes from an MIT-licensed pack,
+whose notice `resourcepack-bedrock/CREDITS.txt` carries and has to keep; `resourcepack/CREDITS.txt` says where the
+painted crown comes from.
+
+`resourcepack-bedrock/entity/pig.entity.json` replaces Bedrock's own pig for Bedrock players, so it is Mojang's file
+with the crown added. When a Bedrock release changes its pig, take the new file from
+[bedrock-samples](https://github.com/Mojang/bedrock-samples) and add the crown's lines back, or every pig a Bedrock
+player sees keeps the old definition.
