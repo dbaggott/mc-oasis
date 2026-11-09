@@ -14,6 +14,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Pig;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.ItemStack;
@@ -34,18 +35,22 @@ final class Feeding implements Listener {
         this.isTechnoblade = isTechnoblade;
     }
 
-    @EventHandler(ignoreCancelled = true)
+    // Last, so a plugin that turns the interaction away, WorldGuard among them, does so before any apple is given.
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onFeed(PlayerInteractEntityEvent event) {
         if (!(event.getRightClicked() instanceof Pig pig) || !isTechnoblade.test(pig)) {
             return;
         }
         Player player = event.getPlayer();
+        if (player.getGameMode() == GameMode.SPECTATOR) {
+            return;
+        }
         ItemStack food = player.getInventory().getItem(event.getHand());
         if (!pig.isBreedItem(food)) {
             return;
         }
         event.setCancelled(true);
-        // As an Audience: Player's own sendActionBar overloads need Bungee's chat API to resolve.
+        // As an Audience: Player's own sendActionBar and sendMessage overloads need Bungee's chat API to resolve.
         Audience told = player;
         Optional<Duration> wait = cooldown.take(player.getUniqueId(), Instant.now());
         if (wait.isPresent()) {
@@ -60,7 +65,8 @@ final class Feeding implements Listener {
         pig.getWorld().playSound(pig, Sound.ENTITY_GENERIC_EAT, 1, 1);
         // Into the inventory, or dropped at the player's feet when it is full.
         player.give(ItemStack.of(Material.GOLDEN_APPLE));
-        told.sendActionBar(Component.text("Technoblade gave you a golden apple.", NamedTextColor.LIGHT_PURPLE));
+        // In chat: a held right-click repeats the interaction, and the refusal that follows takes the action bar.
+        told.sendMessage(Component.text("Technoblade gave you a golden apple.", NamedTextColor.LIGHT_PURPLE));
     }
 
     // Rounded up, so the last second reads 0:01 rather than 0:00.

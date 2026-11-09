@@ -422,8 +422,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
             return FoodRule.Slot.EMPTY;
         }
         Material type = item.getType();
-        return new FoodRule.Slot(type.getKey().asString(), item.getAmount(),
-                type.isEdible() && type != Material.POISONOUS_POTATO);
+        return new FoodRule.Slot(type.getKey().asString(), item.getAmount(), type.isEdible());
     }
 
     // Food kept keeps its own item, enchantments and name included.

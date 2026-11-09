@@ -13,7 +13,9 @@ final class FoodRule {
 
     static final String POISONOUS_POTATO = "minecraft:poisonous_potato";
     static final int FILL = 64;
-    static final Set<String> KEPT = Set.of("minecraft:golden_apple", "minecraft:enchanted_golden_apple");
+    // Food left as it is.
+    static final Set<String> KEPT = Set.of(POISONOUS_POTATO, "minecraft:golden_apple",
+            "minecraft:enchanted_golden_apple");
 
     /** One inventory slot: what's in it, how many, and whether it counts as food. */
     record Slot(String item, int count, boolean food) {
@@ -43,6 +45,6 @@ final class FoodRule {
         if (slot.food() && !KEPT.contains(slot.item())) {
             kept = slot.count() / 2 == 0 ? Slot.EMPTY : new Slot(slot.item(), slot.count() / 2, true);
         }
-        return kept.isEmpty() ? new Slot(POISONOUS_POTATO, FILL, false) : kept;
+        return kept.isEmpty() ? new Slot(POISONOUS_POTATO, FILL, true) : kept;
     }
 }

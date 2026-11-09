@@ -12,7 +12,7 @@ import java.util.List;
  */
 public final class FoodRuleTest {
 
-    private static final Slot POTATOES = new Slot(FoodRule.POISONOUS_POTATO, 64, false);
+    private static final Slot POTATOES = new Slot(FoodRule.POISONOUS_POTATO, 64, true);
 
     private FoodRuleTest() { }
 
@@ -26,7 +26,7 @@ public final class FoodRuleTest {
         Slot enchanted = new Slot("minecraft:enchanted_golden_apple", 1, true);
         Slot sword = new Slot("minecraft:diamond_sword", 1, false);
         Slot stone = new Slot("minecraft:stone", 17, false);
-        Slot partialPotatoes = new Slot(FoodRule.POISONOUS_POTATO, 5, false);
+        Slot partialPotatoes = new Slot(FoodRule.POISONOUS_POTATO, 5, true);
 
         punishes(failures, "an even food stack", List.of(steak), List.of(new Slot("minecraft:cooked_beef", 32, true)));
         punishes(failures, "an odd food stack", List.of(bread), List.of(new Slot("minecraft:bread", 1, true)));
