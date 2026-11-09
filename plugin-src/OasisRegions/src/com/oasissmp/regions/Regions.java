@@ -15,8 +15,9 @@ import java.util.regex.Pattern;
 
 /**
  * The regions in {@code regions.txt}: each a {@code [name]} line, a
- * {@code corners x,y,z x,y,z} line, and a {@code <flag> allow|deny} line per
- * flag, with blank lines and lines starting with {@code #} left out.
+ * {@code corners x,y,z x,y,z} line, and a {@code <flag> allow|deny} or
+ * {@code <flag> "<text>"} line per flag, with blank lines and lines starting
+ * with {@code #} left out.
  */
 record Regions(List<Region> regions) {
 
@@ -26,14 +27,21 @@ record Regions(List<Region> regions) {
     private static final Pattern CORNERS = Pattern.compile(
             "corners (-?\\d+),(-?\\d+),(-?\\d+) (-?\\d+),(-?\\d+),(-?\\d+)");
     private static final Pattern FLAG = Pattern.compile("([a-z-]+) (allow|deny)");
+    // Everything between the first and last quote, so the text can hold quotes.
+    private static final Pattern TEXT_FLAG = Pattern.compile("([a-z-]+) \"(.*)\"");
 
     record Corner(int x, int y, int z) { }
 
-    /** A region, with each flag's value, "allow" or "deny", in file order. */
-    record Region(String name, Corner first, Corner second, Map<String, String> flags) {
+    /**
+     * A region, with each allow/deny flag's value, "allow" or "deny", and each
+     * text flag's text, each in file order.
+     */
+    record Region(String name, Corner first, Corner second, Map<String, String> flags,
+            Map<String, String> textFlags) {
 
         Region {
             flags = Collections.unmodifiableMap(new LinkedHashMap<>(flags));
+            textFlags = Collections.unmodifiableMap(new LinkedHashMap<>(textFlags));
         }
     }
 
@@ -52,6 +60,7 @@ record Regions(List<Region> regions) {
         Corner first = null;
         Corner second = null;
         Map<String, String> flags = new LinkedHashMap<>();
+        Map<String, String> textFlags = new LinkedHashMap<>();
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i).strip();
             if (line.isEmpty() || line.startsWith("#")) {
@@ -61,7 +70,7 @@ record Regions(List<Region> regions) {
             Matcher matcher;
             if ((matcher = NAME.matcher(line)).matches()) {
                 if (name != null) {
-                    regions.add(region(name, first, second, flags));
+                    regions.add(region(name, first, second, flags, textFlags));
                 }
                 name = matcher.group(1);
                 // WorldGuard's world-wide region, which a cuboid would replace.
@@ -73,6 +82,7 @@ record Regions(List<Region> regions) {
                 }
                 first = second = null;
                 flags = new LinkedHashMap<>();
+                textFlags = new LinkedHashMap<>();
             } else if (name == null) {
                 throw new IllegalArgumentException(where + "comes before any [name] line: " + line);
             } else if ((matcher = CORNERS.matcher(line)).matches()) {
@@ -82,25 +92,36 @@ record Regions(List<Region> regions) {
                 first = corner(matcher, 1);
                 second = corner(matcher, 4);
             } else if ((matcher = FLAG.matcher(line)).matches()) {
-                if (flags.putIfAbsent(matcher.group(1), matcher.group(2)) != null) {
-                    throw new IllegalArgumentException(where + name + " sets " + matcher.group(1) + " twice");
-                }
+                setOnce(where, name, matcher, flags, textFlags);
+            } else if ((matcher = TEXT_FLAG.matcher(line)).matches()) {
+                setOnce(where, name, matcher, textFlags, flags);
             } else {
-                throw new IllegalArgumentException(
-                        where + "isn't [name], corners x,y,z x,y,z, or <flag> allow|deny: " + line);
+                throw new IllegalArgumentException(where
+                        + "isn't [name], corners x,y,z x,y,z, <flag> allow|deny, or <flag> \"<text>\": " + line);
             }
         }
         if (name != null) {
-            regions.add(region(name, first, second, flags));
+            regions.add(region(name, first, second, flags, textFlags));
         }
         return new Regions(regions);
     }
 
-    private static Region region(String name, Corner first, Corner second, Map<String, String> flags) {
+    /** Puts a flag line's value in {@code into}, unless either map already sets that flag. */
+    private static void setOnce(String where, String region, Matcher line,
+            Map<String, String> into, Map<String, String> other) {
+        String flag = line.group(1);
+        if (into.containsKey(flag) || other.containsKey(flag)) {
+            throw new IllegalArgumentException(where + region + " sets " + flag + " twice");
+        }
+        into.put(flag, line.group(2));
+    }
+
+    private static Region region(String name, Corner first, Corner second, Map<String, String> flags,
+            Map<String, String> textFlags) {
         if (first == null) {
             throw new IllegalArgumentException(FILE_NAME + ": " + name + " has no corners line");
         }
-        return new Region(name, first, second, flags);
+        return new Region(name, first, second, flags, textFlags);
     }
 
     private static Corner corner(Matcher matcher, int group) {

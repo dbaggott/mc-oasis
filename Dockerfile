@@ -87,6 +87,13 @@ RUN mkdir -p /out/LibertyBans/addons \
       > /out/LibertyBans/addons/addon-exemption-luckperms.jar \
     && test -s /out/LibertyBans/addons/addon-exemption-luckperms.jar
 
+# WorldGuard with the repeat delay on its region messages at 1.5 s rather than
+# its 0.5 s, which no setting changes: scripts/patch-worldguard.py rewrites it.
+FROM python:3.14-alpine@sha256:f6a589d43c42b9e7f7dc67a12d37132491f362859a5d750607710cc56da3bc72 AS worldguard
+COPY build/artifacts/plugins/WorldGuard.jar /WorldGuard.jar
+COPY scripts/patch-worldguard.py /patch-worldguard.py
+RUN mkdir /out && python /patch-worldguard.py /WorldGuard.jar /out/WorldGuard.jar
+
 # A release tag for the image's scripts, java25 because Minecraft 26.3 requires
 # Java 25, and the multi-arch digest so a re-pushed tag can't change it.
 FROM itzg/minecraft-server:2026.9.2-java25@sha256:de5d1b1a83eba576f6c8a688fac2a3523ce457724cdebc8ea48d7818b74cdf6e
@@ -232,6 +239,7 @@ COPY build/artifacts/plugins/ /plugins/
 COPY --from=repo-plugins /out/ /plugins/
 COPY --from=libertybans-addons /out/ /plugins/
 COPY --from=bedrock-pack /out/ /plugins/Geyser-Spigot/packs/
+COPY --from=worldguard /out/ /plugins/
 # Plugin configs the repo owns, one folder per plugin by its declared name.
 # LuckPerms' groups and tracks are files here; which group each player is in
 # stays in its database on the world volume.
