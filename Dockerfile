@@ -20,6 +20,14 @@ RUN mkdir /out && cd /src && for pack in */; do \
       pack="${pack%/}" && (cd "$pack" && python -m zipfile -c "/out/${pack}.zip" ./*); \
     done
 
+# The Bedrock resource pack, resourcepack-bedrock/, zipped as Geyser takes it:
+# Technoblade's crown for Bedrock players, modelled on the head of any pig
+# OasisTechnoblade marks through Geyser.
+FROM python:3.14-alpine@sha256:f6a589d43c42b9e7f7dc67a12d37132491f362859a5d750607710cc56da3bc72 AS bedrock-pack
+COPY scripts/build-pack.sh /build-pack.sh
+COPY resourcepack-bedrock/ /src/
+RUN mkdir /out && sh /build-pack.sh /src /out/oasis.mcpack
+
 # The repo's own plugins, one folder each under plugin-src/ holding its
 # plugin.yml and its Java sources under src/, compiled against the libraries in
 # artifacts.lock into <folder>.jar. The JDK's major version is the server's.
@@ -30,21 +38,25 @@ RUN mkdir /out && cd /src && for pack in */; do \
 # path, for archive and scripting support, that aren't here and aren't needed.
 FROM eclipse-temurin:25-jdk-alpine@sha256:3fd2d245c4e0eba615fe366a71b8bd25f5db7104f53e4026b24bf508b880bd2a AS repo-plugins
 COPY build/artifacts/libraries/ /libraries/
+# Geyser's API, for OasisTechnoblade's Bedrock crown, from the Geyser jar the
+# server runs, so the two always match. Last on the class path, so nothing
+# else Geyser bundles stands in for a library in artifacts.lock.
+COPY build/artifacts/plugins/Geyser-Spigot.jar /geyser/
 COPY plugin-src/ /repo/plugin-src/
 COPY plugins/ /repo/plugins/
 RUN set -e; mkdir /out; cd /repo/plugin-src; for plugin in */; do \
       [ -d "$plugin" ] || continue; \
       plugin="${plugin%/}"; \
       mkdir -p "/classes/${plugin}"; \
-      javac --release 25 -Xlint:all,-classfile,-path -Werror -cp '/libraries/*' \
+      javac --release 25 -Xlint:all,-classfile,-path -Werror -cp '/libraries/*:/geyser/*' \
         -d "/classes/${plugin}" $(find "${plugin}/src" -name '*.java'); \
       if [ -d "${plugin}/test" ]; then \
         mkdir -p "/test-classes/${plugin}"; \
-        javac --release 25 -Xlint:all,-classfile,-path -Werror -cp "/classes/${plugin}:/libraries/*" \
+        javac --release 25 -Xlint:all,-classfile,-path -Werror -cp "/classes/${plugin}:/libraries/*:/geyser/*" \
           -d "/test-classes/${plugin}" $(find "${plugin}/test" -name '*.java'); \
         for test in $(cd "${plugin}/test" && find . -name '*Test.java'); do \
           test="${test#./}"; \
-          (cd /repo && java -cp "/test-classes/${plugin}:/classes/${plugin}:/libraries/*" \
+          (cd /repo && java -cp "/test-classes/${plugin}:/classes/${plugin}:/libraries/*:/geyser/*" \
             "$(echo "${test%.java}" | tr / .)"); \
         done; \
       fi; \
@@ -211,6 +223,7 @@ COPY build/artifacts/plugins/ /plugins/
 # The repo's own plugins, built in the repo-plugins stage.
 COPY --from=repo-plugins /out/ /plugins/
 COPY --from=libertybans-addons /out/ /plugins/
+COPY --from=bedrock-pack /out/ /plugins/Geyser-Spigot/packs/
 COPY --from=worldguard /out/ /plugins/
 # Plugin configs the repo owns, one folder per plugin by its declared name.
 # LuckPerms' groups and tracks are files here; which group each player is in
@@ -239,6 +252,21 @@ COPY data/ /config/
 COPY build/artifacts/datapacks/ /datapacks/
 COPY --from=repo-datapacks /out/ /datapacks/
 COPY server-icon.png /server-icon.png
+
+# The Java resource pack, resourcepack/, which paints Technoblade's crown on
+# its pig variant, is required: a player who declines it is disconnected. It is served by the
+# website, named by its SHA-1, so the build takes that SHA-1, as
+# scripts/java-pack.sh prints it, and fails without one. The site release that
+# carries the pack has to be deployed before an image naming it (README,
+# "Changing the resource pack"). Geyser accepts the pack for Bedrock players,
+# who get resourcepack-bedrock/ instead. Last, so a new pack rebuilds only this.
+ARG RESOURCE_PACK_SHA1
+RUN echo "${RESOURCE_PACK_SHA1}" | grep --quiet --extended-regexp '^[0-9a-f]{40}$' \
+    || { echo "build with --build-arg RESOURCE_PACK_SHA1=\"\$(scripts/java-pack.sh build/resourcepack)\"" >&2; exit 1; }
+ENV RESOURCE_PACK="https://www.oasis-smp.com/assets/oasis-pack-${RESOURCE_PACK_SHA1}.zip" \
+    RESOURCE_PACK_SHA1="${RESOURCE_PACK_SHA1}" \
+    RESOURCE_PACK_ENFORCE=true \
+    RESOURCE_PACK_PROMPT="{\"text\":\"This adds components necessary for playing on OASIS SMP\"}"
 
 # The copy over /data/plugins adds and replaces files but never deletes them,
 # so LuckPerms' group and track folders and OasisFilter's word lists on the

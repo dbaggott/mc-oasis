@@ -379,6 +379,52 @@ check_settings "$name" value "$(printf '%s\t%s\t%s' \
   plugins/Geyser-Spigot/extensions/mcxboxbroadcast/config.yml "\$['friend-sync']['expiry']['enabled']" false)" || exit 1
 echo "MCXboxBroadcast keeps friends who haven't joined lately"
 
+# The Bedrock side of Technoblade's crown: Geyser's packs/ holds the repo's
+# Bedrock pack, Geyser took it without complaint, and OasisTechnoblade defined
+# the entity property that pack draws the crown by. A pack Geyser can't read is
+# skipped with a WARN or ERROR that names it, and a property defined after
+# Geyser asked for them never reaches Bedrock players.
+if ! docker exec --user 1000 "$name" test -s /data/plugins/Geyser-Spigot/packs/oasis.mcpack; then
+  echo "error: Geyser's packs/ has no oasis.mcpack" >&2
+  exit 1
+fi
+geyser_logs="$(docker logs "$name" 2>&1)"
+geyser_problems=' (WARN|ERROR)\]: \[Geyser-Spigot\] .*[Pp]ack'
+if grep --quiet --extended-regexp "$geyser_problems" <<<"$geyser_logs"; then
+  grep --extended-regexp "$geyser_problems" <<<"$geyser_logs" | head -n 20 || true
+  echo "error: Geyser complained about a resource pack" >&2
+  exit 1
+fi
+if ! grep --quiet --fixed-strings '[OasisTechnoblade] Defined the Bedrock entity property oasis:crowned on minecraft:pig' \
+    <<<"$geyser_logs"; then
+  echo "error: OasisTechnoblade didn't define the Bedrock entity property oasis:crowned, so Bedrock players see no crown" >&2
+  exit 1
+fi
+echo "Geyser has the Bedrock pack and the crown's entity property"
+
+# The required Java resource pack: server.properties carries the URL, SHA-1,
+# enforcement and prompt the image sets. CI checks that URL and SHA-1 against
+# the pack the site build carries.
+pack_env="$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$image")"
+pack_env_value() { sed -n "s/^$1=//p" <<<"$pack_env"; }
+properties="$(docker exec --user 1000 "$name" cat /data/server.properties)"
+for setting in "resource-pack RESOURCE_PACK" "resource-pack-sha1 RESOURCE_PACK_SHA1" \
+    "require-resource-pack RESOURCE_PACK_ENFORCE" "resource-pack-prompt RESOURCE_PACK_PROMPT"; do
+  read -r key variable <<<"$setting"
+  expected="$(pack_env_value "$variable")"
+  # server.properties escapes `:` as `\:`.
+  live="$(sed -n "s/^${key}=//p" <<<"$properties" | sed 's/\\:/:/g')"
+  if [[ -z "$expected" || "$live" != "$expected" ]]; then
+    echo "error: server.properties has ${key}=${live}, not the image's ${variable}=${expected}" >&2
+    exit 1
+  fi
+done
+if grep --quiet --fixed-strings 'resource pack prompt' <<<"$(docker logs "$name" 2>&1)"; then
+  echo "error: the server couldn't read the resource pack prompt" >&2
+  exit 1
+fi
+echo "the Java resource pack is required, at the image's URL and SHA-1"
+
 # The Dockerfile's RCON_CMDS_STARTUP. The image runs them through RCON once the
 # server listens and only logs a failure, so what they set is checked below,
 # from these lines: one command each, without the `\n\` or closing quote.
@@ -536,11 +582,19 @@ technoblade() { rcon technoblade | sed 's/\x1b\[[0-9;]*m//g'; }
 technoblade_uuid() { sed -n 's/^Technoblade \([0-9a-f-]\{36\}\) .*/\1/p' <<<"$1"; }
 # The pig's block position, from a reply saying where it is now, as `x y z`.
 technoblade_at() { sed -n 's/.* is at \([0-9]*\) \([0-9]*\) \([0-9]*\) in minecraft:overworld\.$/\1 \2 \3/p' <<<"$1"; }
-technoblade_count() {
+count_of() {
   local reply
-  reply="$(rcon 'execute if entity @e[type=pig,tag=technoblade]')"
+  reply="$(rcon "$1")"
   if [[ "$reply" =~ Count:\ ([0-9]+) ]]; then echo "${BASH_REMATCH[1]}"; else echo 0; fi
 }
+technoblade_count() { count_of 'execute if entity @e[type=pig,tag=technoblade]'; }
+# Technoblade's crown as Java players see it, painted on its head: the pig
+# variant from datapacks/80-oasis-technoblade/. Bedrock players' crown is set
+# as Geyser sends the pig to them, which needs a Bedrock client to see.
+crowned() {
+  [[ "$(rcon 'data get entity @e[type=pig,tag=technoblade,limit=1] variant')" == *'"oasis:technoblade"'* ]]
+}
+named() { [[ "$(rcon 'data get entity @e[type=pig,tag=technoblade,limit=1] CustomName')" != *"Found no elements"* ]]; }
 reply="$(technoblade)"
 first_uuid="$(technoblade_uuid "$reply")"
 if [[ -z "$first_uuid" ]]; then
@@ -563,17 +617,46 @@ if [[ "$(technoblade_count)" != 1 || "$pig_uuid" == "$first_uuid" || "$(technobl
   echo "error: after respawn there isn't exactly one new Technoblade on the platform at y 301 ($(technoblade_count) found): '${reply}'" >&2
   exit 1
 fi
+if ! crowned; then
+  echo "error: after respawn Technoblade isn't the crowned variant: $(rcon 'data get entity @e[type=pig,tag=technoblade,limit=1] variant')" >&2
+  exit 1
+fi
+if named; then
+  echo "error: Technoblade has a name after respawn" >&2
+  exit 1
+fi
+# A name tag is refused by an event only a player fires; a name set any other
+# way is taken off.
+rcon 'data merge entity @e[type=pig,tag=technoblade,limit=1] {CustomName:"Dinnerbone",CustomNameVisible:1b}' >/dev/null
+deadline=$((SECONDS + 5))
+while named; do
+  if ((SECONDS >= deadline)); then
+    echo "error: a name set on Technoblade with /data merge was still there after 5s" >&2
+    exit 1
+  fi
+  sleep 1
+done
+# Where it dies, to look for drops. Only items: a mob drops experience only
+# when a player hurt it, which no command here stands in for, so the
+# experience half of 109's death handler goes unchecked.
+read -r dead_x dead_y dead_z <<<"$(technoblade_at "$reply")"
 rcon 'kill @e[type=pig,tag=technoblade]' >/dev/null
 deadline=$((SECONDS + 10))
-until reply="$(technoblade)" && [[ "$(technoblade_count)" == 1 && "$(technoblade_uuid "$reply")" != "$pig_uuid" ]]; do
+until reply="$(technoblade)" && [[ "$(technoblade_count)" == 1 && "$(technoblade_uuid "$reply")" != "$pig_uuid" ]] \
+  && crowned && ! named; do
   if ((SECONDS >= deadline)); then
-    echo "error: Technoblade wasn't replaced by one new pig within 10s of being killed ($(technoblade_count) found): '${reply}'" >&2
+    echo "error: Technoblade wasn't replaced by one new, crowned, unnamed pig within 10s of being killed ($(technoblade_count) found): '${reply}'" >&2
     exit 1
   fi
   sleep 1
 done
 if ! grep --quiet --fixed-strings 'Technoblade never dies.' <<<"$(docker logs "$name" 2>&1)"; then
   echo "error: Technoblade's death wasn't announced with 'Technoblade never dies.'" >&2
+  exit 1
+fi
+items_dropped="$(count_of "execute if entity @e[type=item,x=${dead_x},y=${dead_y},z=${dead_z},distance=..16]")"
+if [[ "$items_dropped" != 0 ]]; then
+  echo "error: Technoblade dropped ${items_dropped} items when killed, near ${dead_x} ${dead_y} ${dead_z}" >&2
   exit 1
 fi
 # A 1x1 cell, walls two high on each side of the block the pig is in. It may
@@ -611,6 +694,10 @@ until reply="$(technoblade)" && read -r px _ pz <<<"$(technoblade_at "$reply")" 
   fi
   sleep 2
 done
+if ! crowned; then
+  echo "error: after teleporting out of a trap, Technoblade isn't the crowned variant" >&2
+  exit 1
+fi
 pig_uuid="$(technoblade_uuid "$reply")"
 rcon 'summon minecraft:pig 5020 301 5020 {Tags:["technoblade"]}' >/dev/null
 deadline=$((SECONDS + 10))
@@ -626,7 +713,7 @@ if [[ "$(technoblade_uuid "$(technoblade)")" != "$pig_uuid" ]]; then
   exit 1
 fi
 rcon forceload remove all >/dev/null
-echo "Technoblade respawns once when killed, teleports out of a trap, and has no duplicates"
+echo "Technoblade respawns once when killed, teleports out of a trap, and has no duplicates, crowned throughout and with no name"
 
 # The world borders, by width; `worldborder get` doesn't report the center.
 # Every `worldborder set` line has to parse, so a reworded one fails here

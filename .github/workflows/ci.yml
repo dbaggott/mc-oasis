@@ -40,6 +40,8 @@ jobs:
   server:
     # The server runs on Graviton, so the image is built and tested natively.
     runs-on: ubuntu-24.04-arm
+    outputs:
+      pack-sha1: ${{ steps.pack.outputs.sha1 }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -51,8 +53,37 @@ jobs:
       - name: Fetch and verify artifacts
         run: scripts/fetch-artifacts.sh
 
+      # The site job builds the same pack from the same tree, and the site
+      # serves it at the URL this image names; `tested` checks the two jobs'
+      # SHA-1s match.
+      - name: Build the Java resource pack
+        id: pack
+        run: |
+          set -euo pipefail
+          sha1="$(scripts/java-pack.sh build/resourcepack)"
+          echo "RESOURCE_PACK_SHA1=${sha1}" >> "$GITHUB_ENV"
+          echo "sha1=${sha1}" >> "$GITHUB_OUTPUT"
+          # The same tree, with every file's timestamp changed, gives the same bytes.
+          find resourcepack -type f -exec touch -d '2001-02-03 04:05:06' {} +
+          again="$(scripts/java-pack.sh build/resourcepack-again)"
+          cmp "build/resourcepack/oasis-pack-${sha1}.zip" "build/resourcepack-again/oasis-pack-${again}.zip"
+          echo "oasis-pack-${sha1}.zip builds the same twice"
+
       - name: Build
-        run: docker build --platform linux/arm64 --tag mc-oasis:ci .
+        run: docker build --platform linux/arm64 --build-arg "RESOURCE_PACK_SHA1=${RESOURCE_PACK_SHA1}" --tag mc-oasis:ci .
+
+      - name: Check the image names the pack
+        run: |
+          set -euo pipefail
+          env="$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' mc-oasis:ci)"
+          url="$(sed -n 's/^RESOURCE_PACK=//p' <<<"$env")"
+          sha1="$(sed -n 's/^RESOURCE_PACK_SHA1=//p' <<<"$env")"
+          want="https://www.oasis-smp.com/assets/oasis-pack-${RESOURCE_PACK_SHA1}.zip"
+          if [[ "$url" != "$want" || "$sha1" != "$RESOURCE_PACK_SHA1" ]]; then
+            echo "::error::the image names ${url} (${sha1}), not ${want} (${RESOURCE_PACK_SHA1})"
+            exit 1
+          fi
+          echo "the image names ${url}"
 
       - name: Smoke test
         run: |
@@ -76,6 +107,8 @@ jobs:
   # The website under web/, deployed as the mc-oasis-site app.
   site:
     runs-on: ubuntu-latest
+    outputs:
+      pack-sha1: ${{ steps.pack.outputs.sha1 }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -93,6 +126,23 @@ jobs:
 
       - name: Check the build
         run: npm test --prefix web
+
+      # Served at https://www.oasis-smp.com/assets/oasis-pack-<sha1>.zip, the URL
+      # the server image built in the same run names (`tested` checks the two
+      # agree). Named by its content, so a site deploy never deletes or changes
+      # one already served.
+      - name: Add the Java resource pack
+        id: pack
+        run: |
+          set -euo pipefail
+          sha1="$(scripts/java-pack.sh web/dist/assets)"
+          file="web/dist/assets/oasis-pack-${sha1}.zip"
+          if [[ "$(sha1sum "$file" | cut -d' ' -f1)" != "$sha1" ]]; then
+            echo "::error::${file} doesn't have the SHA-1 its name says"
+            exit 1
+          fi
+          echo "sha1=${sha1}" >> "$GITHUB_OUTPUT"
+          echo "the site carries assets/oasis-pack-${sha1}.zip"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: github.event_name != 'pull_request'
@@ -151,6 +201,18 @@ jobs:
     needs: [server, site, api]
     runs-on: ubuntu-latest
     steps:
+      # The server and site jobs build the Java pack on different runners; an
+      # image naming a pack the site doesn't carry would turn every Java player
+      # away.
+      - name: Check the server and site carry the same Java pack
+        env:
+          SERVER_PACK: ${{ needs.server.outputs.pack-sha1 }}
+          SITE_PACK: ${{ needs.site.outputs.pack-sha1 }}
+        run: |
+          if [[ -z "$SERVER_PACK" || "$SERVER_PACK" != "$SITE_PACK" ]]; then
+            echo "::error::the server image names pack ${SERVER_PACK:-none}, the site carries ${SITE_PACK:-none}"
+            exit 1
+          fi
       - run: echo "Every build-and-test job passed."
 
   # The only jobs that can reach AWS, one per artifact. The publish role trusts

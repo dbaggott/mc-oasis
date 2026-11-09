@@ -13,6 +13,8 @@ import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import io.papermc.paper.registry.RegistryAccess;
+import io.papermc.paper.registry.RegistryKey;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -60,7 +62,10 @@ import org.bukkit.scheduler.BukkitTask;
  * killed it loses half of each food stack but golden apples and has every
  * empty slot filled with poisonous potatoes ({@link FoodRule}). Feeding it
  * gives a golden apple ({@link Feeding}). There is only ever one, and a
- * trapped one teleports out.
+ * trapped one teleports out. It wears Technoblade's crown, painted on its
+ * head for Java players and modelled on it for Bedrock players
+ * ({@link BedrockCrown}), which is how players know it: it has no name label,
+ * and any name it gets is taken off.
  *
  * <p>The pig is the one whose UUID is in {@value PigRecord#FILE_NAME}; it also
  * carries the scoreboard tag {@value #TAG} so vanilla selectors find it. A
@@ -73,9 +78,9 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
     static final String PERMISSION = "oasistechnoblade.manage";
     static final String TAG = "technoblade";
 
-    private static final String NAME = "Technoblade";
     private static final Component NEVER_DIES = Component.text("Technoblade never dies.", NamedTextColor.LIGHT_PURPLE);
     private static final String SPAWN_REGION = "spawn";
+    private static final NamespacedKey CROWNED = new NamespacedKey("oasis", "technoblade");
     // Removals that leave the pig alive somewhere, or that the death handler deals with.
     private static final Set<EntityRemoveEvent.Cause> NOT_GONE =
             Set.of(EntityRemoveEvent.Cause.DEATH, EntityRemoveEvent.Cause.UNLOAD);
@@ -90,15 +95,36 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
     private static final int EXIT_LOADED_TRIES = 24;
     // Vanilla's priority for a pig's random stroll, which Roam replaces.
     private static final int ROAM_PRIORITY = 6;
+    private static final int TEND_TICKS = 20;
 
     private Path recordFile;
+    // The crowned pig variant, looked up until found.
+    private Pig.Variant crowned;
+    private boolean warnedNoVariant;
     private FirstSpawn firstSpawn;
-    private PigRecord record;
+    // Volatile: BedrockCrown reads it on Geyser's threads.
+    private volatile PigRecord record;
     private GoalKey<Pig> roamKey;
     private boolean spawning;
     private BukkitTask retry;
     // Where the pig was last found trapped with no way out, so the search isn't repeated there.
     private Pos noExitFrom;
+
+    @Override
+    public void onLoad() {
+        if (getServer().getPluginManager().getPlugin("Geyser-Spigot") == null) {
+            return;
+        }
+        try {
+            BedrockCrown.register(this, pig -> {
+                PigRecord current = record;
+                return current != null && current.pig().equals(pig);
+            }, getLogger());
+        } catch (RuntimeException | LinkageError e) {
+            // A Geyser that failed to load, or one whose API changed: everything but the Bedrock crown still works.
+            getLogger().log(Level.SEVERE, "Couldn't set up Technoblade's crown for Bedrock players", e);
+        }
+    }
 
     @Override
     public void onEnable() {
@@ -142,6 +168,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
             }
         });
         getServer().getScheduler().runTaskTimer(this, () -> checkTrap(false), TRAP_CHECK_TICKS, TRAP_CHECK_TICKS);
+        getServer().getScheduler().runTaskTimer(this, this::tend, TEND_TICKS, TEND_TICKS);
     }
 
     @Override
@@ -231,6 +258,8 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
     private void admit(Pig pig) {
         if (isTechnoblade(pig)) {
             pig.addScoreboardTag(TAG);
+            unname(pig);
+            crownHead(pig);
             MobGoals goals = getServer().getMobGoals();
             goals.removeGoal(pig, VanillaGoal.WATER_AVOIDING_RANDOM_STROLL);
             if (!goals.hasGoal(pig, roamKey)) {
@@ -291,9 +320,8 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         try {
             pig = spot.getWorld().spawn(spot, Pig.class, spawned -> {
                 spawned.addScoreboardTag(TAG);
-                spawned.customName(Component.text(NAME));
-                spawned.setCustomNameVisible(true);
                 spawned.setPersistent(true);
+                crownHead(spawned);
                 spawned.setRemoveWhenFarAway(false);
                 saveRecord(new PigRecord(spawned.getUniqueId(), spot.getWorld().getKey().asString(),
                         pos(spot), Instant.now()));
@@ -311,6 +339,46 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
             retry = null;
         }
         return Optional.of(pig);
+    }
+
+    // Every second the pig is loaded, since a name or variant can be set on it by commands.
+    private void tend() {
+        loaded().ifPresent(pig -> {
+            unname(pig);
+            crownHead(pig);
+        });
+    }
+
+    /**
+     * Java players see the crown painted on Technoblade's head: the pig
+     * variant {@code oasis:technoblade}, from the repo's datapack
+     * {@code datapacks/80-oasis-technoblade/}, with its texture in the resource
+     * pack. It can't breed, so no piglet inherits the variant.
+     */
+    private void crownHead(Pig pig) {
+        if (crowned == null) {
+            crowned = RegistryAccess.registryAccess().getRegistry(RegistryKey.PIG_VARIANT).get(CROWNED);
+        }
+        if (crowned == null) {
+            if (!warnedNoVariant) {
+                getLogger().severe("No pig variant " + CROWNED.asString()
+                        + ", so Java players see Technoblade without its crown; is the datapack missing?");
+                warnedNoVariant = true;
+            }
+        } else if (!crowned.equals(pig.getVariant())) {
+            pig.setVariant(crowned);
+        }
+        if (pig.canBreed()) {
+            pig.setBreed(false);
+        }
+    }
+
+    // By a name tag, which Guard refuses, or by anything else.
+    private static void unname(Pig pig) {
+        if (pig.customName() != null || pig.isCustomNameVisible()) {
+            pig.customName(null);
+            pig.setCustomNameVisible(false);
+        }
     }
 
     private void checkTrap(boolean suffocating) {

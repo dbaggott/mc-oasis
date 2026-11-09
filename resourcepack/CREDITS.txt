@@ -1,0 +1,14 @@
+Technoblade's crown, painted on the pig's head
+
+assets/oasis/textures/entity/pig/technoblade.png is Minecraft 26.3's
+pig_temperate.png with the 64 pixels of crown from "Technoblade Pigs" by
+CubingXT, version 1.0.0, published under CC0 1.0 (no rights reserved):
+https://modrinth.com/resourcepack/technobladepigs
+https://cdn.modrinth.com/data/tnd2yGA9/versions/KX6OjkVY/Technoblade%20Pigs.zip
+(sha256 2c9b1078cb4ad74af5fa518bc3123e8a8f7fe3812aa32f23887427604176e669)
+Those pixels are the top two rows of the head's four sides in its
+temperate_pig.png; nothing else in it differs from the vanilla texture.
+
+The pig variant that uses it, oasis:technoblade, is in the server's datapack
+datapacks/80-oasis-technoblade/. Bedrock players see a 3D crown instead, from
+resourcepack-bedrock/, whose CREDITS.txt says where that comes from.
