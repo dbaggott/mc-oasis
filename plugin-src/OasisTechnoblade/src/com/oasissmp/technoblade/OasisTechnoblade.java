@@ -57,8 +57,9 @@ import org.bukkit.scheduler.BukkitTask;
 /**
  * Technoblade: one pig in the overworld that never stays dead. It respawns
  * where it dies, every player is told "Technoblade never dies.", and whoever
- * killed it loses half of each food stack and has every empty slot filled
- * with poisonous potatoes ({@link FoodRule}). There is only ever one, and a
+ * killed it loses half of each food stack but golden apples and has every
+ * empty slot filled with poisonous potatoes ({@link FoodRule}). Feeding it
+ * gives a golden apple ({@link Feeding}). There is only ever one, and a
  * trapped one teleports out.
  *
  * <p>The pig is the one whose UUID is in {@value PigRecord#FILE_NAME}; it also
@@ -118,6 +119,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         }
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(new Guard(this::isTechnoblade), this);
+        getServer().getPluginManager().registerEvents(new Feeding(this::isTechnoblade), this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(Commands.literal("technoblade")
                         // The console and RCON have it without the permission, which ops don't get by default.
@@ -420,8 +422,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
             return FoodRule.Slot.EMPTY;
         }
         Material type = item.getType();
-        return new FoodRule.Slot(type.getKey().asString(), item.getAmount(),
-                type.isEdible() && type != Material.POISONOUS_POTATO);
+        return new FoodRule.Slot(type.getKey().asString(), item.getAmount(), type.isEdible());
     }
 
     // Food kept keeps its own item, enchantments and name included.
