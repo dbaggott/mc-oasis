@@ -35,8 +35,9 @@ final class Feeding implements Listener {
         this.isTechnoblade = isTechnoblade;
     }
 
-    // Last, so a plugin that turns the interaction away, WorldGuard among them, does so before any apple is given.
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    // First, and cancelling it: WorldGuard skips a cancelled interaction, so
+    // Technoblade is fed even in a region whose interact flag would deny it, spawn among them.
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onFeed(PlayerInteractEntityEvent event) {
         if (!(event.getRightClicked() instanceof Pig pig) || !isTechnoblade.test(pig)) {
             return;
