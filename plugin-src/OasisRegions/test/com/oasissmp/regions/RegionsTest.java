@@ -20,20 +20,33 @@ public final class RegionsTest {
         Regions regions = Regions.parse(List.of(
                 "# a comment", "",
                 "[spawn]", "  corners -512,-64,846 -429,319,936  ", "pvp allow", "tnt deny",
+                "deny-message \"Sorry, but you can't %what% here.\"", "greeting \"Say \"hi\"\"",
+                "farewell \"\"",
                 "[egg-pedestal]", "corners 1,2,3 1,2,3"));
         check(failures, regions.regions().equals(List.of(
                         new Regions.Region("spawn", new Regions.Corner(-512, -64, 846),
-                                new Regions.Corner(-429, 319, 936), Map.of("pvp", "allow", "tnt", "deny")),
+                                new Regions.Corner(-429, 319, 936), Map.of("pvp", "allow", "tnt", "deny"),
+                                Map.of("deny-message", "Sorry, but you can't %what% here.",
+                                        "greeting", "Say \"hi\"", "farewell", "")),
                         new Regions.Region("egg-pedestal", new Regions.Corner(1, 2, 3),
-                                new Regions.Corner(1, 2, 3), Map.of()))),
+                                new Regions.Corner(1, 2, 3), Map.of(), Map.of()))),
                 "regions read with their corners and flags: " + regions.regions());
         check(failures, List.copyOf(regions.regions().getFirst().flags().keySet()).equals(List.of("pvp", "tnt")),
                 "flags not kept in file order: " + regions.regions().getFirst().flags());
+        check(failures, List.copyOf(regions.regions().getFirst().textFlags().keySet())
+                        .equals(List.of("deny-message", "greeting", "farewell")),
+                "text flags not kept in file order: " + regions.regions().getFirst().textFlags());
 
         rejects(failures, "a flag before any region", List.of("pvp allow"));
         rejects(failures, "a region with no corners", List.of("[spawn]", "pvp allow"));
         rejects(failures, "a second corners line", List.of("[spawn]", "corners 0,0,0 1,1,1", "corners 0,0,0 2,2,2"));
         rejects(failures, "a flag set twice", List.of("[spawn]", "corners 0,0,0 1,1,1", "pvp allow", "pvp deny"));
+        rejects(failures, "a text flag set twice",
+                List.of("[spawn]", "corners 0,0,0 1,1,1", "greeting \"a\"", "greeting \"b\""));
+        rejects(failures, "a flag set both ways",
+                List.of("[spawn]", "corners 0,0,0 1,1,1", "greeting allow", "greeting \"b\""));
+        rejects(failures, "text without its closing quote",
+                List.of("[spawn]", "corners 0,0,0 1,1,1", "greeting \"hi"));
         rejects(failures, "a region named twice", List.of("[spawn]", "corners 0,0,0 1,1,1", "[spawn]", "corners 0,0,0 1,1,1"));
         rejects(failures, "WorldGuard's global region", List.of("[__global__]", "corners 0,0,0 1,1,1"));
         rejects(failures, "a flag value other than allow or deny", List.of("[spawn]", "corners 0,0,0 1,1,1", "pvp none"));

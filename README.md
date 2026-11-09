@@ -29,6 +29,7 @@ plugin-src/<Name>/       the repo's own plugins, each a plugin.yml and Java sour
 hook-dupe-agent/         a Java agent the server starts with, which puts back tripwire hook duping; its class comment says how; tests under test/ run at build
 scripts/
   fetch-artifacts.sh     downloads everything in artifacts.lock and verifies each sha256
+  patch-worldguard.py    run by the Docker build: sets the repeat delay on WorldGuard's region messages to 1.5 s
   smoke-test.sh          starts a built image on a throwaway world; checks every plugin and datapack loads and every config setting applies
   bump-bedrock.sh        moves the Geyser, Floodgate and MCXboxBroadcast lines in artifacts.lock to their newest builds at least 48 hours old
 web/                     the website: a Vite site; its rules page renders plugins/OasisRules/rules.txt
@@ -73,6 +74,9 @@ fails CI, pin its line back by hand in that PR, or the day's Geyser bump is held
 run proposes that release again, so this repeats daily until one passes. When a Bedrock
 client update has locked players out before a build is 48 hours old, run it from the Actions tab with
 `skip_wait` checked.
+
+A WorldGuard build fails the Docker build at `scripts/patch-worldguard.py`, which is pinned to the one class it
+rewrites. Check the new class still compiles the delay as the one long 500, then pin the class's new sha256 there.
 
 A Paper build can change the vanilla method `hook-dupe-agent/` rewrites. If the agent no longer recognises it,
 the smoke test fails on the agent's check, and the matcher in `HookDupeAgent.java` follows the new code.

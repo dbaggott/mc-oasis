@@ -762,7 +762,7 @@ fi
 # region's flags are saved on one line, which YAML may wrap, so the file is read
 # with its whitespace collapsed.
 regions="$(docker cp "${name}:/data/plugins/WorldGuard/worlds/world/regions.yml" - | tar -xO | tr -s ' \n' ' ')"
-declare -A region_bounds=() region_flag_lines=()
+declare -A region_bounds=() region_flag_lines=() region_text_flag_lines=()
 region=""
 while IFS= read -r line || [[ -n "$line" ]]; do
   read -r line <<<"$line"
@@ -771,14 +771,17 @@ while IFS= read -r line || [[ -n "$line" ]]; do
   elif [[ "$line" =~ ^\[([a-z0-9_-]+)\]$ ]]; then
     region="${BASH_REMATCH[1]}"
     region_flag_lines[$region]=""
+    region_text_flag_lines[$region]=""
   elif [[ -n "$region" && "$line" =~ ^corners\ (-?[0-9]+),(-?[0-9]+),(-?[0-9]+)\ (-?[0-9]+),(-?[0-9]+),(-?[0-9]+)$ ]]; then
     x1="${BASH_REMATCH[1]}" y1="${BASH_REMATCH[2]}" z1="${BASH_REMATCH[3]}"
     x2="${BASH_REMATCH[4]}" y2="${BASH_REMATCH[5]}" z2="${BASH_REMATCH[6]}"
     region_bounds[$region]="min: {x: $((x1 < x2 ? x1 : x2)), y: $((y1 < y2 ? y1 : y2)), z: $((z1 < z2 ? z1 : z2))} max: {x: $((x1 > x2 ? x1 : x2)), y: $((y1 > y2 ? y1 : y2)), z: $((z1 > z2 ? z1 : z2))}"
   elif [[ -n "$region" && "$line" =~ ^([a-z-]+)\ (allow|deny)$ ]]; then
     region_flag_lines[$region]+="${BASH_REMATCH[1]} ${BASH_REMATCH[2]}"$'\n'
+  elif [[ -n "$region" && "$line" =~ ^([a-z-]+)\ \"(.*)\"$ ]]; then
+    region_text_flag_lines[$region]+="${BASH_REMATCH[1]} ${BASH_REMATCH[2]}"$'\n'
   else
-    echo "error: a line in plugins/OasisRegions/regions.txt isn't [name], corners x,y,z x,y,z, or <flag> allow|deny under a [name]: ${line}" >&2
+    echo "error: a line in plugins/OasisRegions/regions.txt isn't [name], corners x,y,z x,y,z, <flag> allow|deny, or <flag> \"<text>\" under a [name]: ${line}" >&2
     exit 1
   fi
 done <"${repo_root}/plugins/OasisRegions/regions.txt"
@@ -810,8 +813,28 @@ for region in "${!region_bounds[@]}"; do
     fi
     flag_count=$((flag_count + 1))
   done <<<"${region_flag_lines[$region]}"
+  # WorldGuard saves text single-quoted, with each quote in it doubled.
+  while read -r flag_name flag_text; do
+    [[ -n "$flag_name" ]] || continue
+    if ! grep --quiet --fixed-strings "${flag_name}: '${flag_text//\'/\'\'}'" <<<"$region_flags"; then
+      echo "error: the ${region} region doesn't have ${flag_name} \"${flag_text}\": ${region_flags}" >&2
+      exit 1
+    fi
+    flag_count=$((flag_count + 1))
+  done <<<"${region_text_flag_lines[$region]}"
   echo "${region} region ${bounds}, with ${flag_count} flags"
 done
+
+# The image's WorldGuard is the one scripts/patch-worldguard.py wrote: the class
+# it patches holds the delay as a long 1500 (CONSTANT_Long, tag 5).
+worldguard_delays="$(docker run --rm --entrypoint sh "$image" -c \
+  'unzip -p /plugins/WorldGuard.jar com/sk89q/worldguard/bukkit/listener/RegionProtectionListener.class \
+    | od -An -v -tx1 | tr -d " \n" | grep -o 0500000000000005dc | wc -l')"
+if [[ "$worldguard_delays" != 1 ]]; then
+  echo "error: the image's WorldGuard.jar isn't patched to a 1500 ms region message delay" >&2
+  exit 1
+fi
+echo "WorldGuard's region message delay is 1500 ms"
 
 # A LuckPerms group file and an OasisFilter word list file the repo doesn't
 # have, left on the world volume as ones deleted from the repo would be, are
