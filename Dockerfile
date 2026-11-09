@@ -142,7 +142,7 @@ RUN echo "${RESOURCE_PACK_SHA1}" | grep --quiet --extended-regexp '^[0-9a-f]{40}
 ENV RESOURCE_PACK="https://www.oasis-smp.com/assets/oasis-pack-${RESOURCE_PACK_SHA1}.zip" \
     RESOURCE_PACK_SHA1="${RESOURCE_PACK_SHA1}" \
     RESOURCE_PACK_ENFORCE=true \
-    RESOURCE_PACK_PROMPT="{\"text\":\"This server's resource pack adds Technoblade's crown.\"}"
+    RESOURCE_PACK_PROMPT="{\"text\":\"This adds components necessary for playing on OASIS SMP\"}"
 
 # Spawn is protected by the WorldGuard region in plugins/OasisRegions/regions.txt,
 # so vanilla's square of op-only blocks around it is off.
