@@ -637,6 +637,11 @@ while named; do
   fi
   sleep 1
 done
+# Where it dies, to look for drops: none, and no experience.
+read -r dead_x dead_y dead_z <<<"$(technoblade_at "$reply")"
+dropped_near() {
+  count_of "execute if entity @e[type=$1,x=${dead_x},y=${dead_y},z=${dead_z},distance=..16]"
+}
 rcon 'kill @e[type=pig,tag=technoblade]' >/dev/null
 deadline=$((SECONDS + 10))
 until reply="$(technoblade)" && [[ "$(technoblade_count)" == 1 && "$(technoblade_uuid "$reply")" != "$pig_uuid" ]] \
@@ -651,6 +656,24 @@ if ! grep --quiet --fixed-strings 'Technoblade never dies.' <<<"$(docker logs "$
   echo "error: Technoblade's death wasn't announced with 'Technoblade never dies.'" >&2
   exit 1
 fi
+# Killed again, this time with the kill credited to an attacker, as a player's
+# kill is: loot conditioned on a killer applies only then.
+pig_uuid="$(technoblade_uuid "$reply")"
+rcon "summon minecraft:armor_stand ${dead_x} ${dead_y} ${dead_z} {Tags:[\"smoke_attacker\"],Marker:1b,Invisible:1b}" >/dev/null
+rcon 'execute as @e[type=pig,tag=technoblade] run damage @s 1000 minecraft:player_attack by @e[tag=smoke_attacker,limit=1]' >/dev/null
+deadline=$((SECONDS + 10))
+until reply="$(technoblade)" && [[ "$(technoblade_count)" == 1 && "$(technoblade_uuid "$reply")" != "$pig_uuid" ]] && crowned; do
+  if ((SECONDS >= deadline)); then
+    echo "error: Technoblade wasn't replaced within 10s of an attacker killing it: '${reply}'" >&2
+    exit 1
+  fi
+  sleep 1
+done
+if [[ "$(dropped_near item)" != 0 || "$(dropped_near experience_orb)" != 0 ]]; then
+  echo "error: Technoblade dropped something when killed: $(dropped_near item) items, $(dropped_near experience_orb) experience orbs near ${dead_x} ${dead_y} ${dead_z}" >&2
+  exit 1
+fi
+rcon 'kill @e[tag=smoke_attacker]' >/dev/null
 # A 1x1 cell, walls two high on each side of the block the pig is in. It may
 # walk off before the walls are up, so they are built again around wherever it
 # is until it is inside them.
