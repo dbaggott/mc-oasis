@@ -20,8 +20,8 @@ import org.bukkit.inventory.ItemStack;
 
 /**
  * A player who feeds Technoblade what a pig eats gets a golden apple back,
- * once every {@link #COOLDOWN} each. Technoblade eats the food itself rather
- * than breeding on it; while a player is waiting it doesn't take theirs.
+ * then waits {@link #COOLDOWN} before the next. Technoblade eats the food
+ * rather than breeding on it; while a player is waiting it doesn't take theirs.
  */
 final class Feeding implements Listener {
 
