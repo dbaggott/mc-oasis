@@ -61,12 +61,13 @@ import org.bukkit.scheduler.BukkitTask;
 /**
  * Technoblade: one pig in the overworld that never stays dead. It respawns
  * where it dies, every player is told "Technoblade never dies.", and whoever
- * killed it loses half of each food stack and has every empty slot filled
- * with poisonous potatoes ({@link FoodRule}). There is only ever one, and a
+ * killed it loses half of each food stack but golden apples and has every
+ * empty slot filled with poisonous potatoes ({@link FoodRule}). Feeding it
+ * gives a golden apple ({@link Feeding}). There is only ever one, and a
  * trapped one teleports out. It wears Technoblade's crown, painted on its
- * head for Java players and riding it for Bedrock players ({@link Crown}),
- * which is how players know it: it has no name label, and any name it gets is
- * taken off.
+ * head for Java players and modelled on it for Bedrock players
+ * ({@link BedrockCrown}), which is how players know it: it has no name label,
+ * and any name it gets is taken off.
  *
  * <p>The pig is the one whose UUID is in {@value PigRecord#FILE_NAME}; it also
  * carries the scoreboard tag {@value #TAG} so vanilla selectors find it. A
@@ -126,7 +127,8 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
             getLogger().warning("Couldn't read " + recordFile + ", so a new Technoblade is placed: " + e.getMessage());
         }
         getServer().getPluginManager().registerEvents(this, this);
-        getServer().getPluginManager().registerEvents(new Guard(this::isTechnoblade, Crown::is), this);
+        getServer().getPluginManager().registerEvents(new Guard(this::isTechnoblade), this);
+        getServer().getPluginManager().registerEvents(new Feeding(this::isTechnoblade), this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(Commands.literal("technoblade")
                         // The console and RCON have it without the permission, which ops don't get by default.
@@ -508,8 +510,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
             return FoodRule.Slot.EMPTY;
         }
         Material type = item.getType();
-        return new FoodRule.Slot(type.getKey().asString(), item.getAmount(),
-                type.isEdible() && type != Material.POISONOUS_POTATO);
+        return new FoodRule.Slot(type.getKey().asString(), item.getAmount(), type.isEdible());
     }
 
     // Food kept keeps its own item, enchantments and name included.
