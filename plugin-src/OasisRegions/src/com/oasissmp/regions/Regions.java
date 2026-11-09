@@ -91,13 +91,10 @@ record Regions(List<Region> regions) {
                 }
                 first = corner(matcher, 1);
                 second = corner(matcher, 4);
-            } else if ((matcher = FLAG.matcher(line)).matches()
-                    || (matcher = TEXT_FLAG.matcher(line)).matches()) {
-                String flag = matcher.group(1);
-                if (flags.containsKey(flag) || textFlags.containsKey(flag)) {
-                    throw new IllegalArgumentException(where + name + " sets " + flag + " twice");
-                }
-                (matcher.pattern() == FLAG ? flags : textFlags).put(flag, matcher.group(2));
+            } else if ((matcher = FLAG.matcher(line)).matches()) {
+                setOnce(where, name, matcher, flags, textFlags);
+            } else if ((matcher = TEXT_FLAG.matcher(line)).matches()) {
+                setOnce(where, name, matcher, textFlags, flags);
             } else {
                 throw new IllegalArgumentException(where
                         + "isn't [name], corners x,y,z x,y,z, <flag> allow|deny, or <flag> \"<text>\": " + line);
@@ -107,6 +104,16 @@ record Regions(List<Region> regions) {
             regions.add(region(name, first, second, flags, textFlags));
         }
         return new Regions(regions);
+    }
+
+    /** Puts a flag line's value in {@code into}, unless either map already sets that flag. */
+    private static void setOnce(String where, String region, Matcher line,
+            Map<String, String> into, Map<String, String> other) {
+        String flag = line.group(1);
+        if (into.containsKey(flag) || other.containsKey(flag)) {
+            throw new IllegalArgumentException(where + region + " sets " + flag + " twice");
+        }
+        into.put(flag, line.group(2));
     }
 
     private static Region region(String name, Corner first, Corner second, Map<String, String> flags,

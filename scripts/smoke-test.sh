@@ -825,6 +825,17 @@ for region in "${!region_bounds[@]}"; do
   echo "${region} region ${bounds}, with ${flag_count} flags"
 done
 
+# The image's WorldGuard is the one scripts/patch-worldguard.py wrote: the class
+# it patches holds the delay as a long 1500 (CONSTANT_Long, tag 5).
+worldguard_delays="$(docker run --rm --entrypoint sh "$image" -c \
+  'unzip -p /plugins/WorldGuard.jar com/sk89q/worldguard/bukkit/listener/RegionProtectionListener.class \
+    | od -An -v -tx1 | tr -d " \n" | grep -o 0500000000000005dc | wc -l')"
+if [[ "$worldguard_delays" != 1 ]]; then
+  echo "error: the image's WorldGuard.jar isn't patched to a 1500 ms region message delay" >&2
+  exit 1
+fi
+echo "WorldGuard's region message delay is 1500 ms"
+
 # A LuckPerms group file and an OasisFilter word list file the repo doesn't
 # have, left on the world volume as ones deleted from the repo would be, are
 # gone once the server starts again. MCXboxBroadcast's token cache, which the

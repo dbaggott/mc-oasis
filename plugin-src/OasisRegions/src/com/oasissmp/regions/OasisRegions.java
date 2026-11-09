@@ -4,6 +4,8 @@ import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.protection.flags.Flag;
+import com.sk89q.worldguard.protection.flags.FlagContext;
+import com.sk89q.worldguard.protection.flags.InvalidFlagFormat;
 import com.sk89q.worldguard.protection.flags.StateFlag;
 import com.sk89q.worldguard.protection.flags.StringFlag;
 import com.sk89q.worldguard.protection.managers.RegionManager;
@@ -61,7 +63,8 @@ public final class OasisRegions extends JavaPlugin {
             });
             region.textFlags().forEach((name, text) -> {
                 StringFlag flag = stringFlag(name);
-                regionFlags.add(protectedRegion -> protectedRegion.setFlag(flag, text));
+                String value = textValue(flag, text);
+                regionFlags.add(protectedRegion -> protectedRegion.setFlag(flag, value));
             });
             flags.put(region, regionFlags);
         }
@@ -102,6 +105,19 @@ public final class OasisRegions extends JavaPlugin {
                     + " to text, which isn't a WorldGuard text flag");
         }
         return stringFlag;
+    }
+
+    /**
+     * The text as {@code /rg flag} would set it, so a {@code \n} or a color
+     * macro in regions.txt means what it means there.
+     */
+    private static String textValue(StringFlag flag, String text) {
+        try {
+            return flag.parseInput(FlagContext.create().setInput(text).build());
+        } catch (InvalidFlagFormat e) {
+            throw new IllegalArgumentException(Regions.FILE_NAME + " sets " + flag.getName() + " to text WorldGuard"
+                    + " won't take: " + e.getMessage(), e);
+        }
     }
 
     private static BlockVector3 vector(Regions.Corner corner) {

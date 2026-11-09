@@ -32,6 +32,9 @@ def main(source, destination):
         digest = hashlib.sha256(original).hexdigest()
         if digest != CLASS_SHA256:
             sys.exit(f"error: {CLASS} has sha256 {digest}, not the {CLASS_SHA256} this patch was written for")
+        matches = original.count(long_constant(500))
+        if matches != 1:
+            sys.exit(f"error: {CLASS} has {matches} long 500 constants, not the one delay")
         patched = original.replace(long_constant(500), long_constant(DELAY_MS))
         with zipfile.ZipFile(destination, "w") as out:
             for entry in jar.infolist():
