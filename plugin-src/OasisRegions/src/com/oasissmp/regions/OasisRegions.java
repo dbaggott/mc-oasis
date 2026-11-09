@@ -5,14 +5,18 @@ import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.protection.flags.Flag;
 import com.sk89q.worldguard.protection.flags.StateFlag;
+import com.sk89q.worldguard.protection.flags.StringFlag;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -47,11 +51,18 @@ public final class OasisRegions extends JavaPlugin {
         }
         // Every flag looked up before any region is added, so a flag WorldGuard
         // doesn't have stops the plugin with none of the file applied rather than some.
-        Map<Regions.Region, Map<StateFlag, StateFlag.State>> flags = new LinkedHashMap<>();
+        Map<Regions.Region, List<Consumer<ProtectedRegion>>> flags = new LinkedHashMap<>();
         for (Regions.Region region : regions.regions()) {
-            Map<StateFlag, StateFlag.State> regionFlags = new LinkedHashMap<>();
-            region.flags().forEach((name, value) ->
-                    regionFlags.put(stateFlag(name), StateFlag.State.valueOf(value.toUpperCase(Locale.ROOT))));
+            List<Consumer<ProtectedRegion>> regionFlags = new ArrayList<>();
+            region.flags().forEach((name, value) -> {
+                StateFlag flag = stateFlag(name);
+                StateFlag.State state = StateFlag.State.valueOf(value.toUpperCase(Locale.ROOT));
+                regionFlags.add(protectedRegion -> protectedRegion.setFlag(flag, state));
+            });
+            region.textFlags().forEach((name, text) -> {
+                StringFlag flag = stringFlag(name);
+                regionFlags.add(protectedRegion -> protectedRegion.setFlag(flag, text));
+            });
             flags.put(region, regionFlags);
         }
         // Each region built only once those before it are added: adding a
@@ -65,13 +76,13 @@ public final class OasisRegions extends JavaPlugin {
     }
 
     private static ProtectedRegion protectedRegion(
-            Regions.Region region, Map<StateFlag, StateFlag.State> flags, ProtectedRegion existing) {
+            Regions.Region region, List<Consumer<ProtectedRegion>> flags, ProtectedRegion existing) {
         ProtectedRegion protectedRegion = new ProtectedCuboidRegion(
                 region.name(), vector(region.first()), vector(region.second()));
         if (existing != null) {
             protectedRegion.copyFrom(existing);
         }
-        flags.forEach(protectedRegion::setFlag);
+        flags.forEach(flag -> flag.accept(protectedRegion));
         return protectedRegion;
     }
 
@@ -82,6 +93,15 @@ public final class OasisRegions extends JavaPlugin {
                     + ", which isn't a WorldGuard allow/deny flag");
         }
         return stateFlag;
+    }
+
+    private static StringFlag stringFlag(String name) {
+        Flag<?> flag = WorldGuard.getInstance().getFlagRegistry().get(name);
+        if (!(flag instanceof StringFlag stringFlag)) {
+            throw new IllegalArgumentException(Regions.FILE_NAME + " sets " + name
+                    + " to text, which isn't a WorldGuard text flag");
+        }
+        return stringFlag;
     }
 
     private static BlockVector3 vector(Regions.Corner corner) {

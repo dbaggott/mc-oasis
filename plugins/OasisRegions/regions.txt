@@ -3,10 +3,11 @@
 # change to them made in game lasts only until the next start.
 #
 # Each region is a [name] line, then a `corners` line giving two opposite
-# corners as x,y,z, then one `<flag> allow|deny` line per flag. A region that
-# already exists gets these corners and flags and keeps its owners, members and
-# any other flags. With no owners or members, only ops can build or break
-# blocks in a region; the flags cover what membership doesn't.
+# corners as x,y,z, then one line per flag: `<flag> allow|deny`, or
+# `<flag> "<text>"` for a flag that takes text. A region that already exists
+# gets these corners and flags and keeps its owners, members and any other
+# flags. With no owners or members, only ops can build or break blocks in a
+# region; the flags cover what membership doesn't.
 
 # Spawn is on an island, and this covers all of it: the island runs x -504 to
 # -437 and z 854 to 928, the region 8 blocks of water past that, from the
@@ -25,6 +26,10 @@ lighter deny
 enderman-grief deny
 use allow
 chest-access allow
+# What a player is told when the region stops them, WorldGuard putting its
+# words for what they tried in place of %what%. The egg pedestal sets none of
+# its own, so this one covers it too.
+deny-message "Sorry, but you can't %what% here."
 
 # The one block at spawn where a player leaves the dragon egg for someone else
 # to take. Anyone can place a block there; OasisEgg turns away everything but
