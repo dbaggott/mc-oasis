@@ -10,6 +10,9 @@ import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Pig;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.util.Transformation;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 /**
  * Technoblade's crown: an item display riding the pig, tagged {@value #TAG}.
@@ -18,11 +21,16 @@ import org.bukkit.inventory.meta.ItemMeta;
  * <p>The item is a golden helmet whose {@code item_model} is
  * {@value #MODEL}, from the server's resource pack ({@code resourcepack/} in
  * the repo). The model itself sits the crown on the pig's head, measured from
- * where a passenger rides, so the display needs no transformation; a client
- * without the model sees the golden helmet on the pig's back. A passenger
- * doesn't turn with its vehicle, so the plugin turns the crown to where the
- * pig's head faces every tick, and a one-tick teleport duration smooths each
- * turn.
+ * where a passenger rides, facing the way the pig's body does; a client
+ * without the model sees the golden helmet on the pig's back.
+ *
+ * <p>A passenger doesn't turn with its vehicle, so every tick the plugin turns
+ * the crown twice over, as a pig's head turns. The display's yaw is the body's,
+ * which swings the crown round the pig's centre with its body. Its
+ * transformation then turns it by the head's yaw relative to the body, round
+ * the pig's neck, {@value #NECK} blocks ahead of its centre, where the head
+ * model pivots. Each change is interpolated over one tick, the shortest there
+ * is. The crown doesn't follow the head's pitch.
  *
  * <p>The API has no head yaw, so it is read from the server's own entity by
  * reflection: {@code getHandle()} on the Bukkit entity, then vanilla's
@@ -35,6 +43,10 @@ final class Crown {
     static final NamespacedKey MODEL = new NamespacedKey("oasis", "technoblade_crown");
 
     private static final int TURN_TICKS = 1;
+    // The pig model's head pivot: 6 pixels ahead of the body's centre.
+    private static final float NECK = 0.375f;
+    // Below this, a change in the head's turn isn't sent.
+    private static final float TURN_STEP = 0.5f;
 
     private Crown() { }
 
@@ -49,6 +61,7 @@ final class Crown {
             display.setPersistent(true);
             display.setItemStack(item());
             display.setTeleportDuration(TURN_TICKS);
+            display.setInterpolationDuration(TURN_TICKS);
             display.setRotation(pig.getBodyYaw(), 0);
             // The next tick turns it to the head.
         });
@@ -57,10 +70,35 @@ final class Crown {
     }
 
     static void face(ItemDisplay crown, Pig pig, Logger logger) {
-        float yaw = Location.normalizeYaw(headYaw(pig, logger));
-        if (crown.getYaw() != yaw) {
-            crown.setRotation(yaw, 0);
+        float body = Location.normalizeYaw(pig.getBodyYaw());
+        if (crown.getYaw() != body) {
+            crown.setRotation(body, 0);
         }
+        float turn = Location.normalizeYaw(headYaw(pig, logger) - body);
+        float shown = Location.normalizeYaw(turn(crown.getTransformation()));
+        if (Math.abs(Location.normalizeYaw(turn - shown)) >= TURN_STEP) {
+            crown.setTransformation(turnedAtNeck(turn));
+            crown.setInterpolationDelay(0);
+        }
+    }
+
+    /**
+     * A turn of {@code degrees} of yaw round the neck. The display turns by
+     * yaw y as a rotation of -y about its up axis, so the head's turn does
+     * too; the translation keeps the neck where it is.
+     */
+    static Transformation turnedAtNeck(float degrees) {
+        float radians = (float) Math.toRadians(-degrees);
+        Quaternionf rotation = new Quaternionf().rotationY(radians);
+        Vector3f neck = new Vector3f(0, 0, NECK);
+        Vector3f translation = new Vector3f(neck).sub(rotation.transform(new Vector3f(neck)));
+        return new Transformation(translation, rotation, new Vector3f(1, 1, 1), new Quaternionf());
+    }
+
+    // The yaw a transformation from turnedAtNeck turns by.
+    static float turn(Transformation transformation) {
+        Vector3f forward = transformation.getLeftRotation().transform(new Vector3f(0, 0, 1));
+        return (float) -Math.toDegrees(Math.atan2(forward.x, forward.z));
     }
 
     private static boolean headYawFailed;

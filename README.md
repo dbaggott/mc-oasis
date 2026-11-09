@@ -104,7 +104,7 @@ jar, the formats in each `datapacks/*/pack.mcmeta` to the new version's data pac
 `resourcepack/pack.mcmeta` to its resource pack format.
 
 The `library` lines are what `plugin-src/` compiles against, so they follow what the server runs: `paper-api`
-the Paper build, the `adventure-*` libraries the Adventure version, `guava` and `brigadier` the versions that
+the Paper build, the `adventure-*` libraries the Adventure version, `guava`, `brigadier` and `joml` the versions that
 `paper-api`'s POM names, `jetbrains-annotations` the version `adventure-api`'s POM names, `luckperms-api` the LuckPerms
 plugin's major and minor version, `voicechat-api` the Simple Voice Chat plugin, `libertybans-api` the LibertyBans
 plugin, `omnibus` the version `libertybans-api`'s parent POM names, `worldguard-core` the WorldGuard plugin, and
