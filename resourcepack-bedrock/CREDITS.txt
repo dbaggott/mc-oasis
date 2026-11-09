@@ -11,7 +11,7 @@ models. Here its 32 boxes, from assets/minecraft/optifine/cem/pig2.jem, are
 re-expressed as a Bedrock geometry, and the parts of
 assets/minecraft/textures/entity/pig/pig_crown.png they use are packed into
 one texture, technoblade_crown.png. The positions are moved so the crown sits
-on the pig's head as seen from where a passenger rides.
+on the pig's head, measured from the pig's own origin, at its feet.
 
 MIT License
 

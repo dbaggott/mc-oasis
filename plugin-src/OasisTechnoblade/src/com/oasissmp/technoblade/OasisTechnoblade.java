@@ -354,7 +354,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
             return;
         }
         crowns.stream().skip(1).forEach(Entity::remove);
-        Crown.face(crowns.getFirst(), pig, getLogger());
+        Crown.face(crowns.getFirst(), pig);
     }
 
     // A tick on, once a chunk's passengers have mounted: a crown not riding Technoblade is removed.
