@@ -18,14 +18,16 @@ import org.bukkit.event.vehicle.VehicleEnterEvent;
 /**
  * Turns away every vanilla mechanic that would take Technoblade away without
  * killing it: turning into a zombified piglin, a name tag, a lead, a boat or
- * minecart, a portal, a saddle, and anything climbing on.
+ * minecart, a portal, a saddle, and anything climbing on but its own crown.
  */
 final class Guard implements Listener {
 
     private final Predicate<Entity> isTechnoblade;
+    private final Predicate<Entity> isCrown;
 
-    Guard(Predicate<Entity> isTechnoblade) {
+    Guard(Predicate<Entity> isTechnoblade, Predicate<Entity> isCrown) {
         this.isTechnoblade = isTechnoblade;
+        this.isCrown = isCrown;
     }
 
     // Lightning turning it into a zombified piglin among them.
@@ -56,7 +58,9 @@ final class Guard implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onMount(EntityMountEvent event) {
-        refuse(event.getMount(), event);
+        if (!isCrown.test(event.getEntity())) {
+            refuse(event.getMount(), event);
+        }
     }
 
     @EventHandler(ignoreCancelled = true)

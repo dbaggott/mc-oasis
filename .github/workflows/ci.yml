@@ -51,8 +51,35 @@ jobs:
       - name: Fetch and verify artifacts
         run: scripts/fetch-artifacts.sh
 
+      # The site job builds the same pack from the same tree, and the site
+      # serves it at the URL this image names; scripts/java-pack.sh is what
+      # makes the two builds agree, which the check below holds it to.
+      - name: Build the Java resource pack
+        run: |
+          set -euo pipefail
+          sha1="$(scripts/java-pack.sh build/resourcepack)"
+          echo "RESOURCE_PACK_SHA1=${sha1}" >> "$GITHUB_ENV"
+          # The same tree, with every file's timestamp changed, gives the same bytes.
+          find resourcepack -type f -exec touch -d '2001-02-03 04:05:06' {} +
+          again="$(scripts/java-pack.sh build/resourcepack-again)"
+          cmp "build/resourcepack/oasis-pack-${sha1}.zip" "build/resourcepack-again/oasis-pack-${again}.zip"
+          echo "oasis-pack-${sha1}.zip builds the same twice"
+
       - name: Build
-        run: docker build --platform linux/arm64 --tag mc-oasis:ci .
+        run: docker build --platform linux/arm64 --build-arg "RESOURCE_PACK_SHA1=${RESOURCE_PACK_SHA1}" --tag mc-oasis:ci .
+
+      - name: Check the image names the pack
+        run: |
+          set -euo pipefail
+          env="$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' mc-oasis:ci)"
+          url="$(sed -n 's/^RESOURCE_PACK=//p' <<<"$env")"
+          sha1="$(sed -n 's/^RESOURCE_PACK_SHA1=//p' <<<"$env")"
+          want="https://www.oasis-smp.com/assets/oasis-pack-${RESOURCE_PACK_SHA1}.zip"
+          if [[ "$url" != "$want" || "$sha1" != "$RESOURCE_PACK_SHA1" ]]; then
+            echo "::error::the image names ${url} (${sha1}), not ${want} (${RESOURCE_PACK_SHA1})"
+            exit 1
+          fi
+          echo "the image names ${url}"
 
       - name: Smoke test
         run: |
@@ -93,6 +120,21 @@ jobs:
 
       - name: Check the build
         run: npm test --prefix web
+
+      # Served at https://www.oasis-smp.com/assets/oasis-pack-<sha1>.zip, the URL
+      # the server image built in the same run names (the server job checks
+      # its side). Named by its content, so a site deploy never deletes or
+      # changes one already served.
+      - name: Add the Java resource pack
+        run: |
+          set -euo pipefail
+          sha1="$(scripts/java-pack.sh web/dist/assets)"
+          file="web/dist/assets/oasis-pack-${sha1}.zip"
+          if [[ "$(sha1sum "$file" | cut -d' ' -f1)" != "$sha1" ]]; then
+            echo "::error::${file} doesn't have the SHA-1 its name says"
+            exit 1
+          fi
+          echo "the site carries assets/oasis-pack-${sha1}.zip"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: github.event_name != 'pull_request'

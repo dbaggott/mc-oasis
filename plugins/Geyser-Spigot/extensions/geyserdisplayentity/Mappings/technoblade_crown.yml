@@ -1,0 +1,12 @@
+# Technoblade's crown, the item display OasisTechnoblade mounts on the pig. Its
+# Bedrock geometry (resourcepack-bedrock/) is laid out from the display's own
+# position, so the extension's default half-block drop is undone here.
+mappings:
+  technoblade_crown:
+    type: "minecraft:golden_helmet"
+    item-identifier: "oasis:technoblade_crown"
+    displayentityoptions:
+      y-offset: 0
+      vanilla-scale: false
+      vanilla-scale-multiplier: 1
+      hand: false

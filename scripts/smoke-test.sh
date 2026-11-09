@@ -345,6 +345,12 @@ while read -r kind extension _ || [[ -n "${kind:-}" ]]; do
       ready_line='[mcxboxbroadcast] [Primary Session] Starting SessionManager'
       failure_line='extension will not start'
       ;;
+    geyserdisplayentity)
+      start_line='[geyserdisplayentity] Loaded EntityTypes: geyser:item_display'
+      ready_line='[geyserdisplayentity] Done'
+      # It has no failure line of its own: a failure shows as a WARN or ERROR.
+      failure_line=''
+      ;;
     *)
       echo "error: artifacts.lock has extension ${extension}, which the smoke test has no start check for" >&2
       exit 1
@@ -353,7 +359,7 @@ while read -r kind extension _ || [[ -n "${kind:-}" ]]; do
   problem_lines=" (WARN|ERROR)\]: \[Geyser-Spigot\] \[${extension}\] "
   deadline=$((SECONDS + 120))
   until extension_logs="$(docker logs "$name" 2>&1)" \
-      && { grep --quiet --fixed-strings --regexp="$ready_line" --regexp="$failure_line" <<<"$extension_logs" \
+      && { grep --quiet --fixed-strings --regexp="$ready_line" ${failure_line:+--regexp="$failure_line"} <<<"$extension_logs" \
         || grep --quiet --extended-regexp "$problem_lines" <<<"$extension_logs"; }; do
     if [[ "$(docker inspect --format '{{.State.Running}}' "$name")" != true ]] || ((SECONDS >= deadline)); then
       break
@@ -362,7 +368,7 @@ while read -r kind extension _ || [[ -n "${kind:-}" ]]; do
   done
   if ! grep --quiet --fixed-strings "$start_line" <<<"$extension_logs" \
     || ! grep --quiet --fixed-strings "$ready_line" <<<"$extension_logs" \
-    || grep --quiet --fixed-strings "$failure_line" <<<"$extension_logs" \
+    || { [[ -n "$failure_line" ]] && grep --quiet --fixed-strings "$failure_line" <<<"$extension_logs"; } \
     || grep --quiet --extended-regexp "$problem_lines" <<<"$extension_logs"; then
     grep --after-context=3 --fixed-strings "[${extension}]" <<<"$extension_logs" | tail -n 40 || true
     echo "error: the ${extension} extension didn't start, or logged errors starting" >&2
@@ -378,6 +384,47 @@ done <"${repo_root}/artifacts.lock"
 check_settings "$name" value "$(printf '%s\t%s\t%s' \
   plugins/Geyser-Spigot/extensions/mcxboxbroadcast/config.yml "\$['friend-sync']['expiry']['enabled']" false)" || exit 1
 echo "MCXboxBroadcast keeps friends who haven't joined lately"
+
+# The Bedrock side of Technoblade's crown: Geyser's packs/ holds the repo's
+# Bedrock pack and GeyserDisplayEntity's, and Geyser took them and the repo's
+# custom item mapping without complaint. A pack or mapping it can't read is
+# skipped with a WARN or ERROR that names it.
+for pack in oasis GeyserDisplayEntityPack; do
+  if ! docker exec --user 1000 "$name" test -s "/data/plugins/Geyser-Spigot/packs/${pack}.mcpack"; then
+    echo "error: Geyser's packs/ has no ${pack}.mcpack" >&2
+    exit 1
+  fi
+done
+geyser_problems=' (WARN|ERROR)\]: \[Geyser-Spigot\] .*([Mm]apping|[Pp]ack|custom item)'
+if grep --quiet --extended-regexp "$geyser_problems" <<<"$(docker logs "$name" 2>&1)"; then
+  grep --extended-regexp "$geyser_problems" <<<"$(docker logs "$name" 2>&1)" | head -n 20 || true
+  echo "error: Geyser complained about a resource pack or custom item mapping" >&2
+  exit 1
+fi
+echo "Geyser has the Bedrock packs and the crown's item mapping"
+
+# The required Java resource pack: server.properties carries the URL, SHA-1,
+# enforcement and prompt the image sets. CI checks that URL and SHA-1 against
+# the pack the site build carries.
+pack_env="$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$image")"
+pack_env_value() { sed -n "s/^$1=//p" <<<"$pack_env"; }
+properties="$(docker exec --user 1000 "$name" cat /data/server.properties)"
+for setting in "resource-pack RESOURCE_PACK" "resource-pack-sha1 RESOURCE_PACK_SHA1" \
+    "require-resource-pack RESOURCE_PACK_ENFORCE" "resource-pack-prompt RESOURCE_PACK_PROMPT"; do
+  read -r key variable <<<"$setting"
+  expected="$(pack_env_value "$variable")"
+  # server.properties escapes `:` as `\:`.
+  live="$(sed -n "s/^${key}=//p" <<<"$properties" | sed 's/\\:/:/g')"
+  if [[ -z "$expected" || "$live" != "$expected" ]]; then
+    echo "error: server.properties has ${key}=${live}, not the image's ${variable}=${expected}" >&2
+    exit 1
+  fi
+done
+if grep --quiet --fixed-strings 'resource pack prompt' <<<"$(docker logs "$name" 2>&1)"; then
+  echo "error: the server couldn't read the resource pack prompt" >&2
+  exit 1
+fi
+echo "the Java resource pack is required, at the image's URL and SHA-1"
 
 # The Dockerfile's RCON_CMDS_STARTUP. The image runs them through RCON once the
 # server listens and only logs a failure, so what they set is checked below,
@@ -536,11 +583,19 @@ technoblade() { rcon technoblade | sed 's/\x1b\[[0-9;]*m//g'; }
 technoblade_uuid() { sed -n 's/^Technoblade \([0-9a-f-]\{36\}\) .*/\1/p' <<<"$1"; }
 # The pig's block position, from a reply saying where it is now, as `x y z`.
 technoblade_at() { sed -n 's/.* is at \([0-9]*\) \([0-9]*\) \([0-9]*\) in minecraft:overworld\.$/\1 \2 \3/p' <<<"$1"; }
-technoblade_count() {
+count_of() {
   local reply
-  reply="$(rcon 'execute if entity @e[type=pig,tag=technoblade]')"
+  reply="$(rcon "$1")"
   if [[ "$reply" =~ Count:\ ([0-9]+) ]]; then echo "${BASH_REMATCH[1]}"; else echo 0; fi
 }
+technoblade_count() { count_of 'execute if entity @e[type=pig,tag=technoblade]'; }
+# Technoblade's crowns, and of them, the ones riding a pig tagged technoblade.
+crown_count() { count_of 'execute if entity @e[type=item_display,tag=technoblade_crown]'; }
+crown_riding() {
+  count_of 'execute as @e[type=pig,tag=technoblade] on passengers if entity @s[type=item_display,tag=technoblade_crown]'
+}
+crowned() { [[ "$(crown_count)" == 1 && "$(crown_riding)" == 1 ]]; }
+named() { [[ "$(rcon 'data get entity @e[type=pig,tag=technoblade,limit=1] CustomName')" != *"Found no elements"* ]]; }
 reply="$(technoblade)"
 first_uuid="$(technoblade_uuid "$reply")"
 if [[ -z "$first_uuid" ]]; then
@@ -563,11 +618,31 @@ if [[ "$(technoblade_count)" != 1 || "$pig_uuid" == "$first_uuid" || "$(technobl
   echo "error: after respawn there isn't exactly one new Technoblade on the platform at y 301 ($(technoblade_count) found): '${reply}'" >&2
   exit 1
 fi
+if ! crowned; then
+  echo "error: after respawn there isn't exactly one crown, riding Technoblade ($(crown_count) crowns, $(crown_riding) riding)" >&2
+  exit 1
+fi
+if named; then
+  echo "error: Technoblade has a name after respawn" >&2
+  exit 1
+fi
+# A name tag is refused by an event only a player fires; a name set any other
+# way is taken off.
+rcon 'data merge entity @e[type=pig,tag=technoblade,limit=1] {CustomName:"Dinnerbone",CustomNameVisible:1b}' >/dev/null
+deadline=$((SECONDS + 5))
+while named; do
+  if ((SECONDS >= deadline)); then
+    echo "error: a name set on Technoblade with /data merge was still there after 5s" >&2
+    exit 1
+  fi
+  sleep 1
+done
 rcon 'kill @e[type=pig,tag=technoblade]' >/dev/null
 deadline=$((SECONDS + 10))
-until reply="$(technoblade)" && [[ "$(technoblade_count)" == 1 && "$(technoblade_uuid "$reply")" != "$pig_uuid" ]]; do
+until reply="$(technoblade)" && [[ "$(technoblade_count)" == 1 && "$(technoblade_uuid "$reply")" != "$pig_uuid" ]] \
+  && crowned && ! named; do
   if ((SECONDS >= deadline)); then
-    echo "error: Technoblade wasn't replaced by one new pig within 10s of being killed ($(technoblade_count) found): '${reply}'" >&2
+    echo "error: Technoblade wasn't replaced by one new, crowned, unnamed pig within 10s of being killed ($(technoblade_count) found, $(crown_count) crowns, $(crown_riding) riding): '${reply}'" >&2
     exit 1
   fi
   sleep 1
@@ -611,6 +686,10 @@ until reply="$(technoblade)" && read -r px _ pz <<<"$(technoblade_at "$reply")" 
   fi
   sleep 2
 done
+if ! crowned; then
+  echo "error: after teleporting out of a trap, Technoblade isn't wearing exactly one crown ($(crown_count) crowns, $(crown_riding) riding)" >&2
+  exit 1
+fi
 pig_uuid="$(technoblade_uuid "$reply")"
 rcon 'summon minecraft:pig 5020 301 5020 {Tags:["technoblade"]}' >/dev/null
 deadline=$((SECONDS + 10))
@@ -626,7 +705,7 @@ if [[ "$(technoblade_uuid "$(technoblade)")" != "$pig_uuid" ]]; then
   exit 1
 fi
 rcon forceload remove all >/dev/null
-echo "Technoblade respawns once when killed, teleports out of a trap, and has no duplicates"
+echo "Technoblade respawns once when killed, teleports out of a trap, and has no duplicates, wearing one crown throughout and no name"
 
 # The world borders, by width; `worldborder get` doesn't report the center.
 # Every `worldborder set` line has to parse, so a reworded one fails here

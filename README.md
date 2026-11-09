@@ -27,10 +27,15 @@ data/                    server config files the repo owns, copied over the same
 datapacks/<name>/        the repo's own datapacks, each zipped as <name>.zip in the image
 plugin-src/<Name>/       the repo's own plugins, each a plugin.yml and Java sources under src/, compiled into <Name>.jar in the image; tests under test/ run at build
 hook-dupe-agent/         a Java agent the server starts with, which puts back tripwire hook duping; its class comment says how; tests under test/ run at build
+resourcepack/            the Java resource pack every player is required to take: Technoblade's crown; CREDITS.txt says where it comes from
+resourcepack-bedrock/    the same crown for Bedrock players, as a pack Geyser sends them; GeyserDisplayEntity draws it
+plugins/Geyser-Spigot/custom_mappings/  the Bedrock item Geyser shows for the crown's Java item model
 scripts/
   fetch-artifacts.sh     downloads everything in artifacts.lock and verifies each sha256
   smoke-test.sh          starts a built image on a throwaway world; checks every plugin and datapack loads and every config setting applies
   bump-bedrock.sh        moves the Geyser, Floodgate and MCXboxBroadcast lines in artifacts.lock to their newest builds at least 48 hours old
+  build-pack.sh          zips a resource pack so the same files always give the same bytes
+  java-pack.sh           builds resourcepack/ as oasis-pack-<sha1>.zip and prints the SHA-1
 web/                     the website: a Vite site; its rules page renders plugins/OasisRules/rules.txt
 api/                     the website's API: a parent's request for their child to be let in, as a container-image Lambda
 shared/                  what the site's forms and the API both import, so they agree on every field
@@ -43,9 +48,21 @@ shared/                  what the site's forms and the API both import, so they 
 
 ```bash
 scripts/fetch-artifacts.sh
-docker build --platform linux/arm64 --tag mc-oasis:local .
+docker build --platform linux/arm64 --build-arg RESOURCE_PACK_SHA1="$(scripts/java-pack.sh build/resourcepack)" \
+  --tag mc-oasis:local .
 scripts/smoke-test.sh mc-oasis:local
 ```
+
+The image names the resource pack's URL on the website, which a local server can't serve until the pack is deployed
+there. To play on a local server with the pack, serve the pack yourself and point the server at it:
+
+```bash
+python3 -m http.server --directory build/resourcepack 8000 &
+docker run --rm -it -p 25565:25565 -p 19132:19132/udp -e WHITELIST=<you> -e OPS=<you> \
+  -e RESOURCE_PACK="http://localhost:8000/oasis-pack-$(scripts/java-pack.sh build/resourcepack).zip" mc-oasis:local
+```
+
+The client fetches the pack, so `localhost` is the machine the game runs on.
 
 The smoke test needs Docker and `jq`.
 
@@ -67,6 +84,11 @@ where they give one (the Paper and GeyserMC download APIs both do, and GitHub's 
 asset's as its `digest`). Otherwise download the file and hash
 it yourself. A mismatch fails the build.
 
+GeyserDisplayEntity, the extension that shows Bedrock players Technoblade's crown, reaches into Geyser's internals, so a
+Geyser build can break it. It is optional: when a Geyser bump fails CI on it, take its `extension` and `bedrockpack` lines
+out of `artifacts.lock`, and its case out of the smoke test's extension check, rather than hold Geyser back. Bedrock
+players lose the crown until a fixed release is pinned again, and can still join.
+
 Geyser, Floodgate and the MCXboxBroadcast extension are bumped for you: the Bump Bedrock workflow opens a PR on
 `bump/bedrock` daily when there is a newer build, which merges itself once CI passes. If an extension release
 fails CI, pin its line back by hand in that PR, or the day's Geyser bump is held back with it. The next day's
@@ -78,7 +100,8 @@ A Paper build can change the vanilla method `hook-dupe-agent/` rewrites. If the 
 the smoke test fails on the agent's check, and the matcher in `HookDupeAgent.java` follows the new code.
 
 Changing the Minecraft version also means changing `VERSION` in the `Dockerfile` to match the new Paper
-jar, and the formats in each `datapacks/*/pack.mcmeta` to the new version's data pack format.
+jar, the formats in each `datapacks/*/pack.mcmeta` to the new version's data pack format, and the format in
+`resourcepack/pack.mcmeta` to its resource pack format.
 
 The `library` lines are what `plugin-src/` compiles against, so they follow what the server runs: `paper-api`
 the Paper build, the `adventure-*` libraries the Adventure version, `guava` and `brigadier` the versions that
@@ -91,3 +114,19 @@ means changing the JDK image and `--release` in the `Dockerfile`'s `repo-plugins
 Worldgen datapacks (terrain and structures) shape the world only as it is first generated, and removing one
 from an existing world breaks what it generated. The comment at the top of `artifacts.lock` covers their
 order.
+
+## Changing the resource pack
+
+Every Java player has to take the pack in `resourcepack/`: one who declines it is disconnected. The website serves it
+as `assets/oasis-pack-<sha1>.zip`, named by its SHA-1, and the server image built in the same CI run names that URL and
+SHA-1. A site deploy never deletes a file under `assets/`, so once deployed, a pack stays served.
+
+**Deploy the site release that carries a new pack before the server image that names it.** Until then the server
+points every Java player at a URL that isn't served, and they can't join. The zip is built the same way every time
+(`scripts/build-pack.sh`), so this only matters when something under `resourcepack/` changed.
+
+Bedrock players get `resourcepack-bedrock/` from Geyser instead. Raise the `version` in its `manifest.json` (header and
+module alike) whenever anything in it changes: Bedrock clients keep a pack they already have at the same version.
+
+The crown is derived from an MIT-licensed pack; `CREDITS.txt`, in both pack directories, carries its notice, which
+has to stay with it.

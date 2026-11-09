@@ -1,0 +1,37 @@
+Technoblade's crown
+
+The crown's shape and texture come from "Technoblade Pig Crown" by Hohigamer,
+version 1.10, published under the MIT License:
+https://modrinth.com/resourcepack/technoblade-pig-crown
+https://cdn.modrinth.com/data/7gPecjPn/versions/5lpwu4UZ/Technoblade%20Pig%20Crown.zip
+(sha256 c1920dd8288451c846a4c0ff1a54d85c7245ea3fde98ad40d628e9172e3d461b)
+
+That pack draws the crown on a pig's head with OptiFine's custom entity
+models. Here its 32 boxes, from assets/minecraft/optifine/cem/pig2.jem, are
+re-expressed as a vanilla item model (resourcepack/) and a Bedrock geometry
+(resourcepack-bedrock/), and the parts of
+assets/minecraft/textures/entity/pig/pig_crown.png they use are packed into
+one texture, technoblade_crown.png. The positions are moved so the crown sits
+on the pig's head as seen from where a passenger rides.
+
+MIT License
+
+Copyright (c) 2025 Hohigamer
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

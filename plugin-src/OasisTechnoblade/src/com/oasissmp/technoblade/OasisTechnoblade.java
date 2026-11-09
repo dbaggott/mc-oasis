@@ -39,12 +39,14 @@ import org.bukkit.World;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.RemoteConsoleCommandSender;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Pig;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntityDismountEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityRemoveEvent;
@@ -59,7 +61,9 @@ import org.bukkit.scheduler.BukkitTask;
  * where it dies, every player is told "Technoblade never dies.", and whoever
  * killed it loses half of each food stack and has every empty slot filled
  * with poisonous potatoes ({@link FoodRule}). There is only ever one, and a
- * trapped one teleports out.
+ * trapped one teleports out. It wears Technoblade's crown ({@link Crown}),
+ * which is how players know it: it has no name label, and any name it gets is
+ * taken off.
  *
  * <p>The pig is the one whose UUID is in {@value PigRecord#FILE_NAME}; it also
  * carries the scoreboard tag {@value #TAG} so vanilla selectors find it. A
@@ -72,7 +76,6 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
     static final String PERMISSION = "oasistechnoblade.manage";
     static final String TAG = "technoblade";
 
-    private static final String NAME = "Technoblade";
     private static final Component NEVER_DIES = Component.text("Technoblade never dies.", NamedTextColor.LIGHT_PURPLE);
     private static final String SPAWN_REGION = "spawn";
     // Removals that leave the pig alive somewhere, or that the death handler deals with.
@@ -117,7 +120,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
             getLogger().warning("Couldn't read " + recordFile + ", so a new Technoblade is placed: " + e.getMessage());
         }
         getServer().getPluginManager().registerEvents(this, this);
-        getServer().getPluginManager().registerEvents(new Guard(this::isTechnoblade), this);
+        getServer().getPluginManager().registerEvents(new Guard(this::isTechnoblade, Crown::is), this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(Commands.literal("technoblade")
                         // The console and RCON have it without the permission, which ops don't get by default.
@@ -140,6 +143,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
             }
         });
         getServer().getScheduler().runTaskTimer(this, () -> checkTrap(false), TRAP_CHECK_TICKS, TRAP_CHECK_TICKS);
+        getServer().getScheduler().runTaskTimer(this, this::tend, 1, 1);
     }
 
     @Override
@@ -166,6 +170,16 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
     public void onAdd(EntityAddToWorldEvent event) {
         if (event.getEntity() instanceof Pig pig) {
             admit(pig);
+        } else if (Crown.is(event.getEntity())) {
+            checkCrownLater(event.getEntity());
+        }
+    }
+
+    // The pig's death and removal included; an unload dismounts too, but the crown is unloaded with it.
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onDismount(EntityDismountEvent event) {
+        if (Crown.is(event.getEntity())) {
+            checkCrownLater(event.getEntity());
         }
     }
 
@@ -190,6 +204,8 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         }
         UUID dead = event.getEntity().getUniqueId();
         Location where = event.getEntity().getLocation();
+        // Now, not when the body is removed a second later, by which time the new pig wears its own.
+        event.getEntity().getPassengers().stream().filter(Crown::is).forEach(Entity::remove);
         getServer().getScheduler().runTask(this, () -> {
             if (record != null && record.pig().equals(dead)) {
                 placeNear(where);
@@ -229,6 +245,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
     private void admit(Pig pig) {
         if (isTechnoblade(pig)) {
             pig.addScoreboardTag(TAG);
+            unname(pig);
             MobGoals goals = getServer().getMobGoals();
             goals.removeGoal(pig, VanillaGoal.WATER_AVOIDING_RANDOM_STROLL);
             if (!goals.hasGoal(pig, roamKey)) {
@@ -289,8 +306,6 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         try {
             pig = spot.getWorld().spawn(spot, Pig.class, spawned -> {
                 spawned.addScoreboardTag(TAG);
-                spawned.customName(Component.text(NAME));
-                spawned.setCustomNameVisible(true);
                 spawned.setPersistent(true);
                 spawned.setRemoveWhenFarAway(false);
                 saveRecord(new PigRecord(spawned.getUniqueId(), spot.getWorld().getKey().asString(),
@@ -303,12 +318,52 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
             previous.ifPresentOrElse(this::saveRecord, this::clearRecord);
             return Optional.empty();
         }
+        Crown.place(pig);
         getLogger().info("Placed Technoblade " + pig.getUniqueId() + " at " + describe(spot));
         if (retry != null) {
             retry.cancel();
             retry = null;
         }
         return Optional.of(pig);
+    }
+
+    /**
+     * Every tick the pig is loaded: exactly one crown rides it, turned the way
+     * the pig faces, and it has no name.
+     */
+    private void tend() {
+        Optional<Pig> loaded = loaded();
+        if (loaded.isEmpty()) {
+            return;
+        }
+        Pig pig = loaded.get();
+        unname(pig);
+        List<ItemDisplay> crowns = pig.getPassengers().stream()
+                .filter(Crown::is).map(ItemDisplay.class::cast).toList();
+        if (crowns.isEmpty()) {
+            Crown.place(pig);
+            return;
+        }
+        crowns.stream().skip(1).forEach(Entity::remove);
+        Crown.face(crowns.getFirst(), pig);
+    }
+
+    // A tick on, once a chunk's passengers have mounted: a crown not riding Technoblade is removed.
+    private void checkCrownLater(Entity crown) {
+        crown.getScheduler().run(this, task -> {
+            if (crown.isValid() && !isTechnoblade(crown.getVehicle())) {
+                getLogger().info("Removing a crown that isn't on Technoblade, at " + describe(crown.getLocation()));
+                crown.remove();
+            }
+        }, null);
+    }
+
+    // By a name tag, which Guard refuses, or by anything else.
+    private static void unname(Pig pig) {
+        if (pig.customName() != null || pig.isCustomNameVisible()) {
+            pig.customName(null);
+            pig.setCustomNameVisible(false);
+        }
     }
 
     private void checkTrap(boolean suffocating) {
@@ -328,7 +383,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         if (at.equals(noExitFrom)) {
             return;
         }
-        pig.eject();
+        pig.getPassengers().stream().filter(passenger -> !Crown.is(passenger)).forEach(pig::removePassenger);
         pig.leaveVehicle();
         if (pig.isLeashed()) {
             pig.setLeashHolder(null);
@@ -341,6 +396,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
             return;
         }
         effects(from);
+        // Its crown comes along: Paper teleports passengers with their vehicle.
         pig.teleport(exit.get());
         effects(exit.get());
         recordWhere(pig);

@@ -20,6 +20,14 @@ RUN mkdir /out && cd /src && for pack in */; do \
       pack="${pack%/}" && (cd "$pack" && python -m zipfile -c "/out/${pack}.zip" ./*); \
     done
 
+# The Bedrock resource pack, resourcepack-bedrock/, zipped as Geyser takes it:
+# Technoblade's crown for Bedrock players, drawn by the GeyserDisplayEntity
+# extension.
+FROM python:3.14-alpine@sha256:f6a589d43c42b9e7f7dc67a12d37132491f362859a5d750607710cc56da3bc72 AS bedrock-pack
+COPY scripts/build-pack.sh /build-pack.sh
+COPY resourcepack-bedrock/ /src/
+RUN mkdir /out && sh /build-pack.sh /src /out/oasis.mcpack
+
 # The repo's own plugins, one folder each under plugin-src/ holding its
 # plugin.yml and its Java sources under src/, compiled against the libraries in
 # artifacts.lock into <folder>.jar. The JDK's major version is the server's.
@@ -121,6 +129,21 @@ ENV MOTD="§bThe OASIS School SMP" \
     VIEW_DISTANCE=20 \
     SIMULATION_DISTANCE=15
 
+# The Java resource pack, resourcepack/, which adds Technoblade's crown, is
+# required: a player who declines it is disconnected. It is served by the
+# website, named by its SHA-1, so the build takes that SHA-1, as
+# scripts/java-pack.sh prints it, and fails without one. The site release that
+# carries the pack has to be deployed before an image naming it (README,
+# "Changing the resource pack"). Geyser accepts the pack for Bedrock players,
+# who get resourcepack-bedrock/ instead.
+ARG RESOURCE_PACK_SHA1
+RUN echo "${RESOURCE_PACK_SHA1}" | grep --quiet --extended-regexp '^[0-9a-f]{40}$' \
+    || { echo "build with --build-arg RESOURCE_PACK_SHA1=\"\$(scripts/java-pack.sh build/resourcepack)\"" >&2; exit 1; }
+ENV RESOURCE_PACK="https://www.oasis-smp.com/assets/oasis-pack-${RESOURCE_PACK_SHA1}.zip" \
+    RESOURCE_PACK_SHA1="${RESOURCE_PACK_SHA1}" \
+    RESOURCE_PACK_ENFORCE=true \
+    RESOURCE_PACK_PROMPT="{\"text\":\"This server's resource pack adds Technoblade's crown.\"}"
+
 # Spawn is protected by the WorldGuard region in plugins/OasisRegions/regions.txt,
 # so vanilla's square of op-only blocks around it is off.
 ENV SPAWN_PROTECTION=0
@@ -204,6 +227,7 @@ COPY build/artifacts/plugins/ /plugins/
 # The repo's own plugins, built in the repo-plugins stage.
 COPY --from=repo-plugins /out/ /plugins/
 COPY --from=libertybans-addons /out/ /plugins/
+COPY --from=bedrock-pack /out/ /plugins/Geyser-Spigot/packs/
 # Plugin configs the repo owns, one folder per plugin by its declared name.
 # LuckPerms' groups and tracks are files here; which group each player is in
 # stays in its database on the world volume.
@@ -225,7 +249,8 @@ COPY --from=libertybans-addons /out/ /plugins/
 # extensions/: the file the pinned build generates, with expiry off, so a
 # console player who stops playing for a while stays on its friend list. Its
 # Xbox sign-in, cache.json beside it, is never in the image and stays on the
-# world volume.
+# world volume. Beside it, GeyserDisplayEntity's mapping for the crown, and in
+# Geyser's custom_mappings/ the Bedrock item the crown's item model becomes.
 COPY plugins/ /plugins/
 COPY data/ /config/
 COPY build/artifacts/datapacks/ /datapacks/
