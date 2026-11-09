@@ -1,6 +1,5 @@
 {
   "model": {
-    "type": "minecraft:model",
-    "model": "oasis:item/technoblade_crown"
+    "type": "minecraft:empty"
   }
 }

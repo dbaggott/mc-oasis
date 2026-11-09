@@ -27,8 +27,8 @@ data/                    server config files the repo owns, copied over the same
 datapacks/<name>/        the repo's own datapacks, each zipped as <name>.zip in the image
 plugin-src/<Name>/       the repo's own plugins, each a plugin.yml and Java sources under src/, compiled into <Name>.jar in the image; tests under test/ run at build
 hook-dupe-agent/         a Java agent the server starts with, which puts back tripwire hook duping; its class comment says how; tests under test/ run at build
-resourcepack/            the Java resource pack every player is required to take: Technoblade's crown; CREDITS.txt says where it comes from
-resourcepack-bedrock/    the same crown for Bedrock players, as a pack Geyser sends them; GeyserDisplayEntity draws it
+resourcepack/            the Java resource pack every player is required to take: Technoblade's crown, painted on the pig variant in datapacks/80-oasis-technoblade/; CREDITS.txt says where it comes from
+resourcepack-bedrock/    a 3D crown for Bedrock players, riding the pig as an item display, as a pack Geyser sends them; GeyserDisplayEntity draws it, and the Java pack hides it
 plugins/Geyser-Spigot/custom_mappings/  the Bedrock item Geyser shows for the crown's Java item model
 scripts/
   fetch-artifacts.sh     downloads everything in artifacts.lock and verifies each sha256
@@ -128,5 +128,7 @@ points every Java player at a URL that isn't served, and they can't join. The zi
 Bedrock players get `resourcepack-bedrock/` from Geyser instead. Raise the `version` in its `manifest.json` (header and
 module alike) whenever anything in it changes: Bedrock clients keep a pack they already have at the same version.
 
-The crown is derived from an MIT-licensed pack; `CREDITS.txt`, in both pack directories, carries its notice, which
-has to stay with it.
+Java players see the crown painted on the pig variant `oasis:technoblade`, which `datapacks/80-oasis-technoblade/`
+defines and `resourcepack/` textures; Bedrock players see a 3D crown from an MIT-licensed pack, whose notice
+`resourcepack-bedrock/CREDITS.txt` carries and has to keep. `resourcepack/CREDITS.txt` says where the painted crown
+comes from.

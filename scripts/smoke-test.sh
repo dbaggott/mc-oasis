@@ -589,12 +589,18 @@ count_of() {
   if [[ "$reply" =~ Count:\ ([0-9]+) ]]; then echo "${BASH_REMATCH[1]}"; else echo 0; fi
 }
 technoblade_count() { count_of 'execute if entity @e[type=pig,tag=technoblade]'; }
-# Technoblade's crowns, and of them, the ones riding a pig tagged technoblade.
+# Technoblade's crown as Java players see it, painted on its head: the pig
+# variant from datapacks/80-oasis-technoblade/.
+variant_crowned() {
+  [[ "$(rcon 'data get entity @e[type=pig,tag=technoblade,limit=1] variant')" == *'"oasis:technoblade"'* ]]
+}
+# As Bedrock players see it: the crowns, and of them, the ones riding a pig
+# tagged technoblade.
 crown_count() { count_of 'execute if entity @e[type=item_display,tag=technoblade_crown]'; }
 crown_riding() {
   count_of 'execute as @e[type=pig,tag=technoblade] on passengers if entity @s[type=item_display,tag=technoblade_crown]'
 }
-crowned() { [[ "$(crown_count)" == 1 && "$(crown_riding)" == 1 ]]; }
+crowned() { variant_crowned && [[ "$(crown_count)" == 1 && "$(crown_riding)" == 1 ]]; }
 named() { [[ "$(rcon 'data get entity @e[type=pig,tag=technoblade,limit=1] CustomName')" != *"Found no elements"* ]]; }
 reply="$(technoblade)"
 first_uuid="$(technoblade_uuid "$reply")"
@@ -619,7 +625,7 @@ if [[ "$(technoblade_count)" != 1 || "$pig_uuid" == "$first_uuid" || "$(technobl
   exit 1
 fi
 if ! crowned; then
-  echo "error: after respawn there isn't exactly one crown, riding Technoblade ($(crown_count) crowns, $(crown_riding) riding)" >&2
+  echo "error: after respawn Technoblade isn't the crowned variant ($(rcon 'data get entity @e[type=pig,tag=technoblade,limit=1] variant')), or there isn't exactly one crown riding it ($(crown_count) crowns, $(crown_riding) riding)" >&2
   exit 1
 fi
 if named; then

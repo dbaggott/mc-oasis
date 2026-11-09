@@ -13,6 +13,8 @@ import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import io.papermc.paper.registry.RegistryAccess;
+import io.papermc.paper.registry.RegistryKey;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -61,7 +63,8 @@ import org.bukkit.scheduler.BukkitTask;
  * where it dies, every player is told "Technoblade never dies.", and whoever
  * killed it loses half of each food stack and has every empty slot filled
  * with poisonous potatoes ({@link FoodRule}). There is only ever one, and a
- * trapped one teleports out. It wears Technoblade's crown ({@link Crown}),
+ * trapped one teleports out. It wears Technoblade's crown, painted on its
+ * head for Java players and riding it for Bedrock players ({@link Crown}),
  * which is how players know it: it has no name label, and any name it gets is
  * taken off.
  *
@@ -78,6 +81,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
 
     private static final Component NEVER_DIES = Component.text("Technoblade never dies.", NamedTextColor.LIGHT_PURPLE);
     private static final String SPAWN_REGION = "spawn";
+    private static final NamespacedKey CROWNED = new NamespacedKey("oasis", "technoblade");
     // Removals that leave the pig alive somewhere, or that the death handler deals with.
     private static final Set<EntityRemoveEvent.Cause> NOT_GONE =
             Set.of(EntityRemoveEvent.Cause.DEATH, EntityRemoveEvent.Cause.UNLOAD);
@@ -94,6 +98,8 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
     private static final int ROAM_PRIORITY = 6;
 
     private Path recordFile;
+    // The crowned pig variant, looked up once.
+    private Pig.Variant crowned;
     private FirstSpawn firstSpawn;
     private PigRecord record;
     private GoalKey<Pig> roamKey;
@@ -246,6 +252,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         if (isTechnoblade(pig)) {
             pig.addScoreboardTag(TAG);
             unname(pig);
+            crownHead(pig);
             MobGoals goals = getServer().getMobGoals();
             goals.removeGoal(pig, VanillaGoal.WATER_AVOIDING_RANDOM_STROLL);
             if (!goals.hasGoal(pig, roamKey)) {
@@ -307,6 +314,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
             pig = spot.getWorld().spawn(spot, Pig.class, spawned -> {
                 spawned.addScoreboardTag(TAG);
                 spawned.setPersistent(true);
+                crownHead(spawned);
                 spawned.setRemoveWhenFarAway(false);
                 saveRecord(new PigRecord(spawned.getUniqueId(), spot.getWorld().getKey().asString(),
                         pos(spot), Instant.now()));
@@ -338,6 +346,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         }
         Pig pig = loaded.get();
         unname(pig);
+        crownHead(pig);
         List<ItemDisplay> crowns = pig.getPassengers().stream()
                 .filter(Crown::is).map(ItemDisplay.class::cast).toList();
         if (crowns.isEmpty()) {
@@ -359,6 +368,29 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
     }
 
     // By a name tag, which Guard refuses, or by anything else.
+    /**
+     * Java players see the crown painted on Technoblade's head: the pig
+     * variant {@code oasis:technoblade}, from the repo's datapack
+     * {@code datapacks/80-oasis-technoblade/}, with its texture in the resource
+     * pack. It can't breed, so no piglet inherits the variant.
+     */
+    private void crownHead(Pig pig) {
+        if (crowned == null) {
+            crowned = RegistryAccess.registryAccess().getRegistry(RegistryKey.PIG_VARIANT).get(CROWNED);
+            if (crowned == null) {
+                getLogger().severe("No pig variant " + CROWNED.asString()
+                        + ", so Java players see Technoblade without its crown; is the datapack missing?");
+                crowned = pig.getVariant();
+            }
+        }
+        if (pig.getVariant() != crowned) {
+            pig.setVariant(crowned);
+        }
+        if (pig.canBreed()) {
+            pig.setBreed(false);
+        }
+    }
+
     private static void unname(Pig pig) {
         if (pig.customName() != null || pig.isCustomNameVisible()) {
             pig.customName(null);

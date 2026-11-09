@@ -8,8 +8,7 @@ https://cdn.modrinth.com/data/7gPecjPn/versions/5lpwu4UZ/Technoblade%20Pig%20Cro
 
 That pack draws the crown on a pig's head with OptiFine's custom entity
 models. Here its 32 boxes, from assets/minecraft/optifine/cem/pig2.jem, are
-re-expressed as a vanilla item model (resourcepack/) and a Bedrock geometry
-(resourcepack-bedrock/), and the parts of
+re-expressed as a Bedrock geometry, and the parts of
 assets/minecraft/textures/entity/pig/pig_crown.png they use are packed into
 one texture, technoblade_crown.png. The positions are moved so the crown sits
 on the pig's head as seen from where a passenger rides.

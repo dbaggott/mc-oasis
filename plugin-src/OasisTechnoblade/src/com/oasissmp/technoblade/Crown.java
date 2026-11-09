@@ -15,14 +15,19 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 /**
- * Technoblade's crown: an item display riding the pig, tagged {@value #TAG}.
- * A pig renders nothing on its head, so the crown is an entity of its own.
+ * Technoblade's crown as Bedrock players see it: an item display riding the
+ * pig, tagged {@value #TAG}. Java players see the crown painted on the pig's
+ * head instead ({@link OasisTechnoblade}'s pig variant), which moves exactly
+ * with the head; a crown riding the pig lags the head, so Java players don't
+ * see this one.
  *
- * <p>The item is a golden helmet whose {@code item_model} is
- * {@value #MODEL}, from the server's resource pack ({@code resourcepack/} in
- * the repo). The model itself sits the crown on the pig's head, measured from
- * where a passenger rides, facing the way the pig's body does; a client
- * without the model sees the golden helmet on the pig's back.
+ * <p>The item is a golden helmet whose {@code item_model} is {@value #MODEL}.
+ * The server's Java resource pack ({@code resourcepack/}) makes that model
+ * empty. Geyser maps it to a Bedrock item ({@code
+ * plugins/Geyser-Spigot/custom_mappings/}) whose attachable, in {@code
+ * resourcepack-bedrock/}, draws the crown, and the GeyserDisplayEntity
+ * extension shows the display to Bedrock players. A Java client too old for
+ * {@code item_model} sees the golden helmet on the pig's back.
  *
  * <p>A passenger doesn't turn with its vehicle, so every tick the plugin turns
  * the crown twice over, as a pig's head turns. The display's yaw is the body's,

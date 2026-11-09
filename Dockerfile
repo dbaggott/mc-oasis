@@ -21,8 +21,8 @@ RUN mkdir /out && cd /src && for pack in */; do \
     done
 
 # The Bedrock resource pack, resourcepack-bedrock/, zipped as Geyser takes it:
-# Technoblade's crown for Bedrock players, drawn by the GeyserDisplayEntity
-# extension.
+# Technoblade's crown for Bedrock players, an item display riding the pig drawn
+# by the GeyserDisplayEntity extension. The Java pack hides that display.
 FROM python:3.14-alpine@sha256:f6a589d43c42b9e7f7dc67a12d37132491f362859a5d750607710cc56da3bc72 AS bedrock-pack
 COPY scripts/build-pack.sh /build-pack.sh
 COPY resourcepack-bedrock/ /src/
@@ -129,8 +129,8 @@ ENV MOTD="§bThe OASIS School SMP" \
     VIEW_DISTANCE=20 \
     SIMULATION_DISTANCE=15
 
-# The Java resource pack, resourcepack/, which adds Technoblade's crown, is
-# required: a player who declines it is disconnected. It is served by the
+# The Java resource pack, resourcepack/, which paints Technoblade's crown on
+# its pig variant, is required: a player who declines it is disconnected. It is served by the
 # website, named by its SHA-1, so the build takes that SHA-1, as
 # scripts/java-pack.sh prints it, and fails without one. The site release that
 # carries the pack has to be deployed before an image naming it (README,
