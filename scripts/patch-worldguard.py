@@ -16,7 +16,7 @@ import sys
 import zipfile
 
 CLASS = "com/sk89q/worldguard/bukkit/listener/RegionProtectionListener.class"
-# WorldGuard 7.0.20's.
+# The class in the WorldGuard artifacts.lock pins, checked to hold the constant.
 CLASS_SHA256 = "eddfd7cedb87cb07493cfad24112f4725c0417073ad86e76dfe930cbde36e488"
 DELAY_MS = 1500
 

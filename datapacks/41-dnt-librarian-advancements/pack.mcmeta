@@ -1,0 +1,7 @@
+{
+  "pack": {
+    "description": "Hides the Dungeons and Taverns librarian book advancements the enchant disabler doesn't, whose books it strips",
+    "min_format": [121, 0],
+    "max_format": [121, 0]
+  }
+}
