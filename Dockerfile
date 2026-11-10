@@ -14,7 +14,7 @@
 
 # The repo's own datapacks, one folder each under datapacks/, zipped under the
 # folder's name: the base image copies only zips into the world.
-FROM python:3.14-alpine@sha256:f6a589d43c42b9e7f7dc67a12d37132491f362859a5d750607710cc56da3bc72 AS repo-datapacks
+FROM python:3.14-alpine@sha256:a18b20ad69e74df6cf6d2e1b1a260d7a1ecf5380fd83b310f83ba88c461cf894 AS repo-datapacks
 COPY datapacks/ /src/
 RUN mkdir /out && cd /src && for pack in */; do \
       pack="${pack%/}" && (cd "$pack" && python -m zipfile -c "/out/${pack}.zip" ./*); \
@@ -23,7 +23,7 @@ RUN mkdir /out && cd /src && for pack in */; do \
 # The Bedrock resource pack, resourcepack-bedrock/, zipped as Geyser takes it:
 # Technoblade's crown for Bedrock players, modelled on the head of any pig
 # OasisTechnoblade marks through Geyser.
-FROM python:3.14-alpine@sha256:f6a589d43c42b9e7f7dc67a12d37132491f362859a5d750607710cc56da3bc72 AS bedrock-pack
+FROM python:3.14-alpine@sha256:a18b20ad69e74df6cf6d2e1b1a260d7a1ecf5380fd83b310f83ba88c461cf894 AS bedrock-pack
 COPY scripts/build-pack.sh /build-pack.sh
 COPY resourcepack-bedrock/ /src/
 RUN mkdir /out && sh /build-pack.sh /src /out/oasis.mcpack
@@ -36,7 +36,7 @@ RUN mkdir /out && sh /build-pack.sh /src /out/oasis.mcpack
 # fails the build.
 # The `path` warning is off: worldedit-bukkit's manifest puts jars on the class
 # path, for archive and scripting support, that aren't here and aren't needed.
-FROM eclipse-temurin:25-jdk-alpine@sha256:3fd2d245c4e0eba615fe366a71b8bd25f5db7104f53e4026b24bf508b880bd2a AS repo-plugins
+FROM eclipse-temurin:25-jdk-alpine@sha256:c7c3d0bdf7f2bbc5a05a6712ed334d198360105634ea9adf76fca94f381b1e3f AS repo-plugins
 COPY build/artifacts/libraries/ /libraries/
 # Geyser's API, for OasisTechnoblade's Bedrock crown, from the Geyser jar the
 # server runs, so the two always match. Last on the class path, so nothing
@@ -68,7 +68,7 @@ RUN set -e; mkdir /out; cd /repo/plugin-src; for plugin in */; do \
 # the server loads the class, which no plugin can. Its class comment says what
 # and why. Its tests, any test/**/*Test.java, run here, and a failing one
 # fails the build.
-FROM eclipse-temurin:25-jdk-alpine@sha256:3fd2d245c4e0eba615fe366a71b8bd25f5db7104f53e4026b24bf508b880bd2a AS hook-dupe-agent
+FROM eclipse-temurin:25-jdk-alpine@sha256:c7c3d0bdf7f2bbc5a05a6712ed334d198360105634ea9adf76fca94f381b1e3f AS hook-dupe-agent
 COPY hook-dupe-agent/ /agent/
 RUN javac --release 25 -Xlint:all -Werror -d /classes $(find /agent/src -name '*.java') \
     && javac --release 25 -Xlint:all -Werror -cp /classes -d /test-classes $(find /agent/test -name '*.java') \
@@ -80,7 +80,7 @@ RUN javac --release 25 -Xlint:all -Werror -d /classes $(find /agent/src -name '*
 # LibertyBans' LuckPerms exemption add-on, taken from inside the pinned
 # LibertyBans jar so it is always the version of the plugin it runs in, under
 # the name LibertyBans' own `addon install` gives it.
-FROM python:3.14-alpine@sha256:f6a589d43c42b9e7f7dc67a12d37132491f362859a5d750607710cc56da3bc72 AS libertybans-addons
+FROM python:3.14-alpine@sha256:a18b20ad69e74df6cf6d2e1b1a260d7a1ecf5380fd83b310f83ba88c461cf894 AS libertybans-addons
 COPY build/artifacts/plugins/LibertyBans.jar /LibertyBans.jar
 RUN mkdir -p /out/LibertyBans/addons \
     && unzip -p /LibertyBans.jar dependencies/addon-jars/addon-exemption-luckperms.jar \
@@ -89,14 +89,14 @@ RUN mkdir -p /out/LibertyBans/addons \
 
 # WorldGuard with the repeat delay on its region messages at 1.5 s rather than
 # its 0.5 s, which no setting changes: scripts/patch-worldguard.py rewrites it.
-FROM python:3.14-alpine@sha256:f6a589d43c42b9e7f7dc67a12d37132491f362859a5d750607710cc56da3bc72 AS worldguard
+FROM python:3.14-alpine@sha256:a18b20ad69e74df6cf6d2e1b1a260d7a1ecf5380fd83b310f83ba88c461cf894 AS worldguard
 COPY build/artifacts/plugins/WorldGuard.jar /WorldGuard.jar
 COPY scripts/patch-worldguard.py /patch-worldguard.py
 RUN mkdir /out && python /patch-worldguard.py /WorldGuard.jar /out/WorldGuard.jar
 
 # A release tag for the image's scripts, java25 because Minecraft 26.3 requires
 # Java 25, and the multi-arch digest so a re-pushed tag can't change it.
-FROM itzg/minecraft-server:2026.9.2-java25@sha256:de5d1b1a83eba576f6c8a688fac2a3523ce457724cdebc8ea48d7818b74cdf6e
+FROM itzg/minecraft-server:2026.11.0-java25@sha256:8d5080d8dcd0a2629c2e4f248678373a337a40537ad6ef2857c7dbcda6e3eadd
 
 # The baked Paper jar instead of a download, and no default configs fetched
 # from GitHub at start. VERSION must name the jar's Minecraft version: the
