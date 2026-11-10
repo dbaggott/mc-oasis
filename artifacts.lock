@@ -29,7 +29,7 @@
 #
 # Changing a line is a version bump: update version, sha256 and url together.
 
-server  paper          26.3-235      4ebaf5c9da98c654bb8f17245799943dfb05a285830be4307bfdf7bc9ca024bf  https://fill-data.papermc.io/v1/objects/4ebaf5c9da98c654bb8f17245799943dfb05a285830be4307bfdf7bc9ca024bf/paper-26.3-235.jar
+server  paper          26.3-246      d158542561e440c4026be7ccb32f551ee88313864792f38ea0ce5d1b88f1b27c  https://fill-data.papermc.io/v1/objects/d158542561e440c4026be7ccb32f551ee88313864792f38ea0ce5d1b88f1b27c/paper-26.3-246.jar
 
 plugin  Geyser-Spigot  2.12.1-1295   b60ff8f9a007f30823cf40173532a0390e6150cdfc577551f6f37bdd5ccd1528  https://download.geysermc.org/v2/projects/geyser/versions/2.12.1/builds/1295/downloads/spigot
 plugin  floodgate      2.2.5-141     21570aff9ce17d6983928e8552777760e1ede5050026b04c686b0ae112e6fd7e  https://download.geysermc.org/v2/projects/floodgate/versions/2.2.5/builds/141/downloads/spigot
@@ -42,7 +42,7 @@ plugin  ClickVillagers  paper-1.6.3      6cacfaa07f113e6ad5230d7efba5963dfb6a45d
 plugin  GrimAC         2.3.74-43850df   505a77aaaae255d51603b459d1f1af382c1f998204802086de7a8d70fc8ee211  https://cdn.modrinth.com/data/LJNGWSvH/versions/ZgpTyoHe/grimac-bukkit-2.3.74-43850df.jar
 plugin  voicechat      bukkit-2.6.25    f39f2e840873aa08e0ccec733fdc824ed4c3b9282e027fd6f18a79006eebad20  https://cdn.modrinth.com/data/9eGKb6K1/versions/5OqsnSs7/voicechat-bukkit-2.6.25.jar
 plugin  WorldEdit      7.4.6            e0ce67d870ad1fef8a40dd9d7926360caf3bb44722438545d6b20b55f82a0c91  https://cdn.modrinth.com/data/1u6JkXh5/versions/YFnqiUlL/worldedit-bukkit-7.4.6.jar
-plugin  WorldGuard     7.0.20           8768a49bcbecbb7a413ad134ee72d9871cdf967b7d938e6b96bb0ca72bb1467b  https://cdn.modrinth.com/data/DKY9btbd/versions/9YdeGXiK/worldguard-bukkit-7.0.20.jar
+plugin  WorldGuard     7.0.21           070223c535629f3f5d15f002388c1e3ae615a5f4ba051e7ccfb5d716540547a9  https://cdn.modrinth.com/data/DKY9btbd/versions/fiHLM6oY/worldguard-bukkit-7.0.21.jar
 plugin  TradeCycle     2.1.0            4ee533db5ef8241f58ebe8eff8befc02043142ea5879e26989fbf279fe0822d0  https://cdn.modrinth.com/data/GpyBM69F/versions/oYCeMLy6/TradeCycle-2.1.0.jar
 plugin  TAB            6.2.1            0b6a21af6fd3b113c05821daaed00ff92234a84ca94b29b3aec0ef1bd313b8a9  https://cdn.modrinth.com/data/gG7VFbG0/versions/Bu3K2CAM/TAB%20v6.2.1.jar
 plugin  LibertyBans    1.1.4            57303df011ff49747856af4ed818546f19b5dd84b8c627a6666431d0df962634  https://cdn.modrinth.com/data/PgXAUxLZ/versions/7WLjonzv/LibertyBans_Release-1.1.4.jar
@@ -64,7 +64,7 @@ datapack  50-bacap                          1.21.1            ce391fe46846d7fb35
 datapack  51-bacaped                        2.9.4             1e703448f72f83cdc37855efee887dc95fb4f7207e4d4d7fc07ac61aadb75fab  https://cdn.modrinth.com/data/Qx9yFN48/versions/5UgV7jwJ/BACAP_Enhanced_Discoveries_2.9.4.zip
 datapack  60-players-drop-heads             1.1.0             4899f5a04760c5787e5e9d944518d25100794de6ac8ec6c2f3e15e02a6d2770f  https://cdn.modrinth.com/data/NU7qMnLN/versions/twuiZTiF/players-drop-heads-1.1.0-mc26.3.zip
 
-library  paper-api                        26.3.build.235-stable  4604a70b3b4f2e7a8c76a48ddcf26c3bb6223af8239e530c8c94438ed155a946  https://repo.papermc.io/repository/maven-public/io/papermc/paper/paper-api/26.3.build.235-stable/paper-api-26.3.build.235-stable.jar
+library  paper-api                        26.3.build.246-stable  2867037c4296866673082a0b73cb768f77f238251139f5d87128b2ec8392ee85  https://repo.papermc.io/repository/maven-public/io/papermc/paper/paper-api/26.3.build.246-stable/paper-api-26.3.build.246-stable.jar
 library  brigadier                        1.3.11                 9d09cf4819de83dfcd38bcb212d5f2227131791cef3abbfca3321d6fb2b9a64d  https://libraries.minecraft.net/com/mojang/brigadier/1.3.11/brigadier-1.3.11.jar
 library  adventure-api                    5.2.0                  7e52fe7190be3e87b3b3f71712cfa12315fcd27109f302a7b440c12f01fae827  https://repo1.maven.org/maven2/net/kyori/adventure-api/5.2.0/adventure-api-5.2.0.jar
 library  adventure-key                    5.2.0                  0184d173200e2eef8fbc791f622d1d58fd459f8930c616b5a4fe79e83eda6c55  https://repo1.maven.org/maven2/net/kyori/adventure-key/5.2.0/adventure-key-5.2.0.jar
@@ -76,6 +76,6 @@ library  luckperms-api                    5.5                    cd910f936adc4de
 library  voicechat-api                    2.6.25                 d827114efa4913c2727e8ec92ef4b1473a93a47452f5b05a72e6a3cbacda22ed  https://maven.maxhenkel.de/repository/public/de/maxhenkel/voicechat/voicechat-api/2.6.25/voicechat-api-2.6.25.jar
 library  libertybans-api                  1.1.4                  7d026646e5f14123f225d13d96a9c416cbf7952da301a58cc9328578c578eb5f  https://mvn-repo.arim.space/affero-gpl3/space/arim/libertybans/bans-api/1.1.4/bans-api-1.1.4.jar
 library  omnibus                          1.1.0-RC2              9cf3905dd5ff84682b1d82d6facc84b7d6faa5b77075261bbc808cdc92c57f3d  https://mvn-repo.arim.space/lesser-gpl3/space/arim/omnibus/omnibus/1.1.0-RC2/omnibus-1.1.0-RC2.jar
-library  worldguard-core                  7.0.20                 94db11ff3191b078042f68149bb768c2fb55b6f61ea44f5d29c92d48ea99c3fa  https://maven.enginehub.org/repo/com/sk89q/worldguard/worldguard-core/7.0.20/worldguard-core-7.0.20.jar
+library  worldguard-core                  7.0.21                 87db4b92104589e05adcdf070a84c3bc351e93f759f71f182d15acddddf96788  https://maven.enginehub.org/repo/com/sk89q/worldguard/worldguard-core/7.0.21/worldguard-core-7.0.21.jar
 library  worldedit-core                   7.4.6                  fa796d6b903f79aaa4348d510729e0526182e7c9df752865da1b690710c8d1fb  https://maven.enginehub.org/repo/com/sk89q/worldedit/worldedit-core/7.4.6/worldedit-core-7.4.6.jar
 library  worldedit-bukkit                 7.4.6                  d1731b62471819df95a7305b54b4435bf5dae978d073362ff737cb64c7988f89  https://maven.enginehub.org/repo/com/sk89q/worldedit/worldedit-bukkit/7.4.6/worldedit-bukkit-7.4.6.jar
