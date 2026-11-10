@@ -13,9 +13,15 @@
 # by the host when the container starts.
 
 # The repo's own datapacks, one folder each under datapacks/, zipped under the
-# folder's name: the base image copies only zips into the world.
+# folder's name: the base image copies only zips into the world. The
+# advancements in 41-dnt-librarian-advancements come from the pinned DnT and
+# enchant disabler, so they follow whichever versions artifacts.lock pins.
 FROM python:3.14-alpine@sha256:a18b20ad69e74df6cf6d2e1b1a260d7a1ecf5380fd83b310f83ba88c461cf894 AS repo-datapacks
 COPY datapacks/ /src/
+COPY build/artifacts/datapacks/20-dungeons-and-taverns.zip build/artifacts/datapacks/40-dnt-enchant-disabler.zip /dnt/
+COPY scripts/hide-dnt-advancements.py /hide-dnt-advancements.py
+RUN python /hide-dnt-advancements.py /dnt/20-dungeons-and-taverns.zip /dnt/40-dnt-enchant-disabler.zip \
+      /src/41-dnt-librarian-advancements
 RUN mkdir /out && cd /src && for pack in */; do \
       pack="${pack%/}" && (cd "$pack" && python -m zipfile -c "/out/${pack}.zip" ./*); \
     done

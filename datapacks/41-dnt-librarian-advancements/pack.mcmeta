@@ -1,6 +1,6 @@
 {
   "pack": {
-    "description": "Hides Dungeons and Taverns 6.1's librarian book advancements, whose rewards the enchant disabler strips, the way the disabler hides their pre-6.1 cure_villager names",
+    "description": "Hides the Dungeons and Taverns librarian book advancements the enchant disabler doesn't, whose books it strips",
     "min_format": [121, 0],
     "max_format": [121, 0]
   }
