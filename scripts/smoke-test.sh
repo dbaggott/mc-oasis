@@ -757,6 +757,11 @@ if [[ "$(rumor_interval)" != "rumor interval = 45 minutes (30 by default)" ]]; t
   echo "error: after setting the rumor interval to 0, which is out of bounds, and then 45, it reads '$(rumor_interval)'" >&2
   exit 1
 fi
+every_setting="$(rcon technoblade config)"
+if [[ "$every_setting" != *"hit damage = 6 health"* || "$every_setting" != *"stare reach = 32 blocks"* ]]; then
+  echo "error: /technoblade config doesn't list every subject's settings: '${every_setting}'" >&2
+  exit 1
+fi
 rcon forceload remove all >/dev/null
 echo "Technoblade is absent until added, respawns once when killed, teleports out of a trap, has no duplicates, and goes when removed, crowned throughout and with no name"
 

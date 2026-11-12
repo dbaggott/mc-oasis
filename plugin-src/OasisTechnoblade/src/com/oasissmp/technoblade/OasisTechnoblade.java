@@ -194,6 +194,8 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
                         .then(Commands.literal("remove").executes(context -> remove(context.getSource())))
                         .then(Commands.literal("respawn").then(column(this::respawn)))
                         .then(Commands.literal("config")
+                                .executes(context -> reportSettings(context.getSource(),
+                                        List.of(Setting.Subject.values())))
                                 .then(Commands.literal("get").then(subject()
                                         .executes(context -> reportSettings(context.getSource(),
                                                 StringArgumentType.getString(context, "subject")))))
@@ -679,18 +681,24 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
     }
 
     private int reportSettings(CommandSourceStack source, String subjectName) {
-        Audience sender = source.getSender();
         Optional<Setting.Subject> subject = subject(subjectName);
         if (subject.isEmpty()) {
-            sender.sendMessage(Component.text("Nothing configurable is called " + subjectName + ".",
-                    NamedTextColor.RED));
+            ((Audience) source.getSender()).sendMessage(Component.text("Nothing configurable is called "
+                    + subjectName + "; /technoblade config lists everything that is.", NamedTextColor.RED));
             return Command.SINGLE_SUCCESS;
         }
-        for (Setting setting : subject.get().settings()) {
-            int value = settings.get(setting);
-            sender.sendMessage(Component.text(subjectName + " " + setting.commandName() + " = " + value + " "
-                    + setting.unit() + (value == setting.defaultValue() ? ""
-                            : " (" + setting.defaultValue() + " by default)"), NamedTextColor.LIGHT_PURPLE));
+        return reportSettings(source, List.of(subject.get()));
+    }
+
+    private int reportSettings(CommandSourceStack source, List<Setting.Subject> subjects) {
+        Audience sender = source.getSender();
+        for (Setting.Subject subject : subjects) {
+            for (Setting setting : subject.settings()) {
+                int value = settings.get(setting);
+                sender.sendMessage(Component.text(subject.commandName() + " " + setting.commandName() + " = "
+                        + value + " " + setting.unit() + (value == setting.defaultValue() ? ""
+                                : " (" + setting.defaultValue() + " by default)"), NamedTextColor.LIGHT_PURPLE));
+            }
         }
         return Command.SINGLE_SUCCESS;
     }
