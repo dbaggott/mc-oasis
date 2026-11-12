@@ -7,21 +7,17 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-/** A wait of one length per player between one turn and the next, kept in memory only. */
+/** A wait per player between one turn and the next, kept in memory only. */
 final class Cooldown {
 
-    private final Duration length;
     private final Map<UUID, Instant> ends = new HashMap<>();
 
-    Cooldown(Duration length) {
-        this.length = length;
-    }
-
     /**
-     * Takes {@code player}'s turn at {@code now} and starts their wait, or,
-     * if they are still waiting, leaves it as it is and says how long is left.
+     * Takes {@code player}'s turn at {@code now} and starts their wait of
+     * {@code length}, or, if they are still waiting, leaves it as it is and
+     * says how long is left.
      */
-    Optional<Duration> take(UUID player, Instant now) {
+    Optional<Duration> take(UUID player, Instant now, Duration length) {
         ends.values().removeIf(end -> !end.isAfter(now));
         Instant end = ends.get(player);
         if (end != null) {

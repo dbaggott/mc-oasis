@@ -9,6 +9,11 @@ https://cdn.modrinth.com/data/tnd2yGA9/versions/KX6OjkVY/Technoblade%20Pigs.zip
 Those pixels are the top two rows of the head's four sides in its
 temperate_pig.png; nothing else in it differs from the vanilla texture.
 
-The pig variant that uses it, oasis:technoblade, is in the server's datapack
+assets/oasis/textures/entity/pig/technoblade_glaring.png is technoblade.png
+with the white pixel of each eye painted red (#E00000), for the stare
+Technoblade gives a player who killed it.
+
+The pig variants that use them, oasis:technoblade and
+oasis:technoblade_glaring, are in the server's datapack
 datapacks/80-oasis-technoblade/. Bedrock players see a 3D crown instead, from
 resourcepack-bedrock/, whose CREDITS.txt says where that comes from.

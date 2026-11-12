@@ -1,7 +1,7 @@
-# The overworld column, as `x z`, where OasisTechnoblade places Technoblade
-# when it has no pig recorded, as on a new world. It is also the fallback when
-# a placement finds no safe spot nearby. The pig goes on the surface of the
-# column.
+# The overworld column, as `x z`, where `/technoblade add` places Technoblade
+# when it is given no column of its own. A world has no Technoblade until
+# staff run that. It is also the fallback when a placement finds no safe spot
+# nearby. The pig goes on the surface of the column.
 #
 # On the spawn island: Technoblade swims off it to the mainland in its own time.
 -480 880

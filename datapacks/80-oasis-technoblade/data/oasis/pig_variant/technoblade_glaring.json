@@ -1,0 +1,6 @@
+{
+  "asset_id": "oasis:entity/pig/technoblade_glaring",
+  "baby_asset_id": "minecraft:entity/pig/pig_temperate_baby",
+  "model": "normal",
+  "spawn_conditions": []
+}

@@ -2,11 +2,11 @@ name: OasisTechnoblade
 version: 1.0.0
 main: com.oasissmp.technoblade.OasisTechnoblade
 api-version: '26.3'
-description: Technoblade, the one pig in the overworld that never stays dead, and /technoblade for staff
+description: Technoblade, the one pig in the overworld that never stays dead, once staff add it with /technoblade
 depend: [WorldGuard, WorldEdit]
 # Loaded first when present, so the Bedrock crown is set up before Geyser enables.
 softdepend: [Geyser-Spigot]
 permissions:
   oasistechnoblade.manage:
-    description: See where Technoblade is and place a new one with /technoblade
+    description: See where Technoblade is, add it to the world, remove it, place a new one and change its settings with /technoblade
     default: false

@@ -6,6 +6,10 @@ import com.destroystokyo.paper.entity.ai.VanillaGoal;
 import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.protection.managers.RegionManager;
@@ -22,12 +26,15 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
+import java.util.stream.Stream;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -57,21 +64,29 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 /**
- * Technoblade: one pig in the overworld that never stays dead. It respawns
- * where it dies, every player is told "Technoblade never dies.", and whoever
- * killed it loses half of each food stack but golden apples and has every
- * empty slot filled with poisonous potatoes ({@link FoodRule}). Feeding it
- * gives a golden apple ({@link Feeding}). There is only ever one, and a
- * trapped one teleports out. It wears Technoblade's crown, painted on its
- * head for Java players and modelled on it for Bedrock players
- * ({@link BedrockCrown}), which is how players know it: it has no name label,
- * and any name it gets is taken off.
+ * Technoblade: one pig in the overworld that never stays dead. A world has
+ * none until staff run {@code /technoblade add}, and has one from then until
+ * {@code /technoblade remove}. It respawns where it dies. A player who kills
+ * it is told "Technoblade never dies.", is stared at by the new one
+ * ({@link Stare}), and loses half of each food stack but golden apples, with
+ * every empty slot filled with poisonous potatoes ({@link FoodRule}). Hitting
+ * it hurts and throws the attacker back ({@link Hitting}). Feeding it gives a
+ * golden apple and its protection from monsters ({@link Feeding},
+ * {@link Bodyguard}). Now and then players are told where it was seen
+ * ({@link Rumors}). Staff tune the numbers behind these with
+ * {@code /technoblade config} ({@link Setting}). There is only ever one, and
+ * a trapped one teleports out.
+ * It wears Technoblade's crown, painted on its head for Java players and
+ * modelled on it for Bedrock players ({@link BedrockCrown}), which is how
+ * players know it: it has no name label, and any name it gets is taken off.
  *
- * <p>The pig is the one whose UUID is in {@value PigRecord#FILE_NAME}; it also
- * carries the scoreboard tag {@value #TAG} so vanilla selectors find it. A
- * new pig is placed only when the recorded one dies, is removed for good, or
- * staff run {@code /technoblade respawn}: an unloaded pig is still alive.
- * Any other pig with the tag is removed as it enters the world.
+ * <p>The pig is the one whose UUID is in {@value PigRecord#FILE_NAME}, and
+ * with no such file there is no Technoblade. It also carries the scoreboard
+ * tag {@value #TAG} so vanilla selectors find it. A new pig is placed only
+ * when the recorded one dies, is removed other than by
+ * {@code /technoblade remove}, or staff run {@code /technoblade respawn}: an
+ * unloaded pig is still alive. Any other pig with the tag is removed as it
+ * enters the world.
  */
 public final class OasisTechnoblade extends JavaPlugin implements Listener {
 
@@ -79,8 +94,10 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
     static final String TAG = "technoblade";
 
     private static final Component NEVER_DIES = Component.text("Technoblade never dies.", NamedTextColor.LIGHT_PURPLE);
+    private static final String NOT_IN_WORLD = "Technoblade isn't in the world; /technoblade add places it.";
     private static final String SPAWN_REGION = "spawn";
     private static final NamespacedKey CROWNED = new NamespacedKey("oasis", "technoblade");
+    private static final NamespacedKey GLARING = new NamespacedKey("oasis", "technoblade_glaring");
     // Removals that leave the pig alive somewhere, or that the death handler deals with.
     private static final Set<EntityRemoveEvent.Cause> NOT_GONE =
             Set.of(EntityRemoveEvent.Cause.DEATH, EntityRemoveEvent.Cause.UNLOAD);
@@ -95,16 +112,26 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
     private static final int EXIT_LOADED_TRIES = 24;
     // Vanilla's priority for a pig's random stroll, which Roam replaces.
     private static final int ROAM_PRIORITY = 6;
+    // Ahead of every vanilla goal that moves a pig or turns its head.
+    private static final int STARE_PRIORITY = 0;
     private static final int TEND_TICKS = 20;
 
     private Path recordFile;
-    // The crowned pig variant, looked up until found.
+    // The pig variants, each looked up until found.
     private Pig.Variant crowned;
-    private boolean warnedNoVariant;
+    private Pig.Variant glaring;
+    private final Set<NamespacedKey> warnedNoVariant = new HashSet<>();
+    private Stare stare;
     private FirstSpawn firstSpawn;
+    private Path settingsFile;
+    private Settings settings;
+    private Rumors rumors;
     // Volatile: BedrockCrown reads it on Geyser's threads.
     private volatile PigRecord record;
+    // A record there but unreadable: the world had a Technoblade, which no record now names.
+    private boolean recordUnreadable;
     private GoalKey<Pig> roamKey;
+    private GoalKey<Pig> stareKey;
     private boolean spawning;
     private BukkitTask retry;
     // Where the pig was last found trapped with no way out, so the search isn't repeated there.
@@ -130,11 +157,20 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
     public void onEnable() {
         recordFile = getDataFolder().toPath().resolve(PigRecord.FILE_NAME);
         roamKey = GoalKey.of(Pig.class, new NamespacedKey(this, "roam"));
+        stareKey = GoalKey.of(Pig.class, new NamespacedKey(this, "stare"));
         try {
             firstSpawn = FirstSpawn.load(getDataFolder().toPath());
         } catch (IOException e) {
             throw new UncheckedIOException("Couldn't read " + FirstSpawn.FILE_NAME, e);
         }
+        settingsFile = getDataFolder().toPath().resolve(Settings.FILE_NAME);
+        try {
+            settings = Settings.load(settingsFile, line -> getLogger().warning(settingsFile
+                    + " has a line that sets nothing, which is left out: " + line));
+        } catch (IOException e) {
+            throw new UncheckedIOException("Couldn't read " + settingsFile, e);
+        }
+        stare = new Stare(this, settings, this::isTechnoblade, this::crownHead);
         try {
             record = PigRecord.load(recordFile).orElse(null);
         } catch (IOException e) {
@@ -142,10 +178,14 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         } catch (IllegalArgumentException e) {
             // Placing a new pig is the way back: the old one is a duplicate when it loads.
             getLogger().warning("Couldn't read " + recordFile + ", so a new Technoblade is placed: " + e.getMessage());
+            recordUnreadable = true;
         }
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(new Guard(this::isTechnoblade), this);
-        getServer().getPluginManager().registerEvents(new Feeding(this::isTechnoblade), this);
+        Guarding guarding = new Guarding();
+        getServer().getPluginManager().registerEvents(new Feeding(this::isTechnoblade, settings, guarding), this);
+        getServer().getPluginManager().registerEvents(new Bodyguard(guarding, settings, this::loaded), this);
+        getServer().getPluginManager().registerEvents(new Hitting(this, this::isTechnoblade, settings), this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(Commands.literal("technoblade")
                         // The console and RCON have it without the permission, which ops don't get by default.
@@ -153,22 +193,68 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
                                 || source.getSender() instanceof RemoteConsoleCommandSender
                                 || source.getSender().hasPermission(PERMISSION))
                         .executes(context -> report(context.getSource()))
-                        .then(Commands.literal("respawn")
-                                .then(Commands.argument("x", IntegerArgumentType.integer())
-                                        .then(Commands.argument("z", IntegerArgumentType.integer())
-                                                .executes(context -> respawn(context.getSource(),
-                                                        IntegerArgumentType.getInteger(context, "x"),
-                                                        IntegerArgumentType.getInteger(context, "z"))))))
-                        .build(), "Where Technoblade is, or place a new one"));
+                        .then(Commands.literal("add")
+                                .executes(context -> add(context.getSource(), firstSpawn.x(), firstSpawn.z()))
+                                .then(column(this::add)))
+                        .then(Commands.literal("remove").executes(context -> remove(context.getSource())))
+                        .then(Commands.literal("respawn").then(column(this::respawn)))
+                        .then(Commands.literal("config")
+                                .executes(context -> reportSettings(context.getSource(),
+                                        List.of(Setting.Subject.values())))
+                                .then(Commands.literal("get").then(subject()
+                                        .executes(context -> reportSettings(context.getSource(),
+                                                StringArgumentType.getString(context, "subject")))))
+                                .then(Commands.literal("set").then(subject()
+                                        .then(Commands.argument("setting", StringArgumentType.word())
+                                                .suggests((context, builder) -> suggest(builder,
+                                                        subject(StringArgumentType.getString(context, "subject"))
+                                                                .map(Setting.Subject::settings).orElse(List.of())
+                                                                .stream().map(Setting::commandName)))
+                                                .then(Commands.argument("value", IntegerArgumentType.integer())
+                                                        .executes(context -> set(context.getSource(),
+                                                                StringArgumentType.getString(context, "subject"),
+                                                                StringArgumentType.getString(context, "setting"),
+                                                                IntegerArgumentType.getInteger(context, "value"))))))))
+                        .build(), "Where Technoblade is, or add it to the world, remove it, place a new one, or"
+                                + " change how it behaves"));
         // On the first tick, after every plugin has enabled and OasisRegions has set up the spawn region.
         getServer().getScheduler().runTask(this, () -> {
             overworld().getEntitiesByClass(Pig.class).forEach(this::admit);
-            if (record == null) {
+            if (recordUnreadable) {
                 placeOnColumn(firstSpawn.x(), firstSpawn.z());
             }
         });
         getServer().getScheduler().runTaskTimer(this, () -> checkTrap(false), TRAP_CHECK_TICKS, TRAP_CHECK_TICKS);
         getServer().getScheduler().runTaskTimer(this, this::tend, TEND_TICKS, TEND_TICKS);
+        rumors = new Rumors(this, settings, () -> record, this::loaded);
+        rumors.scheduleNext();
+    }
+
+    private static RequiredArgumentBuilder<CommandSourceStack, String> subject() {
+        return Commands.argument("subject", StringArgumentType.word()).suggests((context, builder) ->
+                suggest(builder, Arrays.stream(Setting.Subject.values()).map(Setting.Subject::commandName)));
+    }
+
+    private static CompletableFuture<Suggestions> suggest(SuggestionsBuilder builder, Stream<String> names) {
+        names.filter(name -> name.startsWith(builder.getRemainingLowerCase())).forEach(builder::suggest);
+        return builder.buildFuture();
+    }
+
+    private static Optional<Setting.Subject> subject(String name) {
+        return Arrays.stream(Setting.Subject.values()).filter(subject -> subject.commandName().equals(name))
+                .findFirst();
+    }
+
+    private interface ColumnCommand {
+        int run(CommandSourceStack source, int x, int z);
+    }
+
+    private static RequiredArgumentBuilder<CommandSourceStack, Integer> column(ColumnCommand command) {
+        return Commands.argument("x", IntegerArgumentType.integer())
+                .then(Commands.argument("z", IntegerArgumentType.integer())
+                        .executes(context -> command.run(context.getSource(),
+                                IntegerArgumentType.getInteger(context, "x"),
+                                IntegerArgumentType.getInteger(context, "z"))));
     }
 
     @Override
@@ -219,10 +305,20 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         }
         UUID dead = event.getEntity().getUniqueId();
         Location where = event.getEntity().getLocation();
+        Player killer = event.getEntity().getKiller();
+        getLogger().info("Technoblade died at " + describe(where)
+                + (killer == null ? "" : ", killed by " + killer.getName()));
+        UUID killerId = killer == null ? null : killer.getUniqueId();
         getServer().getScheduler().runTask(this, () -> {
-            if (record != null && record.pig().equals(dead)) {
-                placeNear(where);
-                ((Audience) getServer()).sendMessage(NEVER_DIES);
+            if (record == null || !record.pig().equals(dead)) {
+                return;
+            }
+            Optional<Pig> placed = placeNear(where);
+            // Looked up again: only a killer who is still online is told and stared at.
+            Player told = killerId == null ? null : getServer().getPlayer(killerId);
+            if (told != null) {
+                ((Audience) told).sendMessage(NEVER_DIES);
+                placed.ifPresent(pig -> stare.start(pig, told));
             }
         });
     }
@@ -265,6 +361,9 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
             if (!goals.hasGoal(pig, roamKey)) {
                 goals.addGoal(pig, ROAM_PRIORITY, new Roam(pig, roamKey));
             }
+            if (!goals.hasGoal(pig, stareKey)) {
+                goals.addGoal(pig, STARE_PRIORITY, stare.hold(pig, stareKey));
+            }
         } else if (pig.getScoreboardTags().contains(TAG)) {
             getLogger().info("Removing a pig tagged " + TAG + " that isn't Technoblade, at " + describe(pig.getLocation()));
             pig.getScheduler().run(this, task -> pig.remove(), null);
@@ -297,8 +396,9 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
                     + " or on the first-spawn column, so Technoblade " + record.pig() + " stays where it is");
         } else if (pig.isEmpty()) {
             getLogger().severe("Couldn't place Technoblade near " + describe(target)
-                    + " or on the first-spawn column; trying the first-spawn column again every minute");
-            // With no record, a restart places a pig too, which a retry timer wouldn't survive.
+                    + " or on the first-spawn column; trying the first-spawn column again every minute until the"
+                    + " server stops, and after that /technoblade add places it");
+            // The dead pig's record would read as a Technoblade in a chunk that never loads.
             clearRecord();
             if (retry == null) {
                 retry = getServer().getScheduler().runTaskTimer(this, () -> spawn(firstSpawnSurface()),
@@ -353,24 +453,34 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
      * Java players see the crown painted on Technoblade's head: the pig
      * variant {@code oasis:technoblade}, from the repo's datapack
      * {@code datapacks/80-oasis-technoblade/}, with its texture in the resource
-     * pack. It can't breed, so no piglet inherits the variant.
+     * pack. During a death stare it is {@code oasis:technoblade_glaring}, the
+     * same with red eyes, and without that variant the stare has the usual
+     * eyes. It can't breed, so no piglet inherits the variant.
      */
     private void crownHead(Pig pig) {
         if (crowned == null) {
-            crowned = RegistryAccess.registryAccess().getRegistry(RegistryKey.PIG_VARIANT).get(CROWNED);
+            crowned = variant(CROWNED, "so Java players see Technoblade without its crown");
         }
-        if (crowned == null) {
-            if (!warnedNoVariant) {
-                getLogger().severe("No pig variant " + CROWNED.asString()
-                        + ", so Java players see Technoblade without its crown; is the datapack missing?");
-                warnedNoVariant = true;
-            }
-        } else if (!crowned.equals(pig.getVariant())) {
-            pig.setVariant(crowned);
+        if (glaring == null) {
+            glaring = variant(GLARING, "so Java players see its death stare without red eyes");
+        }
+        Pig.Variant worn = glaring != null && stare.isOn(pig) ? glaring : crowned;
+        if (worn != null && !worn.equals(pig.getVariant())) {
+            pig.setVariant(worn);
         }
         if (pig.canBreed()) {
             pig.setBreed(false);
         }
+    }
+
+    // Says once that a variant is missing.
+    private Pig.Variant variant(NamespacedKey key, String consequence) {
+        Pig.Variant found = RegistryAccess.registryAccess().getRegistry(RegistryKey.PIG_VARIANT).get(key);
+        if (found == null && warnedNoVariant.add(key)) {
+            getLogger().severe("No pig variant " + key.asString() + ", " + consequence
+                    + "; is the datapack missing?");
+        }
+        return found;
     }
 
     // By a name tag, which Guard refuses, or by anything else.
@@ -513,7 +623,9 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
     private int report(CommandSourceStack source) {
         Audience sender = source.getSender();
         if (record == null) {
-            sender.sendMessage(Component.text("No Technoblade is recorded.", NamedTextColor.RED));
+            sender.sendMessage(Component.text(retry == null ? NOT_IN_WORLD
+                    : "Technoblade couldn't be placed; the first-spawn column is tried again every minute.",
+                    NamedTextColor.RED));
             return Command.SINGLE_SUCCESS;
         }
         Optional<Pig> loaded = loaded();
@@ -525,17 +637,119 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         return Command.SINGLE_SUCCESS;
     }
 
+    // Awaiting a placement that failed counts: the retry is about to put it there.
+    private boolean inWorld() {
+        return record != null || retry != null;
+    }
+
+    private int add(CommandSourceStack source, int x, int z) {
+        Audience sender = source.getSender();
+        if (inWorld()) {
+            sender.sendMessage(Component.text("Technoblade is already in the world; /technoblade respawn <x> <z>"
+                    + " moves it.", NamedTextColor.RED));
+            return Command.SINGLE_SUCCESS;
+        }
+        sender.sendMessage(placement(placeOnColumn(x, z)));
+        return Command.SINGLE_SUCCESS;
+    }
+
+    // The record goes before the pig does, so removing the pig isn't taken for a loss.
+    private int remove(CommandSourceStack source) {
+        Audience sender = source.getSender();
+        if (!inWorld()) {
+            sender.sendMessage(Component.text(NOT_IN_WORLD, NamedTextColor.RED));
+            return Command.SINGLE_SUCCESS;
+        }
+        Optional<Pig> pig = loaded();
+        boolean unloaded = record != null && pig.isEmpty();
+        clearRecord();
+        if (retry != null) {
+            retry.cancel();
+            retry = null;
+        }
+        pig.ifPresent(Entity::remove);
+        getLogger().info("Technoblade was removed from the world by " + source.getSender().getName());
+        sender.sendMessage(Component.text(unloaded
+                ? "Removed Technoblade. Its chunk isn't loaded, so its pig goes when the chunk next loads."
+                : "Removed Technoblade.", NamedTextColor.LIGHT_PURPLE));
+        return Command.SINGLE_SUCCESS;
+    }
+
     // The new pig is recorded before the old one goes, so removing the old one isn't taken for a loss.
     private int respawn(CommandSourceStack source, int x, int z) {
         Audience sender = source.getSender();
+        if (!inWorld()) {
+            sender.sendMessage(Component.text(NOT_IN_WORLD, NamedTextColor.RED));
+            return Command.SINGLE_SUCCESS;
+        }
         Optional<UUID> old = Optional.ofNullable(record).map(PigRecord::pig);
         Optional<Pig> placed = placeOnColumn(x, z);
         old.map(getServer()::getEntity).filter(entity -> !isTechnoblade(entity)).ifPresent(Entity::remove);
-        sender.sendMessage(placed.map(pig -> Component.text("Placed Technoblade " + pig.getUniqueId() + " at "
-                                + describe(pig.getLocation()) + ".", NamedTextColor.LIGHT_PURPLE))
-                .orElseGet(() -> Component.text("Couldn't place Technoblade; see the server log.",
-                        NamedTextColor.RED)));
+        sender.sendMessage(placement(placed));
         return Command.SINGLE_SUCCESS;
+    }
+
+    private int reportSettings(CommandSourceStack source, String subjectName) {
+        Optional<Setting.Subject> subject = subject(subjectName);
+        if (subject.isEmpty()) {
+            ((Audience) source.getSender()).sendMessage(Component.text("Nothing configurable is called "
+                    + subjectName + "; /technoblade config lists everything that is.", NamedTextColor.RED));
+            return Command.SINGLE_SUCCESS;
+        }
+        return reportSettings(source, List.of(subject.get()));
+    }
+
+    private int reportSettings(CommandSourceStack source, List<Setting.Subject> subjects) {
+        Audience sender = source.getSender();
+        for (Setting.Subject subject : subjects) {
+            for (Setting setting : subject.settings()) {
+                int value = settings.get(setting);
+                sender.sendMessage(Component.text(subject.commandName() + " " + setting.commandName() + " = "
+                        + value + " " + setting.unit() + (value == setting.defaultValue() ? ""
+                                : " (" + setting.defaultValue() + " by default)"), NamedTextColor.LIGHT_PURPLE));
+            }
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    // Takes effect at once, and is saved.
+    private int set(CommandSourceStack source, String subjectName, String settingName, int value) {
+        Audience sender = source.getSender();
+        Optional<Setting> named = subject(subjectName).flatMap(subject -> subject.settings().stream()
+                .filter(setting -> setting.commandName().equals(settingName)).findFirst());
+        if (named.isEmpty()) {
+            sender.sendMessage(Component.text("There is no setting " + subjectName + " " + settingName + ".",
+                    NamedTextColor.RED));
+            return Command.SINGLE_SUCCESS;
+        }
+        Setting setting = named.get();
+        try {
+            settings.set(setting, value);
+        } catch (IllegalArgumentException e) {
+            sender.sendMessage(Component.text(e.getMessage() + ".", NamedTextColor.RED));
+            return Command.SINGLE_SUCCESS;
+        }
+        if (setting == Setting.RUMOR_INTERVAL || setting == Setting.RUMOR_JITTER) {
+            rumors.scheduleNext();
+        }
+        String done = subjectName + " " + settingName + " set to " + value + " " + setting.unit() + ".";
+        getLogger().info(source.getSender().getName() + ": " + done);
+        try {
+            settings.save(settingsFile);
+            sender.sendMessage(Component.text(done, NamedTextColor.LIGHT_PURPLE));
+        } catch (IOException e) {
+            getLogger().log(Level.SEVERE, "Couldn't save " + settingsFile + "; the change lasts until a restart", e);
+            sender.sendMessage(Component.text(done + " It couldn't be saved, so it lasts until a restart; see the"
+                    + " server log.", NamedTextColor.RED));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static Component placement(Optional<Pig> placed) {
+        return placed.map(pig -> Component.text("Placed Technoblade " + pig.getUniqueId() + " at "
+                        + describe(pig.getLocation()) + ".", NamedTextColor.LIGHT_PURPLE))
+                .orElseGet(() -> Component.text("Couldn't place Technoblade; see the server log.",
+                        NamedTextColor.RED));
     }
 
     private Optional<Pig> loaded() {

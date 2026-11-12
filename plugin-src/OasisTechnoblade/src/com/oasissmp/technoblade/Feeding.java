@@ -3,6 +3,7 @@ package com.oasissmp.technoblade;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
@@ -18,21 +19,27 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 /**
  * A player who feeds Technoblade what a pig eats gets a golden apple back,
- * then waits {@link #COOLDOWN} before the next. Technoblade eats the food
- * rather than breeding on it; while a player is waiting it doesn't take theirs.
+ * now and then with a gold nugget or a while of Luck or Speed
+ * ({@link Gifts}), and is guarded by it ({@link Bodyguard}). They then wait
+ * out a cooldown before the next. Technoblade eats the food rather than
+ * breeding on it; while a player is waiting it doesn't take theirs.
  */
 final class Feeding implements Listener {
 
-    static final Duration COOLDOWN = Duration.ofMinutes(5);
-
     private final Predicate<Entity> isTechnoblade;
-    private final Cooldown cooldown = new Cooldown(COOLDOWN);
+    private final Settings settings;
+    private final Guarding guarding;
+    private final Cooldown cooldown = new Cooldown();
 
-    Feeding(Predicate<Entity> isTechnoblade) {
+    Feeding(Predicate<Entity> isTechnoblade, Settings settings, Guarding guarding) {
         this.isTechnoblade = isTechnoblade;
+        this.settings = settings;
+        this.guarding = guarding;
     }
 
     // First, and cancelling it: WorldGuard skips a cancelled interaction, so
@@ -53,7 +60,9 @@ final class Feeding implements Listener {
         event.setCancelled(true);
         // As an Audience: Player's own sendActionBar and sendMessage overloads need Bungee's chat API to resolve.
         Audience told = player;
-        Optional<Duration> wait = cooldown.take(player.getUniqueId(), Instant.now());
+        Instant now = Instant.now();
+        Optional<Duration> wait = cooldown.take(player.getUniqueId(), now,
+                settings.minutes(Setting.FEED_COOLDOWN));
         if (wait.isPresent()) {
             told.sendActionBar(Component.text("Technoblade isn't hungry. Try again in " + minutes(wait.get()) + ".",
                     NamedTextColor.LIGHT_PURPLE));
@@ -68,6 +77,34 @@ final class Feeding implements Listener {
         player.give(ItemStack.of(Material.GOLDEN_APPLE));
         // In chat: a held right-click repeats the interaction, and the refusal that follows takes the action bar.
         told.sendMessage(Component.text("Technoblade gave you a golden apple.", NamedTextColor.LIGHT_PURPLE));
+        Gifts gifts = Gifts.roll(ThreadLocalRandom.current(), settings.get(Setting.FEED_NUGGET),
+                settings.get(Setting.FEED_EFFECT));
+        if (gifts.nugget()) {
+            player.give(ItemStack.of(Material.GOLD_NUGGET));
+            told.sendMessage(Component.text("Technoblade gave you a gold nugget.", NamedTextColor.LIGHT_PURPLE));
+        }
+        gifts.effect().ifPresent(effect -> {
+            // Level I. Over an effect the player already has, the longer or stronger of the two stays.
+            player.addPotionEffect(new PotionEffect(type(effect),
+                    (int) Settings.ticks(settings.minutes(Setting.FEED_EFFECT_DURATION)), 0));
+            told.sendMessage(Component.text("Technoblade gave you " + name(effect) + ".",
+                    NamedTextColor.LIGHT_PURPLE));
+        });
+        guarding.start(player.getUniqueId(), now, settings.minutes(Setting.GUARD_DURATION));
+    }
+
+    private static PotionEffectType type(Gifts.Effect effect) {
+        return switch (effect) {
+            case LUCK -> PotionEffectType.LUCK;
+            case SPEED -> PotionEffectType.SPEED;
+        };
+    }
+
+    private static String name(Gifts.Effect effect) {
+        return switch (effect) {
+            case LUCK -> "Luck";
+            case SPEED -> "Speed";
+        };
     }
 
     // Rounded up, so the last second reads 0:01 rather than 0:00.

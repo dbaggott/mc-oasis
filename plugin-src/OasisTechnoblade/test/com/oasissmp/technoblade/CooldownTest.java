@@ -21,7 +21,7 @@ public final class CooldownTest {
 
     public static void main(String[] args) {
         List<String> failures = new ArrayList<>();
-        Cooldown cooldown = new Cooldown(Duration.ofMinutes(5));
+        Cooldown cooldown = new Cooldown();
         Instant start = Instant.ofEpochSecond(1_790_000_000L);
 
         takes(failures, cooldown, ALEX, start, Optional.empty(), "a first turn");
@@ -43,7 +43,7 @@ public final class CooldownTest {
 
     private static void takes(List<String> failures, Cooldown cooldown, UUID player, Instant now,
             Optional<Duration> expected, String what) {
-        Optional<Duration> wait = cooldown.take(player, now);
+        Optional<Duration> wait = cooldown.take(player, now, Duration.ofMinutes(5));
         if (!wait.equals(expected)) {
             failures.add(what + ": " + wait + ", not " + expected);
         }
