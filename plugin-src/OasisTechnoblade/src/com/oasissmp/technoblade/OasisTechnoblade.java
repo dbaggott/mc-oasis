@@ -128,6 +128,8 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
     private Rumors rumors;
     // Volatile: BedrockCrown reads it on Geyser's threads.
     private volatile PigRecord record;
+    // A record there but unreadable: the world had a Technoblade, which no record now names.
+    private boolean recordUnreadable;
     private GoalKey<Pig> roamKey;
     private GoalKey<Pig> stareKey;
     private boolean spawning;
@@ -176,6 +178,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         } catch (IllegalArgumentException e) {
             // Placing a new pig is the way back: the old one is a duplicate when it loads.
             getLogger().warning("Couldn't read " + recordFile + ", so a new Technoblade is placed: " + e.getMessage());
+            recordUnreadable = true;
         }
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(new Guard(this::isTechnoblade), this);
@@ -214,9 +217,13 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
                                                                 IntegerArgumentType.getInteger(context, "value"))))))))
                         .build(), "Where Technoblade is, or add it to the world, remove it, place a new one, or"
                                 + " change how it behaves"));
-        // On the first tick, after every plugin has enabled.
-        getServer().getScheduler().runTask(this,
-                () -> overworld().getEntitiesByClass(Pig.class).forEach(this::admit));
+        // On the first tick, after every plugin has enabled and OasisRegions has set up the spawn region.
+        getServer().getScheduler().runTask(this, () -> {
+            overworld().getEntitiesByClass(Pig.class).forEach(this::admit);
+            if (recordUnreadable) {
+                placeOnColumn(firstSpawn.x(), firstSpawn.z());
+            }
+        });
         getServer().getScheduler().runTaskTimer(this, () -> checkTrap(false), TRAP_CHECK_TICKS, TRAP_CHECK_TICKS);
         getServer().getScheduler().runTaskTimer(this, this::tend, TEND_TICKS, TEND_TICKS);
         rumors = new Rumors(this, settings, () -> record, this::loaded);
