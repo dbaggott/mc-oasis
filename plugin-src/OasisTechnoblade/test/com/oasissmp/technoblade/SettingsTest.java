@@ -64,7 +64,7 @@ public final class SettingsTest {
             Settings.of(defaults, Map.of("rumor-minutes", "5"));
             failures.add("rumors were set to every 5 minutes under a jitter of 10");
         } catch (IllegalArgumentException refused) {
-            // /technoblade set refuses it.
+            // /technoblade config set refuses it.
         }
 
         Path file = Files.createTempDirectory("oasistechnoblade").resolve("OasisTechnoblade/"

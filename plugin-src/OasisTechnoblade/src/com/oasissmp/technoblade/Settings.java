@@ -17,7 +17,7 @@ import java.util.Map;
  * {@code name value} line for each, with blank lines and lines starting with
  * {@code #} left out, every setting there, none twice, and nothing else. Its
  * own comments say what each one does. {@code settings-changed.txt}, in the
- * same form, holds the ones staff changed with {@code /technoblade set}. Only
+ * same form, holds the ones staff changed with {@code /technoblade config set}. Only
  * the plugin writes it, on the world volume, so a change outlasts restarts
  * and new images.
  */
@@ -60,7 +60,7 @@ record Settings(double hitDamage, double throwSpeed, double throwLift, Duration 
     // Written beside the file and moved over it, so a crash mid-write leaves the old one.
     static void save(Path file, Map<String, String> changed) throws IOException {
         List<String> lines = new ArrayList<>();
-        lines.add("# Settings changed with /technoblade set, over the defaults in " + FILE_NAME + ".");
+        lines.add("# Settings changed with /technoblade config set, over the defaults in " + FILE_NAME + ".");
         changed.forEach((name, value) -> lines.add(name + " " + value));
         Files.createDirectories(file.getParent());
         Path written = file.resolveSibling(file.getFileName() + ".new");

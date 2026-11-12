@@ -189,15 +189,16 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
                                 .then(column(this::add)))
                         .then(Commands.literal("remove").executes(context -> remove(context.getSource())))
                         .then(Commands.literal("respawn").then(column(this::respawn)))
-                        .then(Commands.literal("settings").executes(context -> listSettings(context.getSource())))
-                        .then(Commands.literal("set").then(settingName()
-                                .then(Commands.argument("value", StringArgumentType.word())
-                                        .executes(context -> set(context.getSource(),
-                                                StringArgumentType.getString(context, "name"),
-                                                StringArgumentType.getString(context, "value"))))))
-                        .then(Commands.literal("unset").then(settingName()
-                                .executes(context -> unset(context.getSource(),
-                                        StringArgumentType.getString(context, "name")))))
+                        .then(Commands.literal("config")
+                                .executes(context -> listSettings(context.getSource()))
+                                .then(Commands.literal("set").then(settingName()
+                                        .then(Commands.argument("value", StringArgumentType.word())
+                                                .executes(context -> set(context.getSource(),
+                                                        StringArgumentType.getString(context, "name"),
+                                                        StringArgumentType.getString(context, "value"))))))
+                                .then(Commands.literal("unset").then(settingName()
+                                        .executes(context -> unset(context.getSource(),
+                                                StringArgumentType.getString(context, "name"))))))
                         .build(), "Where Technoblade is, or add it to the world, remove it, place a new one, or"
                                 + " change how it behaves"));
         // On the first tick, after every plugin has enabled.
@@ -701,7 +702,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         if (!defaults.containsKey(name)) {
             // As an Audience: CommandSender's own sendMessage overloads need Bungee's chat API to resolve.
             ((Audience) source.getSender()).sendMessage(Component.text("There is no setting " + name
-                    + "; /technoblade settings lists them.", NamedTextColor.RED));
+                    + "; /technoblade config lists them.", NamedTextColor.RED));
             return Command.SINGLE_SUCCESS;
         }
         Map<String, String> next = new LinkedHashMap<>(changed);
