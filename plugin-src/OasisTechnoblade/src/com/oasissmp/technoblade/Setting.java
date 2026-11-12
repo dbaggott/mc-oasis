@@ -39,7 +39,7 @@ enum Setting {
 
     /** How often, on average, players are told where Technoblade was seen. */
     RUMOR_INTERVAL(Subject.RUMOR, "interval", 30, 1, 1440, "minutes"),
-    /** How much earlier or later than the interval each rumor can come. */
+    /** How much earlier or later than the interval each rumor can come, which is never more than the interval. */
     RUMOR_JITTER(Subject.RUMOR, "jitter", 10, 0, 1440, "minutes"),
     /** How near Technoblade a player has to be for a rumor to name them. 0 means rumors only name biomes. */
     RUMOR_REACH(Subject.RUMOR, "reach", 128, 0, 512, "blocks"),

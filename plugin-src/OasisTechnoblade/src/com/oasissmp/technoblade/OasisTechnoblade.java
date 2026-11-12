@@ -73,7 +73,9 @@ import org.bukkit.scheduler.BukkitTask;
  * it hurts and throws the attacker back ({@link Hitting}). Feeding it gives a
  * golden apple and its protection from monsters ({@link Feeding},
  * {@link Bodyguard}). Now and then players are told where it was seen
- * ({@link Rumors}). There is only ever one, and a trapped one teleports out.
+ * ({@link Rumors}). Staff tune the numbers behind these with
+ * {@code /technoblade config} ({@link Setting}). There is only ever one, and
+ * a trapped one teleports out.
  * It wears Technoblade's crown, painted on its head for Java players and
  * modelled on it for Bedrock players ({@link BedrockCrown}), which is how
  * players know it: it has no name label, and any name it gets is taken off.
@@ -720,7 +722,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
             sender.sendMessage(Component.text(e.getMessage() + ".", NamedTextColor.RED));
             return Command.SINGLE_SUCCESS;
         }
-        if (setting.subject() == Setting.Subject.RUMOR) {
+        if (setting == Setting.RUMOR_INTERVAL || setting == Setting.RUMOR_JITTER) {
             rumors.scheduleNext();
         }
         String done = subjectName + " " + settingName + " set to " + value + " " + setting.unit() + ".";

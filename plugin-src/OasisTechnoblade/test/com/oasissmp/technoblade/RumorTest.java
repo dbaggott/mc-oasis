@@ -47,6 +47,15 @@ public final class RumorTest {
             failures.add("waits run from " + shortest + " to " + longest + " ticks, not from 24000 to 48000");
         }
 
+        // A jitter longer than the time between rumors counts as that time: up to an hour apart, not 90 minutes.
+        long widest = 0;
+        for (int i = 0; i < 10_000; i++) {
+            widest = Math.max(widest, Rumor.delayTicks(random, Duration.ofMinutes(30), Duration.ofMinutes(60)));
+        }
+        if (widest > 72_000 || widest < 70_800) {
+            failures.add("with an hour's jitter on 30 minutes, the longest wait is " + widest + " ticks, not 72000");
+        }
+
         named(failures, "plains", "Plains");
         named(failures, "dark_forest", "Dark Forest");
         named(failures, "cave/andesite_caves", "Andesite Caves");

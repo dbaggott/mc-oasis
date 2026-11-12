@@ -12,9 +12,14 @@ final class Rumor {
 
     private Rumor() { }
 
-    /** The ticks until the next rumor: {@code every}, give or take up to {@code jitter}, and never none. */
+    /**
+     * The ticks until the next rumor: {@code every}, give or take up to
+     * {@code jitter}, or up to {@code every} itself if that is less, so the
+     * average stays {@code every}.
+     */
     static long delayTicks(RandomGenerator random, Duration every, Duration jitter) {
-        return random.nextLong(Settings.ticks(every.minus(jitter)), Settings.ticks(every.plus(jitter)) + 1);
+        Duration either = jitter.compareTo(every) < 0 ? jitter : every;
+        return random.nextLong(Settings.ticks(every.minus(either)), Settings.ticks(every.plus(either)) + 1);
     }
 
     /** Either hint when a player is near enough to name, and otherwise the biome. */

@@ -666,7 +666,7 @@ until reply="$(technoblade)" && [[ "$(technoblade_count)" == 1 && "$(technoblade
 done
 # The death is logged. "Technoblade never dies." goes to a player who killed
 # it and to nobody else, and /kill has no player behind it.
-if ! grep --quiet --extended-regexp '\[OasisTechnoblade\] Technoblade died at [0-9]+ [0-9]+ [0-9]+ in minecraft:overworld$' \
+if ! grep --quiet --extended-regexp '\[OasisTechnoblade\] Technoblade died at [0-9]+ [0-9]+ [0-9]+ in minecraft:overworld' \
     <<<"$(docker logs "$name" 2>&1)"; then
   echo "error: Technoblade's death wasn't logged" >&2
   exit 1

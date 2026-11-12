@@ -41,6 +41,9 @@ final class Stare {
 
     void start(Pig staring, Player at) {
         end();
+        if (settings.get(Setting.STARE_DURATION) == 0) {
+            return;
+        }
         pig = staring;
         killer = at.getUniqueId();
         ends = plugin.getServer().getCurrentTick()

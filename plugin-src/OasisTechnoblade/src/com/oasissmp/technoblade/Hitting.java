@@ -23,6 +23,9 @@ import org.bukkit.util.Vector;
  */
 final class Hitting implements Listener {
 
+    // The blocks a player can fall unhurt: further than a jump takes them.
+    private static final float OWN_FALL = 3;
+
     private final Plugin plugin;
     private final Predicate<Entity> isTechnoblade;
     private final Settings settings;
@@ -39,7 +42,9 @@ final class Hitting implements Listener {
     // Only a hit that landed: one a protected region cancelled costs the attacker nothing.
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onHit(EntityDamageByEntityEvent event) {
-        if (!isTechnoblade.test(event.getEntity())) {
+        // A sweep that caught it wasn't aimed at it.
+        if (!isTechnoblade.test(event.getEntity())
+                || event.getCause() == EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK) {
             return;
         }
         Player attacker = attacker(event.getDamager());
@@ -51,9 +56,12 @@ final class Hitting implements Listener {
         attacker.setHealth(Retaliation.healthAfter(attacker.getHealth(), settings.get(Setting.HIT_DAMAGE)));
         attacker.playHurtAnimation(0);
         attacker.getWorld().playSound(attacker, Sound.ENTITY_PLAYER_HURT, 1, 1);
-        thrown.start(attacker.getUniqueId(), plugin.getServer().getCurrentTick());
-        if (landing == null) {
-            landing = plugin.getServer().getScheduler().runTaskTimer(plugin, this::land, 1, 1);
+        // A fall the attacker was already in when they hit it is their own, and still hurts.
+        if (attacker.getFallDistance() <= OWN_FALL) {
+            thrown.start(attacker.getUniqueId(), plugin.getServer().getCurrentTick());
+            if (landing == null) {
+                landing = plugin.getServer().getScheduler().runTaskTimer(plugin, this::land, 1, 1);
+            }
         }
         Location pig = event.getEntity().getLocation();
         // On the next tick: the hit's own knockback and velocity updates come after this event and would overwrite it.
