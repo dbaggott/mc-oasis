@@ -16,6 +16,7 @@ import org.bukkit.block.Biome;
 import org.bukkit.entity.Pig;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.scheduler.BukkitTask;
 
 /**
  * Rumors: every so often ({@link Rumor#delayTicks}), while anyone is online
@@ -26,20 +27,26 @@ import org.bukkit.plugin.Plugin;
 final class Rumors {
 
     private final Plugin plugin;
-    private final Settings settings;
+    private final Supplier<Settings> settings;
     private final Supplier<PigRecord> record;
     private final Supplier<Optional<Pig>> technoblade;
+    private BukkitTask next;
 
-    Rumors(Plugin plugin, Settings settings, Supplier<PigRecord> record, Supplier<Optional<Pig>> technoblade) {
+    Rumors(Plugin plugin, Supplier<Settings> settings, Supplier<PigRecord> record, Supplier<Optional<Pig>> technoblade) {
         this.plugin = plugin;
         this.settings = settings;
         this.record = record;
         this.technoblade = technoblade;
     }
 
+    /** Starts the wait for the next rumor, in place of any wait already on, by the settings as they are now. */
     void scheduleNext() {
-        plugin.getServer().getScheduler().runTaskLater(plugin, this::spread,
-                Rumor.delayTicks(ThreadLocalRandom.current(), settings.rumorEvery(), settings.rumorJitter()));
+        if (next != null) {
+            next.cancel();
+        }
+        Settings now = settings.get();
+        next = plugin.getServer().getScheduler().runTaskLater(plugin, this::spread,
+                Rumor.delayTicks(ThreadLocalRandom.current(), now.rumorEvery(), now.rumorJitter()));
     }
 
     private void spread() {
@@ -79,7 +86,7 @@ final class Rumors {
     // Not one in spectator: a staff member watching unseen is never named.
     private Optional<Player> nearest(Pig pig) {
         Location at = pig.getLocation();
-        double near = settings.rumorNear();
+        double near = settings.get().rumorNear();
         return pig.getWorld().getPlayers().stream()
                 .filter(player -> player.getGameMode() != GameMode.SPECTATOR)
                 .filter(player -> player.getLocation().distanceSquared(at) <= near * near)

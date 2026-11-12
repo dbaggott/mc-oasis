@@ -7,19 +7,14 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Whom Technoblade is guarding: each player for one length of time from when
+ * Whom Technoblade is guarding: each player for a length of time from when
  * their guarding last started, kept in memory only.
  */
 final class Guarding {
 
-    private final Duration length;
     private final Map<UUID, Instant> ends = new HashMap<>();
 
-    Guarding(Duration length) {
-        this.length = length;
-    }
-
-    void start(UUID player, Instant now) {
+    void start(UUID player, Instant now, Duration length) {
         ends.values().removeIf(end -> !end.isAfter(now));
         ends.put(player, now.plus(length));
     }

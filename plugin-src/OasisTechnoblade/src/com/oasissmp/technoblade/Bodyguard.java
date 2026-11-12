@@ -19,11 +19,11 @@ final class Bodyguard implements Listener {
 
     private final Guarding guarding;
     private final Supplier<Optional<Pig>> technoblade;
-    private final double reach;
+    private final Supplier<Settings> settings;
 
-    Bodyguard(Guarding guarding, double reach, Supplier<Optional<Pig>> technoblade) {
+    Bodyguard(Guarding guarding, Supplier<Settings> settings, Supplier<Optional<Pig>> technoblade) {
         this.guarding = guarding;
-        this.reach = reach;
+        this.settings = settings;
         this.technoblade = technoblade;
     }
 
@@ -33,6 +33,7 @@ final class Bodyguard implements Listener {
                 || !guarding.guards(player.getUniqueId(), Instant.now())) {
             return;
         }
+        double reach = settings.get().guardReach();
         technoblade.get()
                 .filter(pig -> pig.getWorld().equals(monster.getWorld())
                         && pig.getLocation().distanceSquared(monster.getLocation()) <= reach * reach)

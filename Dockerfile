@@ -246,10 +246,11 @@ COPY --from=worldguard /out/ /plugins/
 # OasisRegions' the WorldGuard regions it sets up, and OasisSpawn's the spawn
 # it pastes into a new world on the seed spawn was built in, with that seed's
 # hash: the seed itself stays out of this public repo. OasisTechnoblade's are the
-# column where /technoblade add places Technoblade and the settings for how it
-# behaves. Its record of which pig is Technoblade is written beside those on
-# the world volume, and the image never carries one, so a new world has no
-# Technoblade until staff add it.
+# column where /technoblade add places Technoblade and the default settings
+# for how it behaves. Its record of which pig is Technoblade, and the settings
+# staff changed with /technoblade set, are written beside those on the world
+# volume. The image never carries either, so a new world has no Technoblade
+# until staff add it, and a changed setting outlasts a new image.
 # Geyser-Spigot's is MCXboxBroadcast's, under the extension's id in Geyser's
 # extensions/: the file the pinned build generates, with expiry off, so a
 # console player who stops playing for a while stays on its friend list. Its

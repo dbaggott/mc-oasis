@@ -1,6 +1,11 @@
-# How Technoblade behaves, read by OasisTechnoblade at every start. One
-# `name value` line for each setting, all of them required; blank lines and
-# lines starting with `#` are left out. Distances are in blocks.
+# How Technoblade behaves by default, read by OasisTechnoblade at every start.
+# One `name value` line for each setting, all of them required; blank lines
+# and lines starting with `#` are left out. Distances are in blocks.
+#
+# Staff change a setting on the running server with `/technoblade set <name>
+# <value>`, which lasts across restarts and new images until `/technoblade
+# unset <name>`: those are kept in settings-changed.txt on the world volume,
+# and win over the values here. `/technoblade settings` lists what is in force.
 
 # Hitting it. The attacker loses this much health (2 is a heart), though never
 # their last half heart, and is thrown back at these speeds across and up, in

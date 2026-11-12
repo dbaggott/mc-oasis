@@ -20,23 +20,23 @@ public final class GuardingTest {
 
     public static void main(String[] args) {
         List<String> failures = new ArrayList<>();
-        Guarding guarding = new Guarding(Duration.ofMinutes(5));
+        Guarding guarding = new Guarding();
         Instant start = Instant.ofEpochSecond(1_790_000_000L);
 
         guards(failures, guarding, ALEX, start, false, "a player who was never fed from");
-        guarding.start(ALEX, start);
+        guarding.start(ALEX, start, Duration.ofMinutes(5));
         guards(failures, guarding, ALEX, start, true, "a player as their guarding starts");
         guards(failures, guarding, ALEX, start.plusSeconds(299), true, "a player a second before it ends");
         guards(failures, guarding, ALEX, start.plusSeconds(300), false, "a player as it ends");
         guards(failures, guarding, STEVE, start.plusSeconds(60), false, "another player meanwhile");
 
-        guarding.start(STEVE, start.plusSeconds(200));
+        guarding.start(STEVE, start.plusSeconds(200), Duration.ofMinutes(5));
         guards(failures, guarding, ALEX, start.plusSeconds(250), true, "the first player after a second's started");
         guards(failures, guarding, STEVE, start.plusSeconds(499), true, "the second player after the first's ended");
         guards(failures, guarding, STEVE, start.plusSeconds(500), false, "the second player as theirs ends");
 
-        guarding.start(ALEX, start.plusSeconds(600));
-        guarding.start(ALEX, start.plusSeconds(700));
+        guarding.start(ALEX, start.plusSeconds(600), Duration.ofMinutes(5));
+        guarding.start(ALEX, start.plusSeconds(700), Duration.ofMinutes(5));
         guards(failures, guarding, ALEX, start.plusSeconds(999), true, "a player whose guarding started again");
         guards(failures, guarding, ALEX, start.plusSeconds(1000), false, "a player as the later guarding ends");
 

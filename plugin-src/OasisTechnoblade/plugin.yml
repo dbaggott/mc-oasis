@@ -8,5 +8,5 @@ depend: [WorldGuard, WorldEdit]
 softdepend: [Geyser-Spigot]
 permissions:
   oasistechnoblade.manage:
-    description: See where Technoblade is, add it to the world, remove it and place a new one with /technoblade
+    description: See where Technoblade is, add it to the world, remove it, place a new one and change its settings with /technoblade
     default: false

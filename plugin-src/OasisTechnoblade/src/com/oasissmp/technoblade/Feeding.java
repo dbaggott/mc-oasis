@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -32,15 +33,14 @@ import org.bukkit.potion.PotionEffectType;
 final class Feeding implements Listener {
 
     private final Predicate<Entity> isTechnoblade;
-    private final Settings settings;
+    private final Supplier<Settings> current;
     private final Guarding guarding;
-    private final Cooldown cooldown;
+    private final Cooldown cooldown = new Cooldown();
 
-    Feeding(Predicate<Entity> isTechnoblade, Settings settings, Guarding guarding) {
+    Feeding(Predicate<Entity> isTechnoblade, Supplier<Settings> current, Guarding guarding) {
         this.isTechnoblade = isTechnoblade;
-        this.settings = settings;
+        this.current = current;
         this.guarding = guarding;
-        this.cooldown = new Cooldown(settings.feedCooldown());
     }
 
     // First, and cancelling it: WorldGuard skips a cancelled interaction, so
@@ -61,8 +61,9 @@ final class Feeding implements Listener {
         event.setCancelled(true);
         // As an Audience: Player's own sendActionBar and sendMessage overloads need Bungee's chat API to resolve.
         Audience told = player;
+        Settings settings = current.get();
         Instant now = Instant.now();
-        Optional<Duration> wait = cooldown.take(player.getUniqueId(), now);
+        Optional<Duration> wait = cooldown.take(player.getUniqueId(), now, settings.feedCooldown());
         if (wait.isPresent()) {
             told.sendActionBar(Component.text("Technoblade isn't hungry. Try again in " + minutes(wait.get()) + ".",
                     NamedTextColor.LIGHT_PURPLE));
@@ -88,7 +89,7 @@ final class Feeding implements Listener {
             told.sendMessage(Component.text("Technoblade gave you " + name(effect) + ".",
                     NamedTextColor.LIGHT_PURPLE));
         });
-        guarding.start(player.getUniqueId(), now);
+        guarding.start(player.getUniqueId(), now, settings.guardFor());
     }
 
     private static PotionEffectType type(Gifts.Effect effect) {

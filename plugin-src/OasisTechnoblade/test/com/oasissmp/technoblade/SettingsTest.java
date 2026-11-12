@@ -1,15 +1,20 @@
 package com.oasissmp.technoblade;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Checks that settings.txt reads, the repo's
- * plugins/OasisTechnoblade/settings.txt included, and that one with a setting
- * missing, repeated, unknown or out of range doesn't. Runs from the repo root.
+ * plugins/OasisTechnoblade/settings.txt included, that one with a setting
+ * missing, repeated, unknown or out of range doesn't, that changed settings
+ * stand in for the defaults only where the result still reads, and that they
+ * read back as saved. Runs from the repo root.
  */
 public final class SettingsTest {
 
@@ -26,7 +31,7 @@ public final class SettingsTest {
         Settings expected = new Settings(6, 0.7, 0.4, Duration.ofMinutes(5), 10, 20, Duration.ofMinutes(2),
                 Duration.ofMinutes(4), 16, Duration.ofMinutes(30), Duration.ofMinutes(10), 128,
                 Duration.ofMillis(500), 32);
-        Settings read = Settings.parse(GOOD);
+        Settings read = Settings.of(Settings.read(GOOD));
         if (!read.equals(expected)) {
             failures.add("the settings read as " + read + ", not " + expected);
         }
@@ -46,7 +51,36 @@ public final class SettingsTest {
         refuses(failures, replaced("rumor-minutes", "0"), "rumors every 0 minutes");
         refuses(failures, replaced("rumor-jitter-minutes", "30"), "a jitter as long as the time between rumors");
 
-        Settings repo = Settings.load(Path.of("plugins/OasisTechnoblade"));
+        Map<String, String> defaults = Settings.read(GOOD);
+        if (!List.copyOf(defaults.keySet()).subList(0, 2).equals(List.of("hit-damage", "throw-speed"))) {
+            failures.add("the settings aren't in the file's order: " + defaults.keySet());
+        }
+        Settings changed = Settings.of(defaults, Map.of("rumor-minutes", "12", "stare-reach", "8"));
+        if (!changed.rumorEvery().equals(Duration.ofMinutes(12)) || changed.stareReach() != 8
+                || changed.hitDamage() != 6) {
+            failures.add("with rumor-minutes and stare-reach changed, the settings are " + changed);
+        }
+        try {
+            Settings.of(defaults, Map.of("rumor-minutes", "5"));
+            failures.add("rumors were set to every 5 minutes under a jitter of 10");
+        } catch (IllegalArgumentException refused) {
+            // /technoblade set refuses it.
+        }
+
+        Path file = Files.createTempDirectory("oasistechnoblade").resolve("OasisTechnoblade/"
+                + Settings.CHANGED_FILE_NAME);
+        if (!Settings.read(file).isEmpty()) {
+            failures.add("a missing file of changed settings read as some");
+        }
+        Map<String, String> saved = new LinkedHashMap<>();
+        saved.put("stare-reach", "8");
+        saved.put("rumor-minutes", "12");
+        Settings.save(file, saved);
+        if (!Settings.read(file).equals(saved)) {
+            failures.add("the changed settings didn't read back: " + Settings.read(file));
+        }
+
+        Settings repo = Settings.of(Settings.read(Path.of("plugins/OasisTechnoblade", Settings.FILE_NAME)));
 
         if (!failures.isEmpty()) {
             failures.forEach(System.err::println);
@@ -72,7 +106,7 @@ public final class SettingsTest {
 
     private static void refuses(List<String> failures, List<String> lines, String what) {
         try {
-            Settings.parse(lines);
+            Settings.of(Settings.read(lines));
             failures.add("settings.txt read with " + what);
         } catch (IllegalArgumentException expected) {
             // The plugin doesn't enable on settings it can't read.

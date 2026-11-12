@@ -6,6 +6,7 @@ import com.destroystokyo.paper.entity.ai.VanillaGoal;
 import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldguard.WorldGuard;
@@ -24,7 +25,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -116,7 +119,12 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
     private final Set<NamespacedKey> warnedNoVariant = new HashSet<>();
     private Stare stare;
     private FirstSpawn firstSpawn;
+    // settings.txt's, and over them the ones staff changed, which are what's saved.
+    private Map<String, String> defaults;
+    private Map<String, String> changed = new LinkedHashMap<>();
+    private Path changedFile;
     private Settings settings;
+    private Rumors rumors;
     // Volatile: BedrockCrown reads it on Geyser's threads.
     private volatile PigRecord record;
     private GoalKey<Pig> roamKey;
@@ -152,12 +160,8 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         } catch (IOException e) {
             throw new UncheckedIOException("Couldn't read " + FirstSpawn.FILE_NAME, e);
         }
-        try {
-            settings = Settings.load(getDataFolder().toPath());
-        } catch (IOException e) {
-            throw new UncheckedIOException("Couldn't read " + Settings.FILE_NAME, e);
-        }
-        stare = new Stare(this, settings, this::isTechnoblade, this::crownHead);
+        loadSettings();
+        stare = new Stare(this, () -> settings, this::isTechnoblade, this::crownHead);
         try {
             record = PigRecord.load(recordFile).orElse(null);
         } catch (IOException e) {
@@ -168,11 +172,11 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         }
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(new Guard(this::isTechnoblade), this);
-        Guarding guarding = new Guarding(settings.guardFor());
-        getServer().getPluginManager().registerEvents(new Feeding(this::isTechnoblade, settings, guarding), this);
+        Guarding guarding = new Guarding();
         getServer().getPluginManager().registerEvents(
-                new Bodyguard(guarding, settings.guardReach(), this::loaded), this);
-        getServer().getPluginManager().registerEvents(new Hitting(this, this::isTechnoblade, settings), this);
+                new Feeding(this::isTechnoblade, () -> settings, guarding), this);
+        getServer().getPluginManager().registerEvents(new Bodyguard(guarding, () -> settings, this::loaded), this);
+        getServer().getPluginManager().registerEvents(new Hitting(this, this::isTechnoblade, () -> settings), this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(Commands.literal("technoblade")
                         // The console and RCON have it without the permission, which ops don't get by default.
@@ -185,13 +189,60 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
                                 .then(column(this::add)))
                         .then(Commands.literal("remove").executes(context -> remove(context.getSource())))
                         .then(Commands.literal("respawn").then(column(this::respawn)))
-                        .build(), "Where Technoblade is, or add it to the world, remove it, or place a new one"));
+                        .then(Commands.literal("settings").executes(context -> listSettings(context.getSource())))
+                        .then(Commands.literal("set").then(settingName()
+                                .then(Commands.argument("value", StringArgumentType.word())
+                                        .executes(context -> set(context.getSource(),
+                                                StringArgumentType.getString(context, "name"),
+                                                StringArgumentType.getString(context, "value"))))))
+                        .then(Commands.literal("unset").then(settingName()
+                                .executes(context -> unset(context.getSource(),
+                                        StringArgumentType.getString(context, "name")))))
+                        .build(), "Where Technoblade is, or add it to the world, remove it, place a new one, or"
+                                + " change how it behaves"));
         // On the first tick, after every plugin has enabled.
         getServer().getScheduler().runTask(this,
                 () -> overworld().getEntitiesByClass(Pig.class).forEach(this::admit));
         getServer().getScheduler().runTaskTimer(this, () -> checkTrap(false), TRAP_CHECK_TICKS, TRAP_CHECK_TICKS);
         getServer().getScheduler().runTaskTimer(this, this::tend, TEND_TICKS, TEND_TICKS);
-        new Rumors(this, settings, () -> record, this::loaded).scheduleNext();
+        rumors = new Rumors(this, () -> settings, () -> record, this::loaded);
+        rumors.scheduleNext();
+    }
+
+    /**
+     * Reads settings.txt, without which the plugin doesn't enable, and the
+     * settings staff changed. A changed setting the defaults no longer have is
+     * dropped, and if the rest don't read, the defaults stand alone until
+     * staff set one again.
+     */
+    private void loadSettings() {
+        Path folder = getDataFolder().toPath();
+        changedFile = folder.resolve(Settings.CHANGED_FILE_NAME);
+        try {
+            defaults = Settings.read(Files.readAllLines(folder.resolve(Settings.FILE_NAME)));
+        } catch (IOException e) {
+            throw new UncheckedIOException("Couldn't read " + Settings.FILE_NAME, e);
+        }
+        settings = Settings.of(defaults);
+        try {
+            Map<String, String> read = Settings.read(changedFile);
+            if (read.keySet().removeIf(name -> !defaults.containsKey(name))) {
+                getLogger().warning(changedFile + " changes settings that no longer exist, which are left out");
+            }
+            settings = Settings.of(defaults, read);
+            changed = read;
+        } catch (IOException | IllegalArgumentException e) {
+            getLogger().log(Level.SEVERE, "Couldn't read " + changedFile + ", so Technoblade behaves as "
+                    + Settings.FILE_NAME + " says", e);
+        }
+    }
+
+    private RequiredArgumentBuilder<CommandSourceStack, String> settingName() {
+        return Commands.argument("name", StringArgumentType.word()).suggests((context, builder) -> {
+            defaults.keySet().stream().filter(name -> name.startsWith(builder.getRemaining()))
+                    .forEach(builder::suggest);
+            return builder.buildFuture();
+        });
     }
 
     private interface ColumnCommand {
@@ -635,6 +686,62 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         Optional<Pig> placed = placeOnColumn(x, z);
         old.map(getServer()::getEntity).filter(entity -> !isTechnoblade(entity)).ifPresent(Entity::remove);
         sender.sendMessage(placement(placed));
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int listSettings(CommandSourceStack source) {
+        Audience sender = source.getSender();
+        defaults.forEach((name, shipped) -> sender.sendMessage(Component.text(changed.containsKey(name)
+                ? name + " " + changed.get(name) + " (set here; the default is " + shipped + ")"
+                : name + " " + shipped, NamedTextColor.LIGHT_PURPLE)));
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int set(CommandSourceStack source, String name, String value) {
+        if (!defaults.containsKey(name)) {
+            // As an Audience: CommandSender's own sendMessage overloads need Bungee's chat API to resolve.
+            ((Audience) source.getSender()).sendMessage(Component.text("There is no setting " + name
+                    + "; /technoblade settings lists them.", NamedTextColor.RED));
+            return Command.SINGLE_SUCCESS;
+        }
+        Map<String, String> next = new LinkedHashMap<>(changed);
+        next.put(name, value);
+        return change(source, next, name + " is now " + value + ".");
+    }
+
+    private int unset(CommandSourceStack source, String name) {
+        if (!changed.containsKey(name)) {
+            ((Audience) source.getSender()).sendMessage(Component.text(name + " isn't set here.",
+                    NamedTextColor.RED));
+            return Command.SINGLE_SUCCESS;
+        }
+        Map<String, String> next = new LinkedHashMap<>(changed);
+        next.remove(name);
+        return change(source, next, name + " is back to its default, " + defaults.get(name) + ".");
+    }
+
+    // Takes effect at once and is saved, or, if the settings wouldn't read with it, changes nothing.
+    private int change(CommandSourceStack source, Map<String, String> next, String done) {
+        Audience sender = source.getSender();
+        Settings read;
+        try {
+            read = Settings.of(defaults, next);
+        } catch (IllegalArgumentException e) {
+            sender.sendMessage(Component.text("Nothing changed: " + e.getMessage() + ".", NamedTextColor.RED));
+            return Command.SINGLE_SUCCESS;
+        }
+        changed = next;
+        settings = read;
+        rumors.scheduleNext();
+        getLogger().info(source.getSender().getName() + " changed Technoblade's settings: " + done);
+        try {
+            Settings.save(changedFile, changed);
+            sender.sendMessage(Component.text(done, NamedTextColor.LIGHT_PURPLE));
+        } catch (IOException e) {
+            getLogger().log(Level.SEVERE, "Couldn't save " + changedFile + "; the change lasts until a restart", e);
+            sender.sendMessage(Component.text(done + " It couldn't be saved, so it lasts until a restart; see the"
+                    + " server log.", NamedTextColor.RED));
+        }
         return Command.SINGLE_SUCCESS;
     }
 
