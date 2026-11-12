@@ -571,9 +571,11 @@ until reply="$(rcon egg)" && [[ "$reply" == *"$placed, as of "*", when its chunk
 done
 echo "/egg finds eggs in loaded and unloaded chunks"
 
-# OasisTechnoblade keeps one pig, Technoblade, which respawns where it dies,
-# never has a second, and teleports out of a trap. The first spawn's column has
-# random terrain in this world, so the pig is moved onto a platform pinned
+# A new world has no Technoblade until /technoblade add. From then until
+# /technoblade remove, OasisTechnoblade keeps one pig, Technoblade, which
+# respawns where it dies, never has a second, and teleports out of a trap. The
+# first spawn's column has random terrain in this world, so the pig is moved
+# onto a platform pinned
 # above any terrain, inside forceloaded chunks so selectors see it, and wider
 # than the plugin's 48-block searches from near its centre. Positive
 # coordinates: rcon-cli reads a leading `-` as a flag. Replies are colored, so
@@ -595,10 +597,22 @@ crowned() {
   [[ "$(rcon 'data get entity @e[type=pig,tag=technoblade,limit=1] variant')" == *'"oasis:technoblade"'* ]]
 }
 named() { [[ "$(rcon 'data get entity @e[type=pig,tag=technoblade,limit=1] CustomName')" != *"Found no elements"* ]]; }
+absent="Technoblade isn't in the world; /technoblade add places it."
+reply="$(technoblade)"
+if [[ "$reply" != "$absent" || "$(technoblade_count)" != 0 ]]; then
+  echo "error: a new world has a Technoblade before /technoblade add ($(technoblade_count) found): '${reply}'" >&2
+  exit 1
+fi
+rcon technoblade add >/dev/null
 reply="$(technoblade)"
 first_uuid="$(technoblade_uuid "$reply")"
 if [[ -z "$first_uuid" ]]; then
-  echo "error: /technoblade reports no recorded pig after start: '${reply}'" >&2
+  echo "error: /technoblade reports no recorded pig after /technoblade add: '${reply}'" >&2
+  exit 1
+fi
+if [[ "$(rcon technoblade add | sed 's/\x1b\[[0-9;]*m//g')" != "Technoblade is already in the world;"* \
+    || "$(technoblade_uuid "$(technoblade)")" != "$first_uuid" ]]; then
+  echo "error: a second /technoblade add wasn't refused: '$(technoblade)'" >&2
   exit 1
 fi
 rcon forceload add 4896 4896 5104 5104 >/dev/null
@@ -650,8 +664,11 @@ until reply="$(technoblade)" && [[ "$(technoblade_count)" == 1 && "$(technoblade
   fi
   sleep 1
 done
-if ! grep --quiet --fixed-strings 'Technoblade never dies.' <<<"$(docker logs "$name" 2>&1)"; then
-  echo "error: Technoblade's death wasn't announced with 'Technoblade never dies.'" >&2
+# The death is logged. "Technoblade never dies." goes to a player who killed
+# it and to nobody else, and /kill has no player behind it.
+if ! grep --quiet --extended-regexp '\[OasisTechnoblade\] Technoblade died at [0-9]+ [0-9]+ [0-9]+ in minecraft:overworld$' \
+    <<<"$(docker logs "$name" 2>&1)"; then
+  echo "error: Technoblade's death wasn't logged" >&2
   exit 1
 fi
 items_dropped="$(count_of "execute if entity @e[type=item,x=${dead_x},y=${dead_y},z=${dead_z},distance=..16]")"
@@ -712,8 +729,23 @@ if [[ "$(technoblade_uuid "$(technoblade)")" != "$pig_uuid" ]]; then
   echo "error: summoning a second pig tagged technoblade changed which pig is Technoblade: '$(technoblade)'" >&2
   exit 1
 fi
+# Removed, it is gone and stays gone; added again on the platform, it is a new pig.
+rcon technoblade remove >/dev/null
+reply="$(technoblade)"
+if [[ "$reply" != "$absent" || "$(technoblade_count)" != 0 ]]; then
+  echo "error: Technoblade is still there after /technoblade remove ($(technoblade_count) found): '${reply}'" >&2
+  exit 1
+fi
+rcon technoblade add 5000 5000 >/dev/null
+reply="$(technoblade)"
+if [[ "$(technoblade_count)" != 1 || -z "$(technoblade_uuid "$reply")" || "$(technoblade_uuid "$reply")" == "$pig_uuid" \
+    || "$(technoblade_at "$reply")" != *" 301 "* ]] || ! crowned; then
+  echo "error: after remove and add there isn't exactly one new, crowned Technoblade on the platform at y 301 ($(technoblade_count) found): '${reply}'" >&2
+  exit 1
+fi
+pig_uuid="$(technoblade_uuid "$reply")"
 rcon forceload remove all >/dev/null
-echo "Technoblade respawns once when killed, teleports out of a trap, and has no duplicates, crowned throughout and with no name"
+echo "Technoblade is absent until added, respawns once when killed, teleports out of a trap, has no duplicates, and goes when removed, crowned throughout and with no name"
 
 # The world borders, by width; `worldborder get` doesn't report the center.
 # Every `worldborder set` line has to parse, so a reworded one fails here

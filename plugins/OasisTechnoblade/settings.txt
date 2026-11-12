@@ -1,0 +1,33 @@
+# How Technoblade behaves, read by OasisTechnoblade at every start. One
+# `name value` line for each setting, all of them required; blank lines and
+# lines starting with `#` are left out. Distances are in blocks.
+
+# Hitting it. The attacker loses this much health (2 is a heart), though never
+# their last half heart, and is thrown back at these speeds across and up, in
+# blocks a tick. 0.7 and 0.4 land them about 5 blocks away on flat ground.
+hit-damage 6
+throw-speed 0.7
+throw-lift 0.4
+
+# Feeding it. A player waits this long between golden apples.
+feed-cooldown-minutes 5
+# The chance of a gold nugget with the apple, and of Luck or Speed with it, is
+# 1 in this many each, and the effect lasts this long.
+nugget-one-in 10
+effect-one-in 10
+effect-minutes 2
+# After a feed it guards the player for this long: monsters within this far of
+# it that go for them go for it instead.
+guard-minutes 5
+guard-reach 16
+
+# Rumors of where it was seen come this often on average, each one earlier or
+# later by up to the jitter, and name a player only within this far of it.
+rumor-minutes 30
+rumor-jitter-minutes 10
+rumor-near 128
+
+# The stare at a player who killed it lasts this long, or until they are
+# further than this from it.
+stare-seconds 10
+stare-reach 32

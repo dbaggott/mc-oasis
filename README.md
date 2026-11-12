@@ -138,7 +138,9 @@ Bedrock players get `resourcepack-bedrock/` from Geyser instead. Raise the `vers
 module alike) whenever anything in it changes: Bedrock clients keep a pack they already have at the same version.
 
 Java players see the crown painted on the pig variant `oasis:technoblade`, which `datapacks/80-oasis-technoblade/`
-defines and `resourcepack/` textures. Bedrock players see a 3D crown on any pig whose Bedrock entity property
+defines and `resourcepack/` textures. `oasis:technoblade_glaring` beside it is the same pig with red eyes, which
+Technoblade has while it stares at a player who killed it; Bedrock players see that stare with the usual eyes.
+Bedrock players see a 3D crown on any pig whose Bedrock entity property
 `oasis:crowned` is set, which OasisTechnoblade sets on Technoblade alone. The crown comes from an MIT-licensed pack,
 whose notice `resourcepack-bedrock/CREDITS.txt` carries and has to keep; `resourcepack/CREDITS.txt` says where the
 painted crown comes from.

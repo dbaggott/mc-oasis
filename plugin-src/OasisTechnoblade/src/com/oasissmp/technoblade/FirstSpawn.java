@@ -8,9 +8,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * The overworld column in {@code first-spawn.txt}: where Technoblade is placed
- * when no pig has been recorded, and where every other placement falls back
- * to. One {@code x z} line, with blank lines and lines starting with {@code #}
+ * The overworld column in {@code first-spawn.txt}: where
+ * {@code /technoblade add} places Technoblade when given no column, and where
+ * every other placement falls back to. One {@code x z} line, with blank lines and lines starting with {@code #}
  * left out.
  */
 record FirstSpawn(int x, int z) {
