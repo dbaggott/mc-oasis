@@ -1,7 +1,6 @@
 package com.oasissmp.technoblade;
 
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Sound;
@@ -26,12 +25,12 @@ final class Hitting implements Listener {
 
     private final Plugin plugin;
     private final Predicate<Entity> isTechnoblade;
-    private final Supplier<Settings> settings;
+    private final Settings settings;
     private final Throws thrown = new Throws();
     // Runs every tick while anyone is mid-throw.
     private BukkitTask landing;
 
-    Hitting(Plugin plugin, Predicate<Entity> isTechnoblade, Supplier<Settings> settings) {
+    Hitting(Plugin plugin, Predicate<Entity> isTechnoblade, Settings settings) {
         this.plugin = plugin;
         this.isTechnoblade = isTechnoblade;
         this.settings = settings;
@@ -49,7 +48,7 @@ final class Hitting implements Listener {
             return;
         }
         // Set rather than dealt as damage, which armor would reduce and which could kill.
-        attacker.setHealth(Retaliation.healthAfter(attacker.getHealth(), settings.get().hitDamage()));
+        attacker.setHealth(Retaliation.healthAfter(attacker.getHealth(), settings.get(Setting.HIT_DAMAGE)));
         attacker.playHurtAnimation(0);
         attacker.getWorld().playSound(attacker, Sound.ENTITY_PLAYER_HURT, 1, 1);
         thrown.start(attacker.getUniqueId(), plugin.getServer().getCurrentTick());
@@ -64,9 +63,9 @@ final class Hitting implements Listener {
             }
             Location at = attacker.getLocation();
             Retaliation.Heading away = Retaliation.away(at.getX() - pig.getX(), at.getZ() - pig.getZ(), at.getYaw());
-            Settings now = settings.get();
-            attacker.setVelocity(new Vector(away.x() * now.throwSpeed(), now.throwLift(),
-                    away.z() * now.throwSpeed()));
+            double speed = settings.get(Setting.HIT_SPEED) / 100.0;
+            attacker.setVelocity(new Vector(away.x() * speed, settings.get(Setting.HIT_LIFT) / 100.0,
+                    away.z() * speed));
         });
     }
 

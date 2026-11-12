@@ -5,7 +5,6 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -33,13 +32,13 @@ import org.bukkit.potion.PotionEffectType;
 final class Feeding implements Listener {
 
     private final Predicate<Entity> isTechnoblade;
-    private final Supplier<Settings> current;
+    private final Settings settings;
     private final Guarding guarding;
     private final Cooldown cooldown = new Cooldown();
 
-    Feeding(Predicate<Entity> isTechnoblade, Supplier<Settings> current, Guarding guarding) {
+    Feeding(Predicate<Entity> isTechnoblade, Settings settings, Guarding guarding) {
         this.isTechnoblade = isTechnoblade;
-        this.current = current;
+        this.settings = settings;
         this.guarding = guarding;
     }
 
@@ -61,9 +60,9 @@ final class Feeding implements Listener {
         event.setCancelled(true);
         // As an Audience: Player's own sendActionBar and sendMessage overloads need Bungee's chat API to resolve.
         Audience told = player;
-        Settings settings = current.get();
         Instant now = Instant.now();
-        Optional<Duration> wait = cooldown.take(player.getUniqueId(), now, settings.feedCooldown());
+        Optional<Duration> wait = cooldown.take(player.getUniqueId(), now,
+                settings.minutes(Setting.FEED_COOLDOWN));
         if (wait.isPresent()) {
             told.sendActionBar(Component.text("Technoblade isn't hungry. Try again in " + minutes(wait.get()) + ".",
                     NamedTextColor.LIGHT_PURPLE));
@@ -78,18 +77,20 @@ final class Feeding implements Listener {
         player.give(ItemStack.of(Material.GOLDEN_APPLE));
         // In chat: a held right-click repeats the interaction, and the refusal that follows takes the action bar.
         told.sendMessage(Component.text("Technoblade gave you a golden apple.", NamedTextColor.LIGHT_PURPLE));
-        Gifts gifts = Gifts.roll(ThreadLocalRandom.current(), settings.nuggetOneIn(), settings.effectOneIn());
+        Gifts gifts = Gifts.roll(ThreadLocalRandom.current(), settings.get(Setting.FEED_NUGGET),
+                settings.get(Setting.FEED_EFFECT));
         if (gifts.nugget()) {
             player.give(ItemStack.of(Material.GOLD_NUGGET));
             told.sendMessage(Component.text("Technoblade gave you a gold nugget.", NamedTextColor.LIGHT_PURPLE));
         }
         gifts.effect().ifPresent(effect -> {
             // Level I. Over an effect the player already has, the longer or stronger of the two stays.
-            player.addPotionEffect(new PotionEffect(type(effect), (int) Settings.ticks(settings.effectFor()), 0));
+            player.addPotionEffect(new PotionEffect(type(effect),
+                    (int) Settings.ticks(settings.minutes(Setting.FEED_EFFECT_DURATION)), 0));
             told.sendMessage(Component.text("Technoblade gave you " + name(effect) + ".",
                     NamedTextColor.LIGHT_PURPLE));
         });
-        guarding.start(player.getUniqueId(), now, settings.guardFor());
+        guarding.start(player.getUniqueId(), now, settings.minutes(Setting.GUARD_DURATION));
     }
 
     private static PotionEffectType type(Gifts.Effect effect) {

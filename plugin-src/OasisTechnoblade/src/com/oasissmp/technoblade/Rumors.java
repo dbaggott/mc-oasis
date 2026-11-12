@@ -27,12 +27,12 @@ import org.bukkit.scheduler.BukkitTask;
 final class Rumors {
 
     private final Plugin plugin;
-    private final Supplier<Settings> settings;
+    private final Settings settings;
     private final Supplier<PigRecord> record;
     private final Supplier<Optional<Pig>> technoblade;
     private BukkitTask next;
 
-    Rumors(Plugin plugin, Supplier<Settings> settings, Supplier<PigRecord> record, Supplier<Optional<Pig>> technoblade) {
+    Rumors(Plugin plugin, Settings settings, Supplier<PigRecord> record, Supplier<Optional<Pig>> technoblade) {
         this.plugin = plugin;
         this.settings = settings;
         this.record = record;
@@ -44,9 +44,9 @@ final class Rumors {
         if (next != null) {
             next.cancel();
         }
-        Settings now = settings.get();
         next = plugin.getServer().getScheduler().runTaskLater(plugin, this::spread,
-                Rumor.delayTicks(ThreadLocalRandom.current(), now.rumorEvery(), now.rumorJitter()));
+                Rumor.delayTicks(ThreadLocalRandom.current(), settings.minutes(Setting.RUMOR_INTERVAL),
+                        settings.minutes(Setting.RUMOR_JITTER)));
     }
 
     private void spread() {
@@ -86,7 +86,7 @@ final class Rumors {
     // Not one in spectator: a staff member watching unseen is never named.
     private Optional<Player> nearest(Pig pig) {
         Location at = pig.getLocation();
-        double near = settings.get().rumorNear();
+        double near = settings.get(Setting.RUMOR_REACH);
         return pig.getWorld().getPlayers().stream()
                 .filter(player -> player.getGameMode() != GameMode.SPECTATOR)
                 .filter(player -> player.getLocation().distanceSquared(at) <= near * near)

@@ -12,16 +12,17 @@ import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 
 /**
  * Technoblade guards whoever fed it ({@link Guarding}): a monster within
- * reach of it that goes for a guarded player goes for it instead. One already on the player when the guarding starts stays on them
- * until it next picks a target.
+ * reach of it that goes for a guarded player goes for it instead. One already
+ * on the player when the guarding starts stays on them until it next picks a
+ * target.
  */
 final class Bodyguard implements Listener {
 
     private final Guarding guarding;
     private final Supplier<Optional<Pig>> technoblade;
-    private final Supplier<Settings> settings;
+    private final Settings settings;
 
-    Bodyguard(Guarding guarding, Supplier<Settings> settings, Supplier<Optional<Pig>> technoblade) {
+    Bodyguard(Guarding guarding, Settings settings, Supplier<Optional<Pig>> technoblade) {
         this.guarding = guarding;
         this.settings = settings;
         this.technoblade = technoblade;
@@ -33,7 +34,7 @@ final class Bodyguard implements Listener {
                 || !guarding.guards(player.getUniqueId(), Instant.now())) {
             return;
         }
-        double reach = settings.get().guardReach();
+        double reach = settings.get(Setting.GUARD_REACH);
         technoblade.get()
                 .filter(pig -> pig.getWorld().equals(monster.getWorld())
                         && pig.getLocation().distanceSquared(monster.getLocation()) <= reach * reach)

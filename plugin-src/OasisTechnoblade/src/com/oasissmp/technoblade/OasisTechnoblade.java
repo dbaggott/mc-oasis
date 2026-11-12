@@ -8,6 +8,8 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.protection.managers.RegionManager;
@@ -25,14 +27,14 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
+import java.util.stream.Stream;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -119,10 +121,7 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
     private final Set<NamespacedKey> warnedNoVariant = new HashSet<>();
     private Stare stare;
     private FirstSpawn firstSpawn;
-    // settings.txt's, and over them the ones staff changed, which are what's saved.
-    private Map<String, String> defaults;
-    private Map<String, String> changed = new LinkedHashMap<>();
-    private Path changedFile;
+    private Path settingsFile;
     private Settings settings;
     private Rumors rumors;
     // Volatile: BedrockCrown reads it on Geyser's threads.
@@ -160,8 +159,14 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         } catch (IOException e) {
             throw new UncheckedIOException("Couldn't read " + FirstSpawn.FILE_NAME, e);
         }
-        loadSettings();
-        stare = new Stare(this, () -> settings, this::isTechnoblade, this::crownHead);
+        settingsFile = getDataFolder().toPath().resolve(Settings.FILE_NAME);
+        try {
+            settings = Settings.load(settingsFile, line -> getLogger().warning(settingsFile
+                    + " has a line that sets nothing, which is left out: " + line));
+        } catch (IOException e) {
+            throw new UncheckedIOException("Couldn't read " + settingsFile, e);
+        }
+        stare = new Stare(this, settings, this::isTechnoblade, this::crownHead);
         try {
             record = PigRecord.load(recordFile).orElse(null);
         } catch (IOException e) {
@@ -173,10 +178,9 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(new Guard(this::isTechnoblade), this);
         Guarding guarding = new Guarding();
-        getServer().getPluginManager().registerEvents(
-                new Feeding(this::isTechnoblade, () -> settings, guarding), this);
-        getServer().getPluginManager().registerEvents(new Bodyguard(guarding, () -> settings, this::loaded), this);
-        getServer().getPluginManager().registerEvents(new Hitting(this, this::isTechnoblade, () -> settings), this);
+        getServer().getPluginManager().registerEvents(new Feeding(this::isTechnoblade, settings, guarding), this);
+        getServer().getPluginManager().registerEvents(new Bodyguard(guarding, settings, this::loaded), this);
+        getServer().getPluginManager().registerEvents(new Hitting(this, this::isTechnoblade, settings), this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(Commands.literal("technoblade")
                         // The console and RCON have it without the permission, which ops don't get by default.
@@ -190,15 +194,20 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
                         .then(Commands.literal("remove").executes(context -> remove(context.getSource())))
                         .then(Commands.literal("respawn").then(column(this::respawn)))
                         .then(Commands.literal("config")
-                                .executes(context -> listSettings(context.getSource()))
-                                .then(Commands.literal("set").then(settingName()
-                                        .then(Commands.argument("value", StringArgumentType.word())
-                                                .executes(context -> set(context.getSource(),
-                                                        StringArgumentType.getString(context, "name"),
-                                                        StringArgumentType.getString(context, "value"))))))
-                                .then(Commands.literal("unset").then(settingName()
-                                        .executes(context -> unset(context.getSource(),
-                                                StringArgumentType.getString(context, "name"))))))
+                                .then(Commands.literal("get").then(subject()
+                                        .executes(context -> reportSettings(context.getSource(),
+                                                StringArgumentType.getString(context, "subject")))))
+                                .then(Commands.literal("set").then(subject()
+                                        .then(Commands.argument("setting", StringArgumentType.word())
+                                                .suggests((context, builder) -> suggest(builder,
+                                                        subject(StringArgumentType.getString(context, "subject"))
+                                                                .map(Setting.Subject::settings).orElse(List.of())
+                                                                .stream().map(Setting::commandName)))
+                                                .then(Commands.argument("value", IntegerArgumentType.integer())
+                                                        .executes(context -> set(context.getSource(),
+                                                                StringArgumentType.getString(context, "subject"),
+                                                                StringArgumentType.getString(context, "setting"),
+                                                                IntegerArgumentType.getInteger(context, "value"))))))))
                         .build(), "Where Technoblade is, or add it to the world, remove it, place a new one, or"
                                 + " change how it behaves"));
         // On the first tick, after every plugin has enabled.
@@ -206,44 +215,23 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
                 () -> overworld().getEntitiesByClass(Pig.class).forEach(this::admit));
         getServer().getScheduler().runTaskTimer(this, () -> checkTrap(false), TRAP_CHECK_TICKS, TRAP_CHECK_TICKS);
         getServer().getScheduler().runTaskTimer(this, this::tend, TEND_TICKS, TEND_TICKS);
-        rumors = new Rumors(this, () -> settings, () -> record, this::loaded);
+        rumors = new Rumors(this, settings, () -> record, this::loaded);
         rumors.scheduleNext();
     }
 
-    /**
-     * Reads settings.txt, without which the plugin doesn't enable, and the
-     * settings staff changed. A changed setting the defaults no longer have is
-     * dropped, and if the rest don't read, the defaults stand alone until
-     * staff set one again.
-     */
-    private void loadSettings() {
-        Path folder = getDataFolder().toPath();
-        changedFile = folder.resolve(Settings.CHANGED_FILE_NAME);
-        try {
-            defaults = Settings.read(Files.readAllLines(folder.resolve(Settings.FILE_NAME)));
-        } catch (IOException e) {
-            throw new UncheckedIOException("Couldn't read " + Settings.FILE_NAME, e);
-        }
-        settings = Settings.of(defaults);
-        try {
-            Map<String, String> read = Settings.read(changedFile);
-            if (read.keySet().removeIf(name -> !defaults.containsKey(name))) {
-                getLogger().warning(changedFile + " changes settings that no longer exist, which are left out");
-            }
-            settings = Settings.of(defaults, read);
-            changed = read;
-        } catch (IOException | IllegalArgumentException e) {
-            getLogger().log(Level.SEVERE, "Couldn't read " + changedFile + ", so Technoblade behaves as "
-                    + Settings.FILE_NAME + " says", e);
-        }
+    private static RequiredArgumentBuilder<CommandSourceStack, String> subject() {
+        return Commands.argument("subject", StringArgumentType.word()).suggests((context, builder) ->
+                suggest(builder, Arrays.stream(Setting.Subject.values()).map(Setting.Subject::commandName)));
     }
 
-    private RequiredArgumentBuilder<CommandSourceStack, String> settingName() {
-        return Commands.argument("name", StringArgumentType.word()).suggests((context, builder) -> {
-            defaults.keySet().stream().filter(name -> name.startsWith(builder.getRemaining()))
-                    .forEach(builder::suggest);
-            return builder.buildFuture();
-        });
+    private static CompletableFuture<Suggestions> suggest(SuggestionsBuilder builder, Stream<String> names) {
+        names.filter(name -> name.startsWith(builder.getRemainingLowerCase())).forEach(builder::suggest);
+        return builder.buildFuture();
+    }
+
+    private static Optional<Setting.Subject> subject(String name) {
+        return Arrays.stream(Setting.Subject.values()).filter(subject -> subject.commandName().equals(name))
+                .findFirst();
     }
 
     private interface ColumnCommand {
@@ -690,56 +678,50 @@ public final class OasisTechnoblade extends JavaPlugin implements Listener {
         return Command.SINGLE_SUCCESS;
     }
 
-    private int listSettings(CommandSourceStack source) {
+    private int reportSettings(CommandSourceStack source, String subjectName) {
         Audience sender = source.getSender();
-        defaults.forEach((name, shipped) -> sender.sendMessage(Component.text(changed.containsKey(name)
-                ? name + " " + changed.get(name) + " (set here; the default is " + shipped + ")"
-                : name + " " + shipped, NamedTextColor.LIGHT_PURPLE)));
-        return Command.SINGLE_SUCCESS;
-    }
-
-    private int set(CommandSourceStack source, String name, String value) {
-        if (!defaults.containsKey(name)) {
-            // As an Audience: CommandSender's own sendMessage overloads need Bungee's chat API to resolve.
-            ((Audience) source.getSender()).sendMessage(Component.text("There is no setting " + name
-                    + "; /technoblade config lists them.", NamedTextColor.RED));
-            return Command.SINGLE_SUCCESS;
-        }
-        Map<String, String> next = new LinkedHashMap<>(changed);
-        next.put(name, value);
-        return change(source, next, name + " is now " + value + ".");
-    }
-
-    private int unset(CommandSourceStack source, String name) {
-        if (!changed.containsKey(name)) {
-            ((Audience) source.getSender()).sendMessage(Component.text(name + " isn't set here.",
+        Optional<Setting.Subject> subject = subject(subjectName);
+        if (subject.isEmpty()) {
+            sender.sendMessage(Component.text("Nothing configurable is called " + subjectName + ".",
                     NamedTextColor.RED));
             return Command.SINGLE_SUCCESS;
         }
-        Map<String, String> next = new LinkedHashMap<>(changed);
-        next.remove(name);
-        return change(source, next, name + " is back to its default, " + defaults.get(name) + ".");
+        for (Setting setting : subject.get().settings()) {
+            int value = settings.get(setting);
+            sender.sendMessage(Component.text(subjectName + " " + setting.commandName() + " = " + value + " "
+                    + setting.unit() + (value == setting.defaultValue() ? ""
+                            : " (" + setting.defaultValue() + " by default)"), NamedTextColor.LIGHT_PURPLE));
+        }
+        return Command.SINGLE_SUCCESS;
     }
 
-    // Takes effect at once and is saved, or, if the settings wouldn't read with it, changes nothing.
-    private int change(CommandSourceStack source, Map<String, String> next, String done) {
+    // Takes effect at once, and is saved.
+    private int set(CommandSourceStack source, String subjectName, String settingName, int value) {
         Audience sender = source.getSender();
-        Settings read;
-        try {
-            read = Settings.of(defaults, next);
-        } catch (IllegalArgumentException e) {
-            sender.sendMessage(Component.text("Nothing changed: " + e.getMessage() + ".", NamedTextColor.RED));
+        Optional<Setting> named = subject(subjectName).flatMap(subject -> subject.settings().stream()
+                .filter(setting -> setting.commandName().equals(settingName)).findFirst());
+        if (named.isEmpty()) {
+            sender.sendMessage(Component.text("There is no setting " + subjectName + " " + settingName + ".",
+                    NamedTextColor.RED));
             return Command.SINGLE_SUCCESS;
         }
-        changed = next;
-        settings = read;
-        rumors.scheduleNext();
-        getLogger().info(source.getSender().getName() + " changed Technoblade's settings: " + done);
+        Setting setting = named.get();
         try {
-            Settings.save(changedFile, changed);
+            settings.set(setting, value);
+        } catch (IllegalArgumentException e) {
+            sender.sendMessage(Component.text(e.getMessage() + ".", NamedTextColor.RED));
+            return Command.SINGLE_SUCCESS;
+        }
+        if (setting.subject() == Setting.Subject.RUMOR) {
+            rumors.scheduleNext();
+        }
+        String done = subjectName + " " + settingName + " set to " + value + " " + setting.unit() + ".";
+        getLogger().info(source.getSender().getName() + ": " + done);
+        try {
+            settings.save(settingsFile);
             sender.sendMessage(Component.text(done, NamedTextColor.LIGHT_PURPLE));
         } catch (IOException e) {
-            getLogger().log(Level.SEVERE, "Couldn't save " + changedFile + "; the change lasts until a restart", e);
+            getLogger().log(Level.SEVERE, "Couldn't save " + settingsFile + "; the change lasts until a restart", e);
             sender.sendMessage(Component.text(done + " It couldn't be saved, so it lasts until a restart; see the"
                     + " server log.", NamedTextColor.RED));
         }

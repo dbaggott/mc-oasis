@@ -3,11 +3,11 @@ package com.oasissmp.technoblade;
 import com.destroystokyo.paper.entity.ai.Goal;
 import com.destroystokyo.paper.entity.ai.GoalKey;
 import com.destroystokyo.paper.entity.ai.GoalType;
+import java.time.Duration;
 import java.util.EnumSet;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Pig;
 import org.bukkit.entity.Player;
@@ -23,7 +23,7 @@ import org.bukkit.scheduler.BukkitTask;
 final class Stare {
 
     private final Plugin plugin;
-    private final Supplier<Settings> settings;
+    private final Settings settings;
     private final Predicate<Entity> isTechnoblade;
     // Gives a pig the look its state calls for; called as a stare starts and ends.
     private final Consumer<Pig> dress;
@@ -32,7 +32,7 @@ final class Stare {
     private int ends;
     private BukkitTask task;
 
-    Stare(Plugin plugin, Supplier<Settings> settings, Predicate<Entity> isTechnoblade, Consumer<Pig> dress) {
+    Stare(Plugin plugin, Settings settings, Predicate<Entity> isTechnoblade, Consumer<Pig> dress) {
         this.plugin = plugin;
         this.settings = settings;
         this.isTechnoblade = isTechnoblade;
@@ -43,7 +43,8 @@ final class Stare {
         end();
         pig = staring;
         killer = at.getUniqueId();
-        ends = plugin.getServer().getCurrentTick() + (int) Settings.ticks(settings.get().stareFor());
+        ends = plugin.getServer().getCurrentTick()
+                + (int) Settings.ticks(Duration.ofSeconds(settings.get(Setting.STARE_DURATION)));
         dress.accept(pig);
         task = plugin.getServer().getScheduler().runTaskTimer(plugin, this::tick, 0, 1);
     }
@@ -54,7 +55,7 @@ final class Stare {
 
     private void tick() {
         Player at = plugin.getServer().getPlayer(killer);
-        double reach = settings.get().stareReach();
+        double reach = settings.get(Setting.STARE_REACH);
         if (plugin.getServer().getCurrentTick() >= ends || !pig.isValid() || !isTechnoblade.test(pig) || at == null
                 || !at.getWorld().equals(pig.getWorld())
                 || at.getLocation().distanceSquared(pig.getLocation()) > reach * reach) {

@@ -744,6 +744,19 @@ if [[ "$(technoblade_count)" != 1 || -z "$(technoblade_uuid "$reply")" || "$(tec
   exit 1
 fi
 pig_uuid="$(technoblade_uuid "$reply")"
+# A setting is its default until set, and takes only a value within its
+# bounds. That it is still saved after a restart is checked below.
+rumor_interval() { rcon technoblade config get rumor | sed 's/\x1b\[[0-9;]*m//g' | grep '^rumor interval = ' || true; }
+if [[ "$(rumor_interval)" != "rumor interval = 30 minutes" ]]; then
+  echo "error: the rumor interval isn't 30 minutes by default: '$(rumor_interval)'" >&2
+  exit 1
+fi
+rcon technoblade config set rumor interval 0 >/dev/null
+rcon technoblade config set rumor interval 45 >/dev/null
+if [[ "$(rumor_interval)" != "rumor interval = 45 minutes (30 by default)" ]]; then
+  echo "error: after setting the rumor interval to 0, which is out of bounds, and then 45, it reads '$(rumor_interval)'" >&2
+  exit 1
+fi
 rcon forceload remove all >/dev/null
 echo "Technoblade is absent until added, respawns once when killed, teleports out of a trap, has no duplicates, and goes when removed, crowned throughout and with no name"
 
@@ -1000,7 +1013,11 @@ if ! docker exec --user 1000 "$name" grep --quiet --fixed-strings "$pig_uuid" /d
   echo "error: OasisTechnoblade's record of Technoblade ${pig_uuid} didn't survive a restart" >&2
   exit 1
 fi
-echo "Technoblade's record survives a restart"
+if ! docker exec --user 1000 "$name" grep --quiet --line-regexp 'RUMOR_INTERVAL 45' /data/plugins/OasisTechnoblade/config.txt; then
+  echo "error: OasisTechnoblade's rumor interval, set to 45 minutes, didn't survive a restart" >&2
+  exit 1
+fi
+echo "Technoblade's record and its settings survive a restart"
 
 # Geyser is still on NetherNet with `raknet` in its config, which it left as is.
 check_geyser_nethernet "$restarted_at" || exit 1

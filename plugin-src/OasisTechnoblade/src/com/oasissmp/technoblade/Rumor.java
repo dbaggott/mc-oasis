@@ -12,7 +12,7 @@ final class Rumor {
 
     private Rumor() { }
 
-    /** The ticks until the next rumor: {@code every}, give or take up to {@code jitter}. */
+    /** The ticks until the next rumor: {@code every}, give or take up to {@code jitter}, and never none. */
     static long delayTicks(RandomGenerator random, Duration every, Duration jitter) {
         return random.nextLong(Settings.ticks(every.minus(jitter)), Settings.ticks(every.plus(jitter)) + 1);
     }
@@ -22,7 +22,10 @@ final class Rumor {
         return playerNearby && random.nextBoolean() ? Hint.PLAYER : Hint.BIOME;
     }
 
-    /** A biome's name from its key's path, for a client with no translation of it: {@code dark_forest} is Dark Forest. */
+    /**
+     * A biome's name from its key's path, for a client with no translation of it:
+     * {@code dark_forest} is Dark Forest.
+     */
     static String biomeName(String path) {
         return Arrays.stream(path.substring(path.lastIndexOf('/') + 1).split("_"))
                 .filter(word -> !word.isEmpty())

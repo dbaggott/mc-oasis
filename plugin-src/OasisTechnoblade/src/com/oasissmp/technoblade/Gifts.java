@@ -11,10 +11,10 @@ record Gifts(boolean nugget, Optional<Effect> effect) {
 
     enum Effect { LUCK, SPEED }
 
-    /** The nugget is 1 chance in {@code nuggetOneIn}, and an effect 1 in {@code effectOneIn}. */
-    static Gifts roll(RandomGenerator random, int nuggetOneIn, int effectOneIn) {
-        boolean nugget = random.nextInt(nuggetOneIn) == 0;
-        if (random.nextInt(effectOneIn) != 0) {
+    /** The nugget comes {@code nuggetPercent} times in 100, and an effect {@code effectPercent} in 100. */
+    static Gifts roll(RandomGenerator random, int nuggetPercent, int effectPercent) {
+        boolean nugget = random.nextInt(100) < nuggetPercent;
+        if (random.nextInt(100) >= effectPercent) {
             return new Gifts(nugget, Optional.empty());
         }
         return new Gifts(nugget, Optional.of(random.nextBoolean() ? Effect.LUCK : Effect.SPEED));

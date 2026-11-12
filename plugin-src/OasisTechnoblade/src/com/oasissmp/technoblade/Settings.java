@@ -5,139 +5,83 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
- * How Technoblade behaves. {@code settings.txt}, which the image ships and
- * puts back at every start, gives every setting its default: one
- * {@code name value} line for each, with blank lines and lines starting with
- * {@code #} left out, every setting there, none twice, and nothing else. Its
- * own comments say what each one does. {@code settings-changed.txt}, in the
- * same form, holds the ones staff changed with {@code /technoblade config set}. Only
- * the plugin writes it, on the world volume, so a change outlasts restarts
- * and new images.
+ * What each {@link Setting} is set to: its default until staff set it with
+ * {@code /technoblade config set}. The ones that were set are saved in
+ * {@value #FILE_NAME} on the world volume, which the image never carries, so
+ * they outlast restarts and new images. One {@code NAME value} line each, by
+ * the setting's enum name.
  */
-record Settings(double hitDamage, double throwSpeed, double throwLift, Duration feedCooldown, int nuggetOneIn,
-        int effectOneIn, Duration effectFor, Duration guardFor, double guardReach, Duration rumorEvery,
-        Duration rumorJitter, double rumorNear, Duration stareFor, double stareReach) {
+final class Settings {
 
-    static final String FILE_NAME = "settings.txt";
-    static final String CHANGED_FILE_NAME = "settings-changed.txt";
+    static final String FILE_NAME = "config.txt";
 
     private static final int TICK_MILLIS = 50;
 
-    Settings {
-        if (rumorJitter.compareTo(rumorEvery) >= 0) {
-            throw new IllegalArgumentException("rumor-jitter-minutes has to be less than rumor-minutes");
-        }
+    private final Map<Setting, Integer> set = new EnumMap<>(Setting.class);
+
+    int get(Setting setting) {
+        return set.getOrDefault(setting, setting.defaultValue());
     }
 
-    /** The settings in a file's lines by name, in the file's order, each still as written. */
-    static Map<String, String> read(List<String> lines) {
-        Map<String, String> values = new LinkedHashMap<>();
-        for (String line : lines.stream().map(String::strip)
-                .filter(line -> !line.isEmpty() && !line.startsWith("#")).toList()) {
-            String[] fields = line.split(" +");
-            if (fields.length != 2) {
-                throw new IllegalArgumentException("A settings line isn't `name value`: " + line);
-            }
-            if (values.put(fields[0], fields[1]) != null) {
-                throw new IllegalArgumentException(fields[0] + " is set twice");
-            }
-        }
-        return values;
+    Duration minutes(Setting setting) {
+        return Duration.ofMinutes(get(setting));
     }
 
-    /** The file's settings, or none if there is no file. */
-    static Map<String, String> read(Path file) throws IOException {
-        return Files.exists(file) ? read(Files.readAllLines(file)) : new LinkedHashMap<>();
+    /** Sets it, or throws {@link IllegalArgumentException} for a value outside its bounds. */
+    void set(Setting setting, int value) {
+        if (value < setting.min() || value > setting.max()) {
+            throw new IllegalArgumentException(setting.subject().commandName() + " " + setting.commandName()
+                    + " must be between " + setting.min() + " and " + setting.max() + " " + setting.unit());
+        }
+        set.put(setting, value);
+    }
+
+    List<String> lines() {
+        return set.entrySet().stream().map(entry -> entry.getKey().name() + " " + entry.getValue()).toList();
+    }
+
+    /**
+     * The settings saved as {@code lines}. A line that names no setting, as
+     * one for a setting since removed does, or whose value is no longer within
+     * its bounds, is left out and handed to {@code skipped}.
+     */
+    static Settings read(List<String> lines, Consumer<String> skipped) {
+        Settings settings = new Settings();
+        for (String line : lines) {
+            String[] fields = line.strip().split(" ");
+            try {
+                if (fields.length != 2) {
+                    throw new IllegalArgumentException("Not `NAME value`");
+                }
+                settings.set(Setting.valueOf(fields[0]), Integer.parseInt(fields[1]));
+            } catch (IllegalArgumentException e) {
+                skipped.accept(line);
+            }
+        }
+        return settings;
+    }
+
+    /** The settings saved in {@code file}, or the defaults if there is no file. */
+    static Settings load(Path file, Consumer<String> skipped) throws IOException {
+        return Files.exists(file) ? read(Files.readAllLines(file), skipped) : new Settings();
     }
 
     // Written beside the file and moved over it, so a crash mid-write leaves the old one.
-    static void save(Path file, Map<String, String> changed) throws IOException {
-        List<String> lines = new ArrayList<>();
-        lines.add("# Settings changed with /technoblade config set, over the defaults in " + FILE_NAME + ".");
-        changed.forEach((name, value) -> lines.add(name + " " + value));
+    void save(Path file) throws IOException {
         Files.createDirectories(file.getParent());
         Path written = file.resolveSibling(file.getFileName() + ".new");
-        Files.write(written, lines);
+        Files.write(written, lines());
         Files.move(written, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-    }
-
-    /** The settings {@code defaults} gives, with those in {@code changed} in place of its own. */
-    static Settings of(Map<String, String> defaults, Map<String, String> changed) {
-        Map<String, String> values = new HashMap<>(defaults);
-        values.putAll(changed);
-        return of(values);
-    }
-
-    static Settings of(Map<String, String> named) {
-        Map<String, String> values = new HashMap<>(named);
-        Settings settings = new Settings(
-                number(values, "hit-damage", 0),
-                number(values, "throw-speed", 0),
-                number(values, "throw-lift", 0),
-                minutes(values, "feed-cooldown-minutes"),
-                (int) whole(values, "nugget-one-in"),
-                (int) whole(values, "effect-one-in"),
-                minutes(values, "effect-minutes"),
-                minutes(values, "guard-minutes"),
-                number(values, "guard-reach", 0),
-                minutes(values, "rumor-minutes"),
-                Duration.ofMillis(Math.round(number(values, "rumor-jitter-minutes", 0) * 60_000)),
-                number(values, "rumor-near", 0),
-                Duration.ofMillis(Math.round(positive(values, "stare-seconds") * 1000)),
-                number(values, "stare-reach", 0));
-        if (!values.isEmpty()) {
-            throw new IllegalArgumentException("There are no settings " + values.keySet());
-        }
-        return settings;
     }
 
     /** A length of time in server ticks, at least one. */
     static long ticks(Duration length) {
         return Math.max(1, length.toMillis() / TICK_MILLIS);
-    }
-
-    // Takes the setting out of values, so what is left afterwards is what doesn't exist.
-    private static double number(Map<String, String> values, String name, double least) {
-        String value = values.remove(name);
-        if (value == null) {
-            throw new IllegalArgumentException(name + " isn't set");
-        }
-        double number;
-        try {
-            number = Double.parseDouble(value);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(name + " isn't a number: " + value, e);
-        }
-        if (!Double.isFinite(number) || number < least) {
-            throw new IllegalArgumentException(name + " is below " + least + ": " + value);
-        }
-        return number;
-    }
-
-    private static double positive(Map<String, String> values, String name) {
-        double number = number(values, name, 0);
-        if (number == 0) {
-            throw new IllegalArgumentException(name + " is 0");
-        }
-        return number;
-    }
-
-    private static Duration minutes(Map<String, String> values, String name) {
-        return Duration.ofMillis(Math.round(positive(values, name) * 60_000));
-    }
-
-    private static long whole(Map<String, String> values, String name) {
-        double number = number(values, name, 1);
-        if (number != Math.rint(number) || number > Integer.MAX_VALUE) {
-            throw new IllegalArgumentException(name + " isn't a whole number: " + number);
-        }
-        return (long) number;
     }
 }
