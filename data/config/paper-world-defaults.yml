@@ -1,5 +1,5 @@
 # Paper settings for every world: each puts back vanilla behavior Paper
-# changes.
+# changes, except where its comment says otherwise.
 #
 # No _version: Paper takes a file without one to be at the current version.
 
@@ -9,6 +9,9 @@ collisions:
 entities:
   behavior:
     only-merge-items-horizontally: true
+    # A villager a zombie kills always turns into a zombie villager, as on Hard,
+    # instead of half the time on Normal.
+    zombie-villager-infection-chance: 100
   spawning:
     # Entities with duplicate UUIDs are left alone, as in vanilla, and logged.
     duplicate-uuid:
