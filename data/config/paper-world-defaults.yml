@@ -9,8 +9,9 @@ collisions:
 entities:
   behavior:
     only-merge-items-horizontally: true
-    # A villager a zombie kills always turns into a zombie villager, as on Hard,
-    # instead of half the time on Normal.
+    # A villager a zombie kills always turns into a zombie villager, whatever the
+    # difficulty. Vanilla converts all of them on Hard, half on Normal, none on
+    # Easy.
     zombie-villager-infection-chance: 100.0
   spawning:
     # Entities with duplicate UUIDs are left alone, as in vanilla, and logged.
