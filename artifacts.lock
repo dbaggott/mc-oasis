@@ -31,9 +31,9 @@
 
 server  paper          26.3-246      d158542561e440c4026be7ccb32f551ee88313864792f38ea0ce5d1b88f1b27c  https://fill-data.papermc.io/v1/objects/d158542561e440c4026be7ccb32f551ee88313864792f38ea0ce5d1b88f1b27c/paper-26.3-246.jar
 
-plugin  Geyser-Spigot  2.12.1-1302   e13592d8ef907657eb9bae6f778dcb6ccb7f4a5b4641baeeb298ff5d13ccc92f  https://download.geysermc.org/v2/projects/geyser/versions/2.12.1/builds/1302/downloads/spigot
+plugin  Geyser-Spigot  2.12.1-1303   218f6e1a09a2fe458cfd531e7295a0f19d17b00db38ceec16222e8982a4d7f21  https://download.geysermc.org/v2/projects/geyser/versions/2.12.1/builds/1303/downloads/spigot
 plugin  floodgate      2.2.5-141     21570aff9ce17d6983928e8552777760e1ede5050026b04c686b0ae112e6fd7e  https://download.geysermc.org/v2/projects/floodgate/versions/2.2.5/builds/141/downloads/spigot
-extension  mcxboxbroadcast  164  8232a666b5a54f7c6241457e807c2fb88d66ad4a8db5e86d30f6e57a1643ad8a  https://github.com/MCXboxBroadcast/Broadcaster/releases/download/164/MCXboxBroadcastExtension.jar
+extension  mcxboxbroadcast  165  f8e55766c525221f6c412a58c085ff9842df22dc73acad8ed51486e976abb788  https://github.com/MCXboxBroadcast/Broadcaster/releases/download/165/MCXboxBroadcastExtension.jar
 plugin  Chunky         1.5.66        809aa579e201196d323fbb8cdc86e8f27c2734d53a2f10db18ac70d16199f16b  https://cdn.modrinth.com/data/fALzjamp/versions/selGpja4/Chunky-Bukkit-1.5.66.jar
 plugin  ViaVersion     5.12.2           c0b63badcb0f7d38f4443e06820f2b8142dd4f0d3b0511f9330ff1050430e6b2  https://cdn.modrinth.com/data/P1OZGk5p/versions/Fkfcr89K/ViaVersion-5.12.2.jar
 plugin  ViaBackwards   5.12.2           e989440e0aad7e12d4685d7a57df854691b67660966a95ec0450e20ce98e87ab  https://cdn.modrinth.com/data/NpvuJQoq/versions/WFO37e8T/ViaBackwards-5.12.2.jar
