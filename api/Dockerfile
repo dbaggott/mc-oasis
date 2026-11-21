@@ -3,7 +3,8 @@
 # https://github.com/awslabs/aws-lambda-web-adapter
 #
 # Built from the repository root, which holds shared/ as well as api/:
-#   docker build --platform linux/arm64 -f api/Dockerfile .
+#   docker build --platform linux/arm64 --provenance=false -f api/Dockerfile .
+# --provenance=false because Lambda refuses an image pushed with an attestation.
 #
 # CI passes NODE_VERSION from .tool-versions; the default serves a bare build.
 ARG NODE_VERSION=24

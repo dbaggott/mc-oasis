@@ -175,7 +175,13 @@ jobs:
           BRANCH: ${{ github.ref_name }}
           SHA: ${{ github.sha }}
         run: |
+          # No provenance attestation: this image ends up on Lambda, which refuses an image
+          # pushed as a manifest list carrying an attestation manifest ("image
+          # manifest, config or layer media type ... is not supported"). Current
+          # Docker attaches a provenance attestation by default, so it is turned
+          # off here rather than left to whichever Docker the runner ships.
           docker build --platform linux/arm64 -f api/Dockerfile \
+            --provenance=false \
             --build-arg "NODE_VERSION=$(awk '/^node /{print $2}' .tool-versions)" \
             --build-arg "BUILD_BRANCH=${BRANCH}" \
             --build-arg "BUILD_COMMIT=${SHA}" \
