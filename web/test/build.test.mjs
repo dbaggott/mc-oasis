@@ -145,6 +145,18 @@ test("the Monocraft license is published beside the site", () => {
   assert.match(readFileSync(resolve(dist, "licenses/Monocraft-OFL.txt"), "utf8"), /SIL OPEN FONT LICENSE/);
 });
 
+for (const page of pages) {
+  test(`${page} asks search engines not to list it`, () => {
+    assert.match(readFileSync(resolve(dist, page), "utf8"), /<meta name="robots" content="noindex">/);
+  });
+}
+
+test("robots.txt lets every crawler fetch every page", () => {
+  const rules = readFileSync(resolve(dist, "robots.txt"), "utf8").replace(/#.*/g, "");
+  assert.match(rules, /^User-agent: \*\s*$/m);
+  assert.doesNotMatch(rules, /^Disallow:[ \t]*\S/m, "a Disallow would hide the noindex tag from crawlers");
+});
+
 test("the schedule page carries the schedule, or says it is coming", () => {
   const html = readFileSync(resolve(dist, "schedule/index.html"), "utf8");
   assert.doesNotMatch(html, /<!-- schedule -->/, "the schedule marker was left in the page");
