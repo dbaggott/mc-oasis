@@ -1,2 +1,5 @@
+# Crawlers may fetch every page: each one carries <meta name="robots"
+# content="noindex">, which keeps the site out of search results. A Disallow here
+# would stop crawlers from reading that tag, and the URLs could still be listed.
 User-agent: *
-Disallow: /
+Disallow:

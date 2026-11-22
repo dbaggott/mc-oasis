@@ -86,6 +86,17 @@ function chrome() {
   };
 }
 
+// The site is for the server's players, not search results. Crawlers read this
+// only on a page public/robots.txt lets them fetch.
+function noindex() {
+  return {
+    name: "oasis-noindex",
+    transformIndexHtml() {
+      return [{ tag: "meta", attrs: { name: "robots", content: "noindex" }, injectTo: "head" }];
+    },
+  };
+}
+
 // Replaces <!-- rules --> in a page with the rules as a list, at build time, so
 // the rules are in the page itself rather than fetched by a script.
 function rules() {
@@ -110,7 +121,7 @@ const inlinableAsset = (filePath) =>
   /\.(avif|gif|ico|jpe?g|png|svg|webp)$/i.test(filePath) ? undefined : false;
 
 export default defineConfig({
-  plugins: [art(), chrome(), rules()],
+  plugins: [art(), chrome(), noindex(), rules()],
   server: {
     // The form imports ../shared, outside web/.
     fs: { allow: [repoRoot] },
