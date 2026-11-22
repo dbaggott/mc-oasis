@@ -145,6 +145,11 @@ test("the Monocraft license is published beside the site", () => {
   assert.match(readFileSync(resolve(dist, "licenses/Monocraft-OFL.txt"), "utf8"), /SIL OPEN FONT LICENSE/);
 });
 
+// The site is for the server's players, not search results.
+test("robots.txt asks every crawler to stay out", () => {
+  assert.equal(readFileSync(resolve(dist, "robots.txt"), "utf8"), "User-agent: *\nDisallow: /\n");
+});
+
 test("the schedule page carries the schedule, or says it is coming", () => {
   const html = readFileSync(resolve(dist, "schedule/index.html"), "utf8");
   assert.doesNotMatch(html, /<!-- schedule -->/, "the schedule marker was left in the page");
