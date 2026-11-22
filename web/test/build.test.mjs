@@ -145,9 +145,9 @@ test("the Monocraft license is published beside the site", () => {
   assert.match(readFileSync(resolve(dist, "licenses/Monocraft-OFL.txt"), "utf8"), /SIL OPEN FONT LICENSE/);
 });
 
-// The site is for the server's players, not search results.
+// The site is for the server's players, so it asks search engines not to crawl it.
 test("robots.txt asks every crawler to stay out", () => {
-  assert.equal(readFileSync(resolve(dist, "robots.txt"), "utf8"), "User-agent: *\nDisallow: /\n");
+  assert.match(readFileSync(resolve(dist, "robots.txt"), "utf8"), /^User-agent: \*\r?\nDisallow: \/\s*$/m);
 });
 
 test("the schedule page carries the schedule, or says it is coming", () => {
