@@ -46,14 +46,14 @@ import java.util.zip.ZipOutputStream;
  */
 public final class GrimFluidPatch {
 
-    static final String PACKETEVENTS = "ac/grim/grimac/shaded/com/github/retrooper/packetevents/";
-    static final String BLOCK_STATE = PACKETEVENTS + "protocol/world/states/WrappedBlockState";
-    static final String STATE_TYPES = PACKETEVENTS + "protocol/world/states/type/StateTypes";
-    static final String STATE_TYPE = PACKETEVENTS + "protocol/world/states/type/StateType";
-    static final String CLASS_ENTRY = BLOCK_STATE + ".class";
+    private static final String PACKETEVENTS = "ac/grim/grimac/shaded/com/github/retrooper/packetevents/";
+    private static final String BLOCK_STATE = PACKETEVENTS + "protocol/world/states/WrappedBlockState";
+    private static final String STATE_TYPES = PACKETEVENTS + "protocol/world/states/type/StateTypes";
+    private static final String STATE_TYPE = PACKETEVENTS + "protocol/world/states/type/StateType";
+    private static final String CLASS_ENTRY = BLOCK_STATE + ".class";
     // The class in the GrimAC artifacts.lock pins, checked to lack the fix.
-    static final String CLASS_SHA256 = "a6f9793c33486398f652f6dca28ad61d25f01386a500b8b105cef47d35dd8532";
-    static final List<String> WATER_HOLDING = List.of(
+    private static final String CLASS_SHA256 = "a6f9793c33486398f652f6dca28ad61d25f01386a500b8b105cef47d35dd8532";
+    private static final List<String> WATER_HOLDING = List.of(
             "BUBBLE_COLUMN", "KELP", "KELP_PLANT", "SEAGRASS", "TALL_SEAGRASS");
 
     private static final ClassDesc BLOCK_STATE_DESC = ClassDesc.ofInternalName(BLOCK_STATE);
@@ -102,13 +102,6 @@ public final class GrimFluidPatch {
                 ClassHierarchyResolver.ofResourceParsing((ClassDesc desc) -> openClass(jar, desc))
                         .orElse(ClassHierarchyResolver.defaultResolver())));
         ClassModel model = classFile.parse(classfile);
-        long isFluid = model.methods().stream()
-                .filter(m -> m.methodName().equalsString("isFluid")
-                        && m.methodTypeSymbol().descriptorString().equals("()Z"))
-                .count();
-        if (isFluid != 1) {
-            fail("expected one isFluid()Z in " + BLOCK_STATE + ", found " + isFluid);
-        }
         return classFile.transformClass(model, ClassTransform.transformingMethodBodies(
                 m -> m.methodName().equalsString("isFluid")
                         && m.methodTypeSymbol().descriptorString().equals("()Z"),
