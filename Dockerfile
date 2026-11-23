@@ -263,9 +263,9 @@ COPY --from=grim /out/ /plugins/
 # it pastes into a new world on the seed spawn was built in, with that seed's
 # hash: the seed itself stays out of this public repo. OasisTechnoblade's are the
 # column where /technoblade add places Technoblade. Its record of which pig is
-# Technoblade, and what staff set with /technoblade config set, are written
+# Technoblade, and what owners set with /technoblade config set, are written
 # beside that on the world volume. The image never carries either, so a new
-# world has no Technoblade until staff add it, and a setting outlasts a new
+# world has no Technoblade until owners add it, and a setting outlasts a new
 # image.
 # Geyser-Spigot's is MCXboxBroadcast's, under the extension's id in Geyser's
 # extensions/: the file the pinned build generates, with expiry off, so a

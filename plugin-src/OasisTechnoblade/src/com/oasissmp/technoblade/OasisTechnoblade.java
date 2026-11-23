@@ -65,7 +65,7 @@ import org.bukkit.scheduler.BukkitTask;
 
 /**
  * Technoblade: one pig in the overworld that never stays dead. A world has
- * none until staff run {@code /technoblade add}, and has one from then until
+ * none until owners run {@code /technoblade add}, and has one from then until
  * {@code /technoblade remove}. It respawns where it dies. A player who kills
  * it is told "Technoblade never dies.", is stared at by the new one
  * ({@link Stare}), and loses half of each food stack but golden apples, with
@@ -73,7 +73,7 @@ import org.bukkit.scheduler.BukkitTask;
  * it hurts and throws the attacker back ({@link Hitting}). Feeding it gives a
  * golden apple and its protection from monsters ({@link Feeding},
  * {@link Bodyguard}). Now and then players are told where it was seen
- * ({@link Rumors}). Staff tune the numbers behind these with
+ * ({@link Rumors}). Owners tune the numbers behind these with
  * {@code /technoblade config} ({@link Setting}). There is only ever one, and
  * a trapped one teleports out.
  * It wears Technoblade's crown, painted on its head for Java players and
@@ -84,7 +84,7 @@ import org.bukkit.scheduler.BukkitTask;
  * with no such file there is no Technoblade. It also carries the scoreboard
  * tag {@value #TAG} so vanilla selectors find it. A new pig is placed only
  * when the recorded one dies, is removed other than by
- * {@code /technoblade remove}, or staff run {@code /technoblade respawn}: an
+ * {@code /technoblade remove}, or owners run {@code /technoblade respawn}: an
  * unloaded pig is still alive. Any other pig with the tag is removed as it
  * enters the world.
  */

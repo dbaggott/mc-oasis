@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * What each {@link Setting} is set to: its default until staff set it with
+ * What each {@link Setting} is set to: its default until owners set it with
  * {@code /technoblade config set}. The ones that were set are saved in
  * {@value #FILE_NAME} on the world volume, which the image never carries, so
  * they outlast restarts and new images. One {@code NAME value} line each, by
