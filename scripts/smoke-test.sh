@@ -536,9 +536,9 @@ if [[ "$reply" != *"Not available in console."* ]]; then
 fi
 echo "/locatorbar registered"
 
-# OasisEnd's /end: the End is disabled until enabled, and takes either. That
-# it is still disabled after a restart is checked below. Whether a portal turns
-# an entity away takes an end portal, which a new world has none of near spawn.
+# OasisEnd's /end: the End is disabled until enabled, and takes either.
+# Whether a portal turns an entity away takes an end portal, which a new world
+# has none of near spawn.
 end_state() { rcon end | sed 's/\x1b\[[0-9;]*m//g'; }
 if [[ "$(end_state)" != *"The End is disabled."* ]]; then
   echo "error: the End isn't disabled before it's been enabled: '$(end_state)'" >&2
