@@ -20,7 +20,7 @@ import org.bukkit.scheduler.BukkitTask;
 
 /**
  * Rumors: every so often ({@link Rumor#delayTicks}), while anyone is online
- * and there is a Technoblade, every player is told where it was seen: near
+ * and there is a Technoblade, unless staff set the interval to 0, every player is told where it was seen: near
  * the closest player to it, if one is near enough, or in which biome. Never
  * its coordinates.
  */
@@ -39,10 +39,17 @@ final class Rumors {
         this.technoblade = technoblade;
     }
 
-    /** Starts the wait for the next rumor, in place of any wait already on, by the settings as they are now. */
+    /**
+     * Starts the wait for the next rumor, in place of any wait already on, by
+     * the settings as they are now: none while the interval is 0.
+     */
     void scheduleNext() {
         if (next != null) {
             next.cancel();
+            next = null;
+        }
+        if (settings.get(Setting.RUMOR_INTERVAL) == 0) {
+            return;
         }
         next = plugin.getServer().getScheduler().runTaskLater(plugin, this::spread,
                 Rumor.delayTicks(ThreadLocalRandom.current(), settings.minutes(Setting.RUMOR_INTERVAL),
