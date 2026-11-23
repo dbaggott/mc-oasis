@@ -20,9 +20,9 @@ import org.bukkit.scheduler.BukkitTask;
 
 /**
  * Rumors: every so often ({@link Rumor#delayTicks}), while anyone is online
- * and there is a Technoblade, unless staff set the interval to 0, every player is told where it was seen: near
+ * and there is a Technoblade, every player is told where it was seen: near
  * the closest player to it, if one is near enough, or in which biome. Never
- * its coordinates.
+ * its coordinates. An interval of 0 turns them off.
  */
 final class Rumors {
 

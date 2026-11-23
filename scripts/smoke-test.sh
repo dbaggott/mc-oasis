@@ -554,6 +554,8 @@ if [[ "$(end_state)" != *"The End is disabled."* ]]; then
   echo "error: /end disable left it reading '$(end_state)'" >&2
   exit 1
 fi
+# Left enabled, so the restart below shows the plugin read it back rather than its default.
+rcon end enable >/dev/null
 echo "/end disabled the End by default, and enables and disables it"
 
 # OasisRules' /rules is registered and shows the repo's rules, by the console
@@ -1069,14 +1071,14 @@ if ! docker exec --user 1000 "$name" grep --quiet --line-regexp 'RUMOR_INTERVAL 
   exit 1
 fi
 echo "Technoblade's record and its settings survive a restart"
-if ! docker exec --user 1000 "$name" grep --quiet --line-regexp 'disabled' /data/plugins/OasisEnd/state.txt; then
-  echo "error: OasisEnd's state, disabled with /end disable, didn't survive a restart" >&2
-  exit 1
-fi
-echo "The End's state survives a restart"
 
 # Geyser is still on NetherNet with `raknet` in its config, which it left as is.
 check_geyser_nethernet "$restarted_at" || exit 1
+if ! grep --quiet --fixed-strings '[OasisEnd] The End is enabled' <<<"$(docker logs --since "$restarted_at" "$name" 2>&1)"; then
+  echo "error: OasisEnd didn't start with the End enabled, as /end enable left it before the restart" >&2
+  exit 1
+fi
+echo "The End's state survives a restart"
 if ! docker exec --user 1000 "$name" grep --quiet --line-regexp '  transport: raknet' "$geyser_config"; then
   echo "error: Geyser rewrote bedrock.transport in ${geyser_config}, so the restart didn't test a persisted raknet" >&2
   exit 1
