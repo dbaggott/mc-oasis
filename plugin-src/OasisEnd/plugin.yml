@@ -1,0 +1,9 @@
+name: OasisEnd
+version: 1.0.0
+main: com.oasissmp.end.OasisEnd
+api-version: '26.3'
+description: Lets owners disable the End with /end, so nothing goes through an end portal into it
+permissions:
+  oasisend.toggle:
+    description: See whether the End is enabled, and enable or disable it, with /end
+    default: false

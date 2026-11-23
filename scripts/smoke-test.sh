@@ -527,6 +527,37 @@ for duty in onduty offduty; do
 done
 echo "/staff registered"
 
+# OasisLocator's /locatorbar is registered, by the console being refused it.
+# That opting out hides a player both ways takes two players, which this can't be.
+reply="$(rcon locatorbar off)"
+if [[ "$reply" != *"Not available in console."* ]]; then
+  echo "error: /locatorbar off answered the console with '${reply}'" >&2
+  exit 1
+fi
+echo "/locatorbar registered"
+
+# OasisEnd's /end: the End is disabled until enabled, and takes either.
+# Whether a portal turns an entity away takes an end portal, which a new world
+# has none of near spawn.
+end_state() { rcon end | sed 's/\x1b\[[0-9;]*m//g'; }
+if [[ "$(end_state)" != *"The End is disabled."* ]]; then
+  echo "error: the End isn't disabled before it's been enabled: '$(end_state)'" >&2
+  exit 1
+fi
+rcon end enable >/dev/null
+if [[ "$(end_state)" != *"The End is enabled."* ]]; then
+  echo "error: /end enable left it reading '$(end_state)'" >&2
+  exit 1
+fi
+rcon end disable >/dev/null
+if [[ "$(end_state)" != *"The End is disabled."* ]]; then
+  echo "error: /end disable left it reading '$(end_state)'" >&2
+  exit 1
+fi
+# Left enabled, so the restart below shows the plugin read it back rather than its default.
+rcon end enable >/dev/null
+echo "/end disabled the End by default, and enables and disables it"
+
 # OasisRules' /rules is registered and shows the repo's rules, by the console
 # being shown the first rule, past any comment or heading. The message on
 # joining takes a player. The number and the rule are colored apart, so the
@@ -752,9 +783,14 @@ if [[ "$(rumor_interval)" != "rumor interval = 30 minutes" ]]; then
   exit 1
 fi
 rcon technoblade config set rumor interval 0 >/dev/null
+if [[ "$(rumor_interval)" != "rumor interval = 0 minutes (30 by default)" ]]; then
+  echo "error: after setting the rumor interval to 0, which turns rumors off, it reads '$(rumor_interval)'" >&2
+  exit 1
+fi
+rcon technoblade config set rumor interval 1441 >/dev/null
 rcon technoblade config set rumor interval 45 >/dev/null
 if [[ "$(rumor_interval)" != "rumor interval = 45 minutes (30 by default)" ]]; then
-  echo "error: after setting the rumor interval to 0, which is out of bounds, and then 45, it reads '$(rumor_interval)'" >&2
+  echo "error: after setting the rumor interval to 1441, which is out of bounds, and then 45, it reads '$(rumor_interval)'" >&2
   exit 1
 fi
 every_setting="$(rcon technoblade config)"
@@ -1038,6 +1074,11 @@ echo "Technoblade's record and its settings survive a restart"
 
 # Geyser is still on NetherNet with `raknet` in its config, which it left as is.
 check_geyser_nethernet "$restarted_at" || exit 1
+if ! grep --quiet --fixed-strings '[OasisEnd] The End is enabled' <<<"$(docker logs --since "$restarted_at" "$name" 2>&1)"; then
+  echo "error: OasisEnd didn't start with the End enabled, as /end enable left it before the restart" >&2
+  exit 1
+fi
+echo "The End's state survives a restart"
 if ! docker exec --user 1000 "$name" grep --quiet --line-regexp '  transport: raknet' "$geyser_config"; then
   echo "error: Geyser rewrote bedrock.transport in ${geyser_config}, so the restart didn't test a persisted raknet" >&2
   exit 1

@@ -1,0 +1,5 @@
+name: OasisLocator
+version: 1.0.0
+main: com.oasissmp.locator.OasisLocator
+api-version: '26.3'
+description: Lets each player opt out of the locator bar with /locatorbar, which hides them from others' bars and others from theirs
