@@ -100,6 +100,21 @@ COPY build/artifacts/plugins/WorldGuard.jar /WorldGuard.jar
 COPY scripts/patch-worldguard.py /patch-worldguard.py
 RUN mkdir /out && python /patch-worldguard.py /WorldGuard.jar /out/WorldGuard.jar
 
+# GrimAC with its bundled packetevents counting bubble columns as water, so
+# Grim stops setting back players riding one: grim-fluid-patch/ rewrites it,
+# and its class comment says why. Its tests, any test/**/*Test.java, run
+# against the patched jar's own code, and a failing one fails the build.
+# -path: the jar's manifest names a Class-Path of jars it doesn't ship.
+FROM eclipse-temurin:25-jdk-alpine@sha256:c7c3d0bdf7f2bbc5a05a6712ed334d198360105634ea9adf76fca94f381b1e3f AS grim
+COPY build/artifacts/plugins/GrimAC.jar /GrimAC.jar
+COPY grim-fluid-patch/ /patch/
+RUN javac --release 25 -Xlint:all -Werror -d /classes $(find /patch/src -name '*.java') \
+    && mkdir /out && java -cp /classes com.oasissmp.grimfluid.GrimFluidPatch /GrimAC.jar /out/GrimAC.jar \
+    && javac --release 25 -Xlint:all,-path -Werror -cp /out/GrimAC.jar -d /test-classes $(find /patch/test -name '*.java') \
+    && cd /patch/test && for test in $(find . -name '*Test.java'); do \
+      test="${test#./}" && java -cp /test-classes:/out/GrimAC.jar "$(echo "${test%.java}" | tr / .)" || exit 1; \
+    done
+
 # A release tag for the image's scripts, java25 because Minecraft 26.3 requires
 # Java 25, and the multi-arch digest so a re-pushed tag can't change it.
 FROM itzg/minecraft-server:2026.11.0-java25@sha256:8d5080d8dcd0a2629c2e4f248678373a337a40537ad6ef2857c7dbcda6e3eadd
@@ -231,6 +246,7 @@ COPY --from=repo-plugins /out/ /plugins/
 COPY --from=libertybans-addons /out/ /plugins/
 COPY --from=bedrock-pack /out/ /plugins/Geyser-Spigot/packs/
 COPY --from=worldguard /out/ /plugins/
+COPY --from=grim /out/ /plugins/
 # Plugin configs the repo owns, one folder per plugin by its declared name.
 # LuckPerms' groups and tracks are files here; which group each player is in
 # stays in its database on the world volume.

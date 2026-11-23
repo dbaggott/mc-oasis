@@ -973,6 +973,18 @@ if [[ "$worldguard_delays" != 1 ]]; then
 fi
 echo "WorldGuard's region message delay is 1500 ms"
 
+# The image's GrimAC is the one grim-fluid-patch/ wrote: only the patched class
+# refers to BUBBLE_COLUMN.
+grim_bubble_columns="$(docker run --rm --entrypoint sh "$image" -c \
+  'unzip -p /plugins/GrimAC.jar \
+    ac/grim/grimac/shaded/com/github/retrooper/packetevents/protocol/world/states/WrappedBlockState.class \
+    | grep -a -o BUBBLE_COLUMN | wc -l')"
+if [[ "$grim_bubble_columns" -lt 1 ]]; then
+  echo "error: the image's GrimAC.jar isn't the one grim-fluid-patch/ patched" >&2
+  exit 1
+fi
+echo "GrimAC counts bubble columns as water"
+
 # A LuckPerms group file and an OasisFilter word list file the repo doesn't
 # have, left on the world volume as ones deleted from the repo would be, are
 # gone once the server starts again. MCXboxBroadcast's token cache, which the
