@@ -38,6 +38,8 @@ public final class OasisLocator extends JavaPlugin implements Listener {
     private static final List<Attribute> RANGES =
             List.of(Attribute.WAYPOINT_TRANSMIT_RANGE, Attribute.WAYPOINT_RECEIVE_RANGE);
 
+    private static final Component NOT_IN_CONSOLE = Component.text("Not available in console.", NamedTextColor.RED);
+
     private NamespacedKey hiddenKey;
     // Multiplies the range by 1 + -1.
     private AttributeModifier hiding;
@@ -52,7 +54,7 @@ public final class OasisLocator extends JavaPlugin implements Listener {
                         .executes(context -> report(context.getSource()))
                         .then(Commands.literal("on").executes(context -> set(context.getSource(), true)))
                         .then(Commands.literal("off").executes(context -> set(context.getSource(), false)))
-                        .build(), "Whether you're on the locator bar, or opt in or out of it"));
+                        .build(), "Enable or disable your participation in the locator bar."));
         getServer().getOnlinePlayers().forEach(this::apply);
     }
 
@@ -91,7 +93,7 @@ public final class OasisLocator extends JavaPlugin implements Listener {
     private int report(CommandSourceStack source) {
         Audience sender = source.getSender();
         if (!(source.getSender() instanceof Player player)) {
-            sender.sendMessage(Component.text("Only a player is on the locator bar.", NamedTextColor.RED));
+            sender.sendMessage(NOT_IN_CONSOLE);
             return 0;
         }
         sender.sendMessage(describe(!isHidden(player)));
@@ -101,8 +103,7 @@ public final class OasisLocator extends JavaPlugin implements Listener {
     private int set(CommandSourceStack source, boolean on) {
         Audience sender = source.getSender();
         if (!(source.getSender() instanceof Player player)) {
-            sender.sendMessage(Component.text("Only a player can opt in or out of the locator bar.",
-                    NamedTextColor.RED));
+            sender.sendMessage(NOT_IN_CONSOLE);
             return 0;
         }
         if (on) {
@@ -117,9 +118,8 @@ public final class OasisLocator extends JavaPlugin implements Listener {
 
     private static Component describe(boolean on) {
         return on
-                ? Component.text("You're on the locator bar: other players on it see you on theirs, and you see"
-                        + " them on yours. /locatorbar off opts out.", NamedTextColor.GREEN)
-                : Component.text("You're off the locator bar: nobody sees you on theirs, and you see nobody on"
-                        + " yours. /locatorbar on opts back in.", NamedTextColor.GREEN);
+                ? Component.text("Your locator bar is enabled.", NamedTextColor.GREEN)
+                : Component.text("Your locator bar is disabled (and you won't show up for other players).",
+                        NamedTextColor.GREEN);
     }
 }

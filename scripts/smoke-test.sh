@@ -530,7 +530,7 @@ echo "/staff registered"
 # OasisLocator's /locatorbar is registered, by the console being refused it.
 # That opting out hides a player both ways takes two players, which this can't be.
 reply="$(rcon locatorbar off)"
-if [[ "$reply" != *"Only a player can opt in or out of the locator bar."* ]]; then
+if [[ "$reply" != *"Not available in console."* ]]; then
   echo "error: /locatorbar off answered the console with '${reply}'" >&2
   exit 1
 fi
