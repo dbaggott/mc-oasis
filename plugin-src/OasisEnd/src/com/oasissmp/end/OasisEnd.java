@@ -20,6 +20,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPortalEnterEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.Vector;
 
 /**
  * {@code /end enable} and {@code /end disable}, for owners. While the End is
@@ -27,7 +28,8 @@ import org.bukkit.plugin.java.JavaPlugin;
  * entity that can use a portal, ender pearls, TNT and minecarts among them.
  * Leaving the End through its exit portal, and the gateways between its
  * islands, still work, so no one is shut in. It starts disabled
- * ({@link EndState}).
+ * ({@link EndState}). A player turned away is bounced back up out of the
+ * portal.
  *
  * <p>Paper asks with {@link EntityPortalEnterEvent} each tick an entity is
  * in an end portal block, before marking it as in the portal; a cancelled one
@@ -37,6 +39,8 @@ public final class OasisEnd extends JavaPlugin implements Listener {
 
     static final String PERMISSION = "oasisend.toggle";
 
+    // Upwards, in blocks a tick: a little over a block high.
+    private static final double BOUNCE = 0.5;
     private static final Component DISABLED_NOTICE = Component.text("The End is disabled.", NamedTextColor.RED);
 
     private Path stateFile;
@@ -74,6 +78,12 @@ public final class OasisEnd extends JavaPlugin implements Listener {
         event.setCancelled(true);
         if (event.getEntity() instanceof Player player) {
             ((Audience) player).sendActionBar(DISABLED_NOTICE);
+            // An end portal block has no collision, and a stronghold's has lava two blocks under it:
+            // bounced each tick they're in it, the player stays over it and can step off onto the frame.
+            Vector velocity = player.getVelocity();
+            if (velocity.getY() < BOUNCE) {
+                player.setVelocity(velocity.setY(BOUNCE));
+            }
         }
     }
 
