@@ -973,6 +973,19 @@ if [[ "$worldguard_delays" != 1 ]]; then
 fi
 echo "WorldGuard's region message delay is 1500 ms"
 
+# The image's GrimAC is the one grim-fluid-patch/ wrote: the class it patches
+# isn't the original it pins.
+grim_class=ac/grim/grimac/shaded/com/github/retrooper/packetevents/protocol/world/states/WrappedBlockState.class
+grim_original_sha256="$(grep -o 'CLASS_SHA256 = "[0-9a-f]*"' \
+  "${repo_root}/grim-fluid-patch/src/com/oasissmp/grimfluid/GrimFluidPatch.java" | cut -d'"' -f2)"
+grim_sha256="$(docker run --rm --entrypoint sh "$image" -c \
+  "unzip -p /plugins/GrimAC.jar ${grim_class} | sha256sum | cut -d' ' -f1")"
+if [[ -z "$grim_original_sha256" || "$grim_sha256" == "$grim_original_sha256" ]]; then
+  echo "error: the image's GrimAC.jar isn't the one grim-fluid-patch/ patched" >&2
+  exit 1
+fi
+echo "GrimAC counts bubble columns as water"
+
 # A LuckPerms group file and an OasisFilter word list file the repo doesn't
 # have, left on the world volume as ones deleted from the repo would be, are
 # gone once the server starts again. MCXboxBroadcast's token cache, which the

@@ -27,6 +27,7 @@ data/                    server config files the repo owns, copied over the same
 datapacks/<name>/        the repo's own datapacks, each zipped as <name>.zip in the image
 plugin-src/<Name>/       the repo's own plugins, each a plugin.yml and Java sources under src/, compiled into <Name>.jar in the image; tests under test/ run at build
 hook-dupe-agent/         a Java agent the server starts with, which puts back tripwire hook duping; its class comment says how; tests under test/ run at build
+grim-fluid-patch/        run by the Docker build: patches GrimAC so bubble columns count as water and work as elevators; its class comment says why; tests under test/ run at build
 resourcepack/            the Java resource pack every player is required to take: Technoblade's crown, painted on the pig variant in datapacks/80-oasis-technoblade/; CREDITS.txt says where it comes from
 resourcepack-bedrock/    the Bedrock pack Geyser sends every Bedrock player: Technoblade's crown, modelled on the head of the pig OasisTechnoblade marks; CREDITS.txt says where it comes from
 scripts/
@@ -104,6 +105,11 @@ client update has locked players out before a build is 48 hours old, run it from
 
 A WorldGuard build fails the Docker build at `scripts/patch-worldguard.py`, which is pinned to the one class it
 rewrites. Check the new class still compiles the delay as the one long 500, then pin the class's new sha256 there.
+
+A GrimAC build fails the Docker build at `grim-fluid-patch/`, which is pinned to the one packetevents class it
+rewrites. If the new build bundles packetevents with https://github.com/retrooper/packetevents/pull/1616, drop the
+patch: its test, run against the unpatched jar, passes. Otherwise check `isFluid` is unchanged and pin the class's new
+sha256 in `GrimFluidPatch.java`.
 
 A Paper build can change the vanilla method `hook-dupe-agent/` rewrites. If the agent no longer recognises it,
 the smoke test fails on the agent's check, and the matcher in `HookDupeAgent.java` follows the new code.
