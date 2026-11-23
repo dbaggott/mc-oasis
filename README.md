@@ -107,9 +107,12 @@ A WorldGuard build fails the Docker build at `scripts/patch-worldguard.py`, whic
 rewrites. Check the new class still compiles the delay as the one long 500, then pin the class's new sha256 there.
 
 A GrimAC build fails the Docker build at `grim-fluid-patch/`, which is pinned to the one packetevents class it
-rewrites. If the new build bundles packetevents with https://github.com/retrooper/packetevents/pull/1616, drop the
-patch: its test, run against the unpatched jar, passes. Otherwise check `isFluid` is unchanged and pin the class's new
-sha256 in `GrimFluidPatch.java`.
+rewrites. To see whether the new build bundles packetevents with
+https://github.com/retrooper/packetevents/pull/1616, compile `grim-fluid-patch/test/` against the new jar and run
+its test with that jar on the classpath, as the `grim` stage in the `Dockerfile` does with the patched one. If it
+passes, drop the patch: `grim-fluid-patch/`, the `grim` stage and its `COPY --from=grim`, the smoke test's GrimAC
+check and its line above. If it fails, check `isFluid` is unchanged and pin the class's new sha256 in
+`GrimFluidPatch.java`.
 
 A Paper build can change the vanilla method `hook-dupe-agent/` rewrites. If the agent no longer recognises it,
 the smoke test fails on the agent's check, and the matcher in `HookDupeAgent.java` follows the new code.
@@ -124,7 +127,7 @@ the Paper build, the `adventure-*` libraries the Adventure version, `guava` and 
 plugin's major and minor version, `voicechat-api` the Simple Voice Chat plugin, `libertybans-api` the LibertyBans
 plugin, `omnibus` the version `libertybans-api`'s parent POM names, `worldguard-core` the WorldGuard plugin, and
 `worldedit-core` and `worldedit-bukkit` the WorldEdit plugin. Changing the Java version
-means changing the JDK image and `--release` in the `Dockerfile`'s `repo-plugins` stage too.
+means changing the JDK image and `--release` in the `Dockerfile`'s `repo-plugins` and `grim` stages too.
 
 Worldgen datapacks (terrain and structures) shape the world only as it is first generated, and removing one
 from an existing world breaks what it generated. The comment at the top of `artifacts.lock` covers their

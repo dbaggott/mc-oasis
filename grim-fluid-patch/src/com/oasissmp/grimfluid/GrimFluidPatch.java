@@ -12,6 +12,7 @@ import java.lang.classfile.CodeBuilder;
 import java.lang.classfile.CodeElement;
 import java.lang.classfile.CodeTransform;
 import java.lang.classfile.Label;
+import java.lang.classfile.MethodModel;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
 import java.nio.file.Files;
@@ -20,6 +21,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -67,9 +69,7 @@ public final class GrimFluidPatch {
             System.err.println("usage: GrimFluidPatch <GrimAC.jar> <patched GrimAC.jar>");
             System.exit(2);
         }
-        try (ZipFile jar = new ZipFile(args[0]);
-                OutputStream file = Files.newOutputStream(Path.of(args[1]));
-                ZipOutputStream out = new ZipOutputStream(file)) {
+        try (ZipFile jar = new ZipFile(args[0])) {
             ZipEntry target = jar.getEntry(CLASS_ENTRY);
             if (target == null) {
                 fail(args[0] + " has no " + CLASS_ENTRY);
@@ -81,12 +81,19 @@ public final class GrimFluidPatch {
                         + " this patch was written for");
             }
             byte[] patched = patch(jar, original);
-            for (ZipEntry entry : jar.stream().toList()) {
-                ZipEntry copy = new ZipEntry(entry.getName());
-                copy.setTime(entry.getTime());
-                out.putNextEntry(copy);
-                out.write(entry.getName().equals(CLASS_ENTRY) ? patched : read(jar, entry));
-                out.closeEntry();
+            try (OutputStream file = Files.newOutputStream(Path.of(args[1]));
+                    ZipOutputStream out = new ZipOutputStream(file)) {
+                for (ZipEntry entry : jar.stream().toList()) {
+                    boolean isTarget = entry.getName().equals(CLASS_ENTRY);
+                    // The patched class has a new size and CRC; every other
+                    // entry keeps its own, and is recompressed.
+                    ZipEntry copy = isTarget ? new ZipEntry(entry.getName()) : new ZipEntry(entry);
+                    copy.setTime(entry.getTime());
+                    copy.setCompressedSize(-1);
+                    out.putNextEntry(copy);
+                    out.write(isTarget ? patched : read(jar, entry));
+                    out.closeEntry();
+                }
             }
         }
         System.out.println("GrimAC's packetevents counts bubble columns, kelp and seagrass as water");
@@ -102,10 +109,14 @@ public final class GrimFluidPatch {
                 ClassHierarchyResolver.ofResourceParsing((ClassDesc desc) -> openClass(jar, desc))
                         .orElse(ClassHierarchyResolver.defaultResolver())));
         ClassModel model = classFile.parse(classfile);
-        return classFile.transformClass(model, ClassTransform.transformingMethodBodies(
-                m -> m.methodName().equalsString("isFluid")
-                        && m.methodTypeSymbol().descriptorString().equals("()Z"),
-                new HoldsWaterFirst()));
+        Predicate<MethodModel> isFluid = m -> m.methodName().equalsString("isFluid")
+                && m.methodTypeSymbol().descriptorString().equals("()Z");
+        long matches = model.methods().stream().filter(isFluid).count();
+        if (matches != 1) {
+            fail("expected one isFluid()Z in " + BLOCK_STATE + ", found " + matches);
+        }
+        return classFile.transformClass(model,
+                ClassTransform.transformingMethodBodies(isFluid, new HoldsWaterFirst()));
     }
 
     private static final class HoldsWaterFirst implements CodeTransform {
