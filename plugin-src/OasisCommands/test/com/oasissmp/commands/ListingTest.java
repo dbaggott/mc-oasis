@@ -6,9 +6,10 @@ import java.util.Set;
 
 /**
  * Checks that the listing takes the repo's plugins' commands and Graves'
- * /graves, by plain name, in name order; leaves out namespaced labels,
- * /commands, other plugins' commands and a /graves some other plugin
- * registered; and leaves out what the sender can't use.
+ * /graves once each, as first known, by plain name, in name order; leaves out
+ * namespaced labels, aliases, /commands, other plugins' commands and a
+ * /graves some other plugin registered; and leaves out what the sender can't
+ * use.
  */
 public final class ListingTest {
 
@@ -17,13 +18,16 @@ public final class ListingTest {
     public static void main(String[] args) {
         List<String> failures = new ArrayList<>();
         List<Listing.Known> known = List.of(
-                new Listing.Known("rules", "OasisRules", "Show the server rules"),
-                new Listing.Known("end", "OasisEnd", "Whether the End is enabled"),
-                new Listing.Known("oasisend:end", "OasisEnd", "Whether the End is enabled"),
-                new Listing.Known("commands", "OasisCommands", "List the Oasis commands you can use"),
-                new Listing.Known("graves", "Graves", "Graves command"),
-                new Listing.Known("graveyards", "Graves", "Graveyards command"),
-                new Listing.Known("lp", "LuckPerms", "Manage permissions"));
+                new Listing.Known("rules", "rules", "OasisRules", "Show the server rules"),
+                new Listing.Known("end", "end", "OasisEnd", "Whether the End is enabled"),
+                new Listing.Known("end", "end", "OasisEnd", "Listed again"),
+                new Listing.Known("oasisend:end", "oasisend:end", "OasisEnd", "Whether the End is enabled"),
+                new Listing.Known("commands", "commands", "OasisCommands", "List the Oasis commands you can use"),
+                new Listing.Known("graves", "graves", "Graves", "Graves command"),
+                new Listing.Known("graves:graves", "graves", "Graves", "Graves command"),
+                new Listing.Known("grave", "graves", "Graves", "Graves command"),
+                new Listing.Known("graveyards", "graveyards", "Graves", "Graveyards command"),
+                new Listing.Known("lp", "lp", "LuckPerms", "Manage permissions"));
 
         List<Listing.Entry> all = Listing.select(known, name -> true);
         check(failures, all.equals(List.of(
@@ -38,7 +42,7 @@ public final class ListingTest {
                 "a sender who can't use /end got " + some);
 
         List<Listing.Entry> impostor = Listing.select(
-                List.of(new Listing.Known("graves", "SomethingElse", "Not Graves")), name -> true);
+                List.of(new Listing.Known("graves", "graves", "SomethingElse", "Not Graves")), name -> true);
         check(failures, impostor.isEmpty(), "another plugin's /graves was listed: " + impostor);
 
         if (!failures.isEmpty()) {
