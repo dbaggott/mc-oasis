@@ -7,3 +7,6 @@ build/
 # The website and its API (web/, api/): installed and built, never committed.
 node_modules/
 dist/
+
+# JetBrains IDEs
+.idea/
