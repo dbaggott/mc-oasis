@@ -267,6 +267,10 @@ COPY --from=grim /out/ /plugins/
 # beside that on the world volume. The image never carries either, so a new
 # world has no Technoblade until owners add it, and a setting outlasts a new
 # image.
+# Graves' make a grave openable by its owner alone, and by owners, who are
+# ops; drop its items when it expires; and turn off its free teleport, its
+# respawn compass and its update check. Its record of graves stays on the
+# world volume.
 # Geyser-Spigot's is MCXboxBroadcast's, under the extension's id in Geyser's
 # extensions/: the file the pinned build generates, with expiry off, so a
 # console player who stops playing for a while stays on its friend list. Its
