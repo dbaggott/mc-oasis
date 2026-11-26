@@ -323,6 +323,18 @@ echo "${properties_settings} plugin properties in place"
 settings="$(repo_settings plugins/LibertyBans plugins/LibertyBans/)" || exit 1
 check_settings "$name" value "$settings" || exit 1
 echo "$(setting_count "$settings") LibertyBans settings in place"
+
+# The repo's Graves settings, each read back from the files Graves is running
+# with. Graves never rewrites them, but on a config-version older than its
+# jar's it moves the whole folder aside and writes its own defaults there,
+# under which anyone can open a grave.
+settings="$(repo_settings plugins/Graves plugins/Graves/)" || exit 1
+check_settings "$name" value "$settings" || exit 1
+if grep --quiet --fixed-strings '[Graves] Warning: Outdated config detected' <<<"$(docker logs "$name" 2>&1)"; then
+  echo "error: Graves moved the repo's config aside as outdated" >&2
+  exit 1
+fi
+echo "$(setting_count "$settings") Graves settings in place"
 if ! grep --quiet --fixed-strings 'ExemptionLuckPermsAddon] LuckPerms detected and hooked' <<<"$logs"; then
   echo "error: LibertyBans' LuckPerms exemption add-on didn't hook into LuckPerms" >&2
   exit 1

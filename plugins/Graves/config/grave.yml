@@ -1,12 +1,13 @@
-# Graves' defaults, except where a grave can be opened from, who can open it,
-# and what happens when it expires. Graves reads each key this file leaves out
-# from the defaults in its jar.
+# Graves' defaults, except who can open a grave, which is stated here in full,
+# when one expires and what happens then, and how a player gets back to it.
+# Graves reads each key this file leaves out from the defaults in its jar.
 #
 # A grave can be opened or broken only by the player who died, and by anyone
-# with graves.bypass: ops, so owners, who can recover a player's items. It
-# stays protected for as long as it lasts; after 3 hours it expires and drops
-# its items where it stood, for anyone to pick up. No zombie is spawned when
-# someone other than the owner loots one.
+# with graves.bypass: ops, so owners, who can recover a player's items. No
+# zombie is spawned when someone other than the owner loots one. A grave stays
+# protected for as long as it lasts; after 6 days it expires and drops its
+# items where it stood, for anyone to pick up. The time runs from the death,
+# while the server is stopped too, so it has to outlast days nobody plays.
 #
 # Players walk back to their grave: there is no economy plugin to charge for
 # teleporting, so the /graves menu's teleport would be free from anywhere, and
@@ -14,6 +15,8 @@
 settings:
   default:
     default:
+      grave:
+        time: 518400
       drop:
         timeout: true
       protection:

@@ -1,7 +1,9 @@
-# Graves' defaults, except that it never reaches the internet on its own: no
-# update check, and /graves dump writes to a file rather than uploading to a
-# paste site. Graves reads each key this file leaves out from the defaults in
-# its jar, and moves aside a file whose config-version is older than its own.
+# Graves' defaults, except that it doesn't check for updates, and /graves
+# dump writes to a file rather than uploading to a paste site. Its bStats
+# metrics can't be turned off from here. Graves reads each key this file leaves
+# out from the defaults in its jar. If its jar's config-version is newer than
+# this file's, it moves the whole config folder aside and runs on its jar's
+# defaults, graves anyone can open among them; the smoke test fails on that.
 config-version: 3
 settings:
   update:
