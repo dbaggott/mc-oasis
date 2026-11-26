@@ -1,6 +1,7 @@
 # Graves' defaults, except who can open a grave, which is stated here in full,
-# when one expires and what happens then, and how a player gets back to it.
-# Graves reads each key this file leaves out from the defaults in its jar.
+# when one expires and what happens then, how a player gets back to it, how
+# many a player can have, and what goes in one. Graves reads each key this
+# file leaves out from the defaults in its jar.
 #
 # A grave can be opened or broken only by the player who died, and by anyone
 # with graves.bypass: ops, so owners, who can recover a player's items. No
@@ -12,11 +13,16 @@
 # Players walk back to their grave: there is no economy plugin to charge for
 # teleporting, so the /graves menu's teleport would be free from anywhere, and
 # it's off. No compass to the grave is given on respawning either.
+#
+# A player has up to 16 graves at once; past that, a death makes none and the
+# items drop as usual. No obituary book is put in a grave. A grave holds half
+# the dead player's XP, counted in points rather than levels; the rest is lost.
 settings:
   default:
     default:
       grave:
         time: 518400
+        max: 16
       drop:
         timeout: true
       protection:
@@ -35,3 +41,7 @@ settings:
         compass: false
       zombie:
         spawn-other: false
+      obituary:
+        enabled: false
+      experience:
+        store: 0.5
