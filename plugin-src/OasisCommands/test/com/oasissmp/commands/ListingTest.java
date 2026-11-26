@@ -6,9 +6,9 @@ import java.util.Set;
 
 /**
  * Checks that the listing takes the repo's plugins' commands and Graves'
- * /graves, once each, in name order; leaves out /commands, other plugins'
- * commands and a /graves some other plugin registered; and leaves out what the
- * sender can't use.
+ * /graves, by plain name, in name order; leaves out namespaced labels,
+ * /commands, other plugins' commands and a /graves some other plugin
+ * registered; and leaves out what the sender can't use.
  */
 public final class ListingTest {
 
@@ -19,7 +19,7 @@ public final class ListingTest {
         List<Listing.Known> known = List.of(
                 new Listing.Known("rules", "OasisRules", "Show the server rules"),
                 new Listing.Known("end", "OasisEnd", "Whether the End is enabled"),
-                new Listing.Known("end", "OasisEnd", "Whether the End is enabled"),
+                new Listing.Known("oasisend:end", "OasisEnd", "Whether the End is enabled"),
                 new Listing.Known("commands", "OasisCommands", "List the Oasis commands you can use"),
                 new Listing.Known("graves", "Graves", "Graves command"),
                 new Listing.Known("graveyards", "Graves", "Graveyards command"),

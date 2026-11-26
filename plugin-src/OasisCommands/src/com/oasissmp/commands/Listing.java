@@ -36,12 +36,17 @@ final class Listing {
 
     /**
      * The commands to list, by name. {@code usable} says whether the sender
-     * can use the command of that name. A name known more than once, as a
-     * command map knows a command by its namespaced label too, is listed once.
+     * can use the command of that name. A command is listed by its plain
+     * name only: a command map also knows each by its namespaced label, as a
+     * command of its own named {@code plugin:name}. A name known more than
+     * once is listed once.
      */
     static List<Entry> select(Collection<Known> known, Predicate<String> usable) {
         Map<String, Entry> entries = new LinkedHashMap<>();
         for (Known command : known) {
+            if (command.name().contains(":")) {
+                continue;
+            }
             Other other = OTHERS.get(command.name());
             Entry entry;
             if (other != null && other.plugin().equals(command.plugin())) {
