@@ -35,7 +35,7 @@ final class Listing {
     record Other(String plugin, String description) { }
 
     static final Map<String, Other> OTHERS = Map.of(
-            "graves", new Other("Graves", "List your graves and where they are"));
+            "graves", new Other("Graves", "Lists your graves and where they are"));
 
     private static final String PREFIX = "Oasis";
 
