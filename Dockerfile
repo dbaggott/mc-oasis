@@ -284,8 +284,9 @@ COPY build/artifacts/datapacks/ /datapacks/
 COPY --from=repo-datapacks /out/ /datapacks/
 COPY server-icon.png /server-icon.png
 
-# The Java resource pack, resourcepack/, which paints Technoblade's crown on
-# its pig variant, is required: a player who declines it is disconnected. It is served by the
+# The Java resource pack, resourcepack/ with Dungeons and Taverns' assets added,
+# which paints Technoblade's crown on its pig variant and gives DnT's charts and
+# keys their look, is required: a player who declines it is disconnected. It is served by the
 # website, named by its SHA-1, so the build takes that SHA-1, as
 # scripts/java-pack.sh prints it, and fails without one. The site release that
 # carries the pack has to be deployed before an image naming it (README,
