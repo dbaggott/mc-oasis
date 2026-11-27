@@ -323,6 +323,11 @@ echo "${properties_settings} plugin properties in place"
 settings="$(repo_settings plugins/LibertyBans plugins/LibertyBans/)" || exit 1
 check_settings "$name" value "$settings" || exit 1
 echo "$(setting_count "$settings") LibertyBans settings in place"
+if ! grep --quiet --fixed-strings 'ExemptionLuckPermsAddon] LuckPerms detected and hooked' <<<"$logs"; then
+  echo "error: LibertyBans' LuckPerms exemption add-on didn't hook into LuckPerms" >&2
+  exit 1
+fi
+echo "LibertyBans exempts staff by LuckPerms group weight"
 
 # The repo's Graves settings, each read back from the files Graves is running
 # with. Graves never rewrites them, but on a config-version older than its
@@ -335,11 +340,6 @@ if grep --quiet --fixed-strings '[Graves] Warning: Outdated config detected' <<<
   exit 1
 fi
 echo "$(setting_count "$settings") Graves settings in place"
-if ! grep --quiet --fixed-strings 'ExemptionLuckPermsAddon] LuckPerms detected and hooked' <<<"$logs"; then
-  echo "error: LibertyBans' LuckPerms exemption add-on didn't hook into LuckPerms" >&2
-  exit 1
-fi
-echo "LibertyBans exempts staff by LuckPerms group weight"
 
 # The Geyser extensions in artifacts.lock started, each by the lines its own
 # code logs: Geyser reports an extension enabled before the extension's own
