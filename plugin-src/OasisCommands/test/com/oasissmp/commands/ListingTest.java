@@ -6,8 +6,9 @@ import java.util.Set;
 
 /**
  * Checks that the listing takes the repo's plugins' commands and the other
- * plugins' commands it names, such as Graves' /graves, once each, as first known, by plain name, in name order; leaves out
- * namespaced labels, aliases, /commands, other plugins' commands and a
+ * plugins' commands it names, such as Graves' /graves and LibertyBans' /mute
+ * and /ban, once each, as first known, by plain name, in name order; leaves
+ * out namespaced labels, aliases, /commands, other plugins' commands and a
  * /graves some other plugin registered; and leaves out what the sender can't
  * use.
  */
