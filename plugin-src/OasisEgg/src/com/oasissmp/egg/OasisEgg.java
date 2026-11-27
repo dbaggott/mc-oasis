@@ -54,7 +54,7 @@ public final class OasisEgg extends JavaPlugin implements Listener {
                                 || source.getSender() instanceof RemoteConsoleCommandSender
                                 || source.getSender().hasPermission(PERMISSION))
                         .executes(context -> locate(context.getSource()))
-                        .build(), "Find the dragon egg"));
+                        .build(), "Finds where the dragon egg is"));
     }
 
     // Everything still loaded is about to go out of reach without an event of its own.
