@@ -35,9 +35,9 @@ final class Listing {
     record Other(String plugin, String description) { }
 
     static final Map<String, Other> OTHERS = Map.of(
-            "ban", new Other("LibertyBans", "Bans a player"),
+            "ban", new Other("LibertyBans", "Bans a player for a specified time"),
             "graves", new Other("Graves", "Lists your graves and where they are"),
-            "mute", new Other("LibertyBans", "Mutes a player"));
+            "mute", new Other("LibertyBans", "Mutes a player for a specified time"));
 
     private static final String PREFIX = "Oasis";
 
