@@ -25,8 +25,10 @@
 #
 # Removing a worldgen datapack (Tectonic, Dungeons and Taverns and its
 # overhauls, Tidal Towns) from an existing world breaks the terrain and
-# structures it generated. One added to an existing world generates only in
-# chunks not yet generated.
+# structures it generated. Add them before the world is first generated where
+# possible: one added to an existing world generates only in chunks not yet
+# generated, and a structure that would reach into a generated chunk is cut off
+# at its edge.
 #
 # The Dungeons and Taverns zip is also the Java resource pack's source:
 # scripts/java-pack.sh adds its assets/ to resourcepack/, so bumping it changes

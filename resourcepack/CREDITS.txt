@@ -20,9 +20,9 @@ resourcepack-bedrock/, whose CREDITS.txt says where that comes from.
 
 Dungeons and Taverns' charts and keys
 
-Everything under assets/dnt/ and assets/minecraft/ is the assets/ folder of
-"Dungeons and Taverns" by Nova_Ember and its contributors, whose zip is both
-the server's datapack and this resource pack:
+Every file in the pack that isn't in resourcepack/ comes from the assets/
+folder of "Dungeons and Taverns" by Nova_Ember and its contributors, whose zip
+is both the server's datapack and this resource pack:
 https://modrinth.com/datapack/dungeons-and-taverns
 scripts/java-pack.sh adds it to the pack from the version artifacts.lock pins,
 with its credits.txt as CREDITS-dungeons-and-taverns.txt; none of it is in
