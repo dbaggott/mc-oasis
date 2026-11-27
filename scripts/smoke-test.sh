@@ -329,6 +329,18 @@ if ! grep --quiet --fixed-strings 'ExemptionLuckPermsAddon] LuckPerms detected a
 fi
 echo "LibertyBans exempts staff by LuckPerms group weight"
 
+# The repo's Graves settings, each read back from the files Graves is running
+# with. Graves never rewrites them, but on a config-version older than its
+# jar's it moves the whole folder aside and writes its own defaults there,
+# under which anyone can open a grave.
+settings="$(repo_settings plugins/Graves plugins/Graves/)" || exit 1
+check_settings "$name" value "$settings" || exit 1
+if grep --quiet --fixed-strings '[Graves] Warning: Outdated config detected' <<<"$(docker logs "$name" 2>&1)"; then
+  echo "error: Graves moved the repo's config aside as outdated" >&2
+  exit 1
+fi
+echo "$(setting_count "$settings") Graves settings in place"
+
 # The Geyser extensions in artifacts.lock started, each by the lines its own
 # code logs: Geyser reports an extension enabled before the extension's own
 # start, which can still fail. They start after the server's "Done (", past the
