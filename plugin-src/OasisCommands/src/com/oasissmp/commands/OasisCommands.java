@@ -45,7 +45,7 @@ public final class OasisCommands extends JavaPlugin {
             CommandNode<CommandSourceStack> node = root.getChild(name);
             return node != null && node.canUse(source);
         });
-        TextComponent.Builder message = Component.text().append(Component.text("Commands:", NamedTextColor.DARK_GRAY));
+        TextComponent.Builder message = Component.text().append(Component.text("Available Commands:", NamedTextColor.DARK_GRAY));
         for (Listing.Entry entry : entries) {
             String command = "/" + entry.name();
             message.appendNewline()

@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Checks that the listing takes the repo's plugins' commands and Graves'
- * /graves once each, as first known, by plain name, in name order; leaves out
+ * Checks that the listing takes the repo's plugins' commands and the other
+ * plugins' commands it names, such as Graves' /graves, once each, as first known, by plain name, in name order; leaves out
  * namespaced labels, aliases, /commands, other plugins' commands and a
  * /graves some other plugin registered; and leaves out what the sender can't
  * use.
@@ -27,19 +27,24 @@ public final class ListingTest {
                 new Listing.Known("graves:graves", "graves", "Graves", "Graves command"),
                 new Listing.Known("grave", "graves", "Graves", "Graves command"),
                 new Listing.Known("graveyards", "graveyards", "Graves", "Graveyards command"),
+                new Listing.Known("mute", "mute", "LibertyBans", ""),
+                new Listing.Known("ban", "ban", "LibertyBans", ""),
+                new Listing.Known("kick", "kick", "LibertyBans", ""),
                 new Listing.Known("lp", "lp", "LuckPerms", "Manage permissions"));
 
         List<Listing.Entry> all = Listing.select(known, name -> true);
         check(failures, all.equals(List.of(
+                new Listing.Entry("ban", Listing.OTHERS.get("ban").description()),
                 new Listing.Entry("end", "Whether the End is enabled"),
                 new Listing.Entry("graves", Listing.OTHERS.get("graves").description()),
+                new Listing.Entry("mute", Listing.OTHERS.get("mute").description()),
                 new Listing.Entry("rules", "Shows the server rules"))),
                 "a sender who can use everything got " + all);
 
-        Set<String> usable = Set.of("rules", "graves", "lp");
+        Set<String> usable = Set.of("rules", "graves", "mute", "lp");
         List<Listing.Entry> some = Listing.select(known, usable::contains);
-        check(failures, some.stream().map(Listing.Entry::name).toList().equals(List.of("graves", "rules")),
-                "a sender who can't use /end got " + some);
+        check(failures, some.stream().map(Listing.Entry::name).toList().equals(List.of("graves", "mute", "rules")),
+                "a sender who can't use /end or /ban got " + some);
 
         List<Listing.Entry> impostor = Listing.select(
                 List.of(new Listing.Known("graves", "graves", "SomethingElse", "Not Graves")), name -> true);
