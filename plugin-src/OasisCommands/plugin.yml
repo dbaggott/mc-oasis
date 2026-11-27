@@ -1,0 +1,5 @@
+name: OasisCommands
+version: 1.0.0
+main: com.oasissmp.commands.OasisCommands
+api-version: '26.3'
+description: Lists the Oasis commands a player can use with /commands

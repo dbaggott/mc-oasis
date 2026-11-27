@@ -582,6 +582,23 @@ if [[ "$reply" != *"1. ${first_rule}"* ]]; then
 fi
 echo "/rules registered"
 
+# OasisCommands' /commands lists, for RCON, which every requirement lets
+# through, each of the repo's plugins' commands and Graves' /graves by its
+# plain name, and neither a namespaced label nor /commands itself. Which ones a
+# player is shown takes a player.
+reply="$(rcon commands | sed 's/\x1b\[[0-9;]*m//g')"
+for command in egg end graves locatorbar rules staff technoblade; do
+  if [[ "$reply" != *"/${command} - "* ]]; then
+    echo "error: /commands didn't list /${command}: '${reply}'" >&2
+    exit 1
+  fi
+done
+if [[ "$reply" == *"/commands - "* || "$reply" =~ /[a-z0-9_.-]+:[a-z0-9_-]+\ -\  ]]; then
+  echo "error: /commands listed itself or a namespaced label: '${reply}'" >&2
+  exit 1
+fi
+echo "/commands lists the Oasis commands"
+
 # OasisEgg's /egg finds an egg placed as a block and one in a shulker box in a
 # chest, in a chunk held loaded, and, once the chunk is let go, finds them where
 # they were when it unloaded. Positive coordinates: rcon-cli reads a leading
