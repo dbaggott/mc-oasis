@@ -9,7 +9,7 @@ import java.util.Set;
  * plugins' commands it names, such as Graves' /graves and LibertyBans' /mute
  * and /ban, once each, as first known, by plain name, in name order; leaves
  * out namespaced labels, aliases, /commands, other plugins' commands and a
- * /graves some other plugin registered; and leaves out what the sender can't
+ * /graves or /mute some other plugin registered; and leaves out what the sender can't
  * use.
  */
 public final class ListingTest {
@@ -48,8 +48,9 @@ public final class ListingTest {
                 "a sender who can't use /end or /ban got " + some);
 
         List<Listing.Entry> impostor = Listing.select(
-                List.of(new Listing.Known("graves", "graves", "SomethingElse", "Not Graves")), name -> true);
-        check(failures, impostor.isEmpty(), "another plugin's /graves was listed: " + impostor);
+                List.of(new Listing.Known("graves", "graves", "SomethingElse", "Not Graves"),
+                        new Listing.Known("mute", "mute", "SomethingElse", "Not LibertyBans")), name -> true);
+        check(failures, impostor.isEmpty(), "another plugin's /graves or /mute was listed: " + impostor);
 
         if (!failures.isEmpty()) {
             failures.forEach(System.err::println);
