@@ -40,7 +40,7 @@ public final class OasisRules extends JavaPlugin implements Listener {
         }
         seenKey = new NamespacedKey(this, "rules_seen");
         getServer().getPluginManager().registerEvents(this, this);
-        registerCommand("rules", "Show the server rules", new RulesCommand());
+        registerCommand("rules", "Shows the server rules", new RulesCommand());
     }
 
     @EventHandler

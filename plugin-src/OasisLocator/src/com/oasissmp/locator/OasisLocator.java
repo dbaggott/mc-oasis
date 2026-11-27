@@ -54,7 +54,7 @@ public final class OasisLocator extends JavaPlugin implements Listener {
                         .executes(context -> report(context.getSource()))
                         .then(Commands.literal("on").executes(context -> set(context.getSource(), true)))
                         .then(Commands.literal("off").executes(context -> set(context.getSource(), false)))
-                        .build(), "Enable or disable your participation in the locator bar."));
+                        .build(), "Enables or disables your participation in the locator bar"));
         getServer().getOnlinePlayers().forEach(this::apply);
     }
 

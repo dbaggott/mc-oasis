@@ -18,7 +18,7 @@ public final class ListingTest {
     public static void main(String[] args) {
         List<String> failures = new ArrayList<>();
         List<Listing.Known> known = List.of(
-                new Listing.Known("rules", "rules", "OasisRules", "Show the server rules"),
+                new Listing.Known("rules", "rules", "OasisRules", "Shows the server rules"),
                 new Listing.Known("end", "end", "OasisEnd", "Whether the End is enabled"),
                 new Listing.Known("end", "end", "OasisEnd", "Listed again"),
                 new Listing.Known("oasisend:end", "oasisend:end", "OasisEnd", "Whether the End is enabled"),
@@ -33,7 +33,7 @@ public final class ListingTest {
         check(failures, all.equals(List.of(
                 new Listing.Entry("end", "Whether the End is enabled"),
                 new Listing.Entry("graves", Listing.OTHERS.get("graves").description()),
-                new Listing.Entry("rules", "Show the server rules"))),
+                new Listing.Entry("rules", "Shows the server rules"))),
                 "a sender who can use everything got " + all);
 
         Set<String> usable = Set.of("rules", "graves", "lp");
