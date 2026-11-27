@@ -9,8 +9,8 @@ import java.util.Set;
  * plugins' commands it names, such as Graves' /graves and LibertyBans' /mute
  * and /ban, once each, as first known, by plain name, in name order; leaves
  * out namespaced labels, aliases, /commands, other plugins' commands and a
- * /graves or /mute some other plugin registered; and leaves out what the sender can't
- * use.
+ * /graves or /mute some other plugin registered; and leaves out what the
+ * sender can't use.
  */
 public final class ListingTest {
 
