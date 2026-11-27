@@ -1015,11 +1015,13 @@ for region in "${!region_bounds[@]}"; do
     fi
     flag_count=$((flag_count + 1))
   done <<<"${region_flag_lines[$region]}"
-  # WorldGuard saves text single-quoted, with each quote in it doubled.
+  # WorldGuard saves text single-quoted, with each quote in it doubled, and
+  # each &-code colour in it as the § code it stands for.
   while read -r flag_name flag_text; do
     [[ -n "$flag_name" ]] || continue
-    if ! grep --quiet --fixed-strings "${flag_name}: '${flag_text//\'/\'\'}'" <<<"$region_flags"; then
-      echo "error: the ${region} region doesn't have ${flag_name} \"${flag_text}\": ${region_flags}" >&2
+    saved_text="$(sed -E 's/&([0123456789abcdefklmnor])/§\1/g' <<<"$flag_text")"
+    if ! grep --quiet --fixed-strings "${flag_name}: '${saved_text//\'/\'\'}'" <<<"$region_flags"; then
+      echo "error: the ${region} region doesn't have ${flag_name} '${saved_text}': ${region_flags}" >&2
       exit 1
     fi
     flag_count=$((flag_count + 1))
