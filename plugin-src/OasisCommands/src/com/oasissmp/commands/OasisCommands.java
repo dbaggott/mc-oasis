@@ -45,11 +45,11 @@ public final class OasisCommands extends JavaPlugin {
             CommandNode<CommandSourceStack> node = root.getChild(name);
             return node != null && node.canUse(source);
         });
-        TextComponent.Builder message = Component.text().append(Component.text("Commands:", NamedTextColor.GOLD));
+        TextComponent.Builder message = Component.text().append(Component.text("Commands:", NamedTextColor.DARK_GRAY));
         for (Listing.Entry entry : entries) {
             String command = "/" + entry.name();
             message.appendNewline()
-                    .append(Component.text(command, NamedTextColor.AQUA)
+                    .append(Component.text(command, NamedTextColor.GOLD)
                             .clickEvent(ClickEvent.suggestCommand(command + " "))
                             .hoverEvent(HoverEvent.showText(Component.text("Click to type " + command))))
                     .append(Component.text(" - " + entry.description(), NamedTextColor.GRAY));
