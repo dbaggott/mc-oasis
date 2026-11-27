@@ -84,7 +84,7 @@ final class Pedestal implements Listener {
         }
         block.setType(Material.AIR);
         block.getWorld().playSound(block.getLocation().toCenterLocation(),
-                Sound.ITEM_BUNDLE_INSERT_FAIL, SoundCategory.BLOCKS, 1, 1);
+                Sound.ITEM_BUNDLE_INSERT_FAIL, SoundCategory.PLAYERS, 1, 1);
     }
 
     // Looked up each time: OasisRegions replaces the region at start, which
