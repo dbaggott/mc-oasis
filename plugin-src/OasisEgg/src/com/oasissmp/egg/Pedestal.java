@@ -8,6 +8,7 @@ import java.util.Map;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
@@ -29,7 +30,7 @@ import org.bukkit.inventory.ItemStack;
  * The block at spawn where a player leaves the dragon egg for someone else to
  * take: the WorldGuard region {@value #REGION}, which lets anyone place a
  * block there. Only the egg can be placed, and right-clicking it puts it in
- * the clicker's inventory instead of teleporting it, with a sound everyone
+ * the clicker's inventory instead of teleporting it, with sounds everyone
  * nearby hears.
  */
 final class Pedestal implements Listener {
@@ -83,8 +84,9 @@ final class Pedestal implements Listener {
             return;
         }
         block.setType(Material.AIR);
-        block.getWorld().playSound(block.getLocation().toCenterLocation(),
-                Sound.ITEM_BUNDLE_INSERT_FAIL, SoundCategory.PLAYERS, 1, 1);
+        Location at = block.getLocation().toCenterLocation();
+        block.getWorld().playSound(at, Sound.ITEM_BUNDLE_DROP_CONTENTS, SoundCategory.PLAYERS, 1, 1);
+        block.getWorld().playSound(at, Sound.ITEM_BUNDLE_INSERT_FAIL, SoundCategory.PLAYERS, 1, 1);
     }
 
     // Looked up each time: OasisRegions replaces the region at start, which
