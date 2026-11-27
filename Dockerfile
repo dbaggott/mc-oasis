@@ -205,7 +205,8 @@ ENV DATAPACKS=/datapacks \
 # versions call spawnRadius, is 0.
 #
 # 35% of the players in the overworld, rounded up, must sleep to skip the
-# night; spectators don't count, and it is never fewer than one. The locator
+# night; spectators don't count, and it is never fewer than one. Phantoms
+# never spawn, so nobody has to sleep to keep them away. The locator
 # bar is on; a player opts out of it with OasisLocator's /locatorbar off.
 # Paper keeps game rules per dimension and RCON runs in the overworld, so a rule
 # that matters outside it is set in each dimension with `execute in`.
@@ -226,6 +227,9 @@ execute in minecraft:the_nether run worldborder set 10001\n\
 setworldspawn -468 63 898\n\
 gamerule respawn_radius 0\n\
 gamerule players_sleeping_percentage 35\n\
+execute in minecraft:overworld run gamerule spawn_phantoms false\n\
+execute in minecraft:the_nether run gamerule spawn_phantoms false\n\
+execute in minecraft:the_end run gamerule spawn_phantoms false\n\
 execute in minecraft:overworld run gamerule locator_bar true\n\
 execute in minecraft:the_nether run gamerule locator_bar true\n\
 execute in minecraft:the_end run gamerule locator_bar true\n\
