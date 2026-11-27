@@ -127,6 +127,10 @@ jobs:
       - name: Check the build
         run: npm test --prefix web
 
+      # The pack takes Dungeons and Taverns' assets from its verified zip.
+      - name: Fetch and verify artifacts
+        run: scripts/fetch-artifacts.sh
+
       # Served at https://www.oasis-smp.com/assets/oasis-pack-<sha1>.zip, the URL
       # the server image built in the same run names (`tested` checks the two
       # agree). Named by its content, so a site deploy never deletes or changes

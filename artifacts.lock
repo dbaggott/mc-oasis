@@ -24,8 +24,13 @@
 #           in plugin-src/ compile against, and none of them goes in the image.
 #
 # Removing a worldgen datapack (Tectonic, Dungeons and Taverns and its
-# overhauls) from an existing world breaks the terrain and structures it
-# generated. Add them only before the world is first generated.
+# overhauls, Tidal Towns) from an existing world breaks the terrain and
+# structures it generated. One added to an existing world generates only in
+# chunks not yet generated.
+#
+# The Dungeons and Taverns zip is also the Java resource pack's source:
+# scripts/java-pack.sh adds its assets/ to resourcepack/, so bumping it changes
+# the pack (see the README's "Changing the resource pack").
 #
 # Changing a line is a version bump: update version, sha256 and url together.
 
@@ -51,6 +56,7 @@ plugin  Graves         4.9.15           03facaf1f36b8b66b9b584537f9c9acd131316a7
 
 datapack  10-tectonic                       3.0.29-datapack   de17001f3aa97568b5868ce009c46a916f3c6b88de5b188ec9731b0f0994df92  https://cdn.modrinth.com/data/lWDHr9jE/versions/pxgiJaJp/tectonic-datapack-3.0.29.zip
 datapack  20-dungeons-and-taverns           6.1.0             eeaff932d07f32c957df0ee5e5ac6378c9361ce32366858872590abe22b90785  https://cdn.modrinth.com/data/tpehi7ww/versions/B1bgkN74/Dungeons%20and%20Taverns%20v6.1.0.zip
+datapack  25-tidal-towns                     2.0               8d2e634f361104561941f1f48bbaf68cc7333d1bfc54d42dfc27483c49c3847e  https://cdn.modrinth.com/data/EEIwvQVo/versions/zUTMZpiw/tidal_towns_2.0_1.20-26.3.zip
 datapack  30-dnt-ancient-city-overhaul      4                 28451d7f5be41549dab68a3245e6d22b0e8022febb63fab37d0186645026c007  https://cdn.modrinth.com/data/DNuNq5bb/versions/Fns9y171/DnT%20Ancient%20City%20Overhaul%20v4.zip
 datapack  30-dnt-desert-temple-overhaul     2.2               c143ae3d45911cf1e6303d624a895f9376bb6cbf774099bde927e83367b31be2  https://cdn.modrinth.com/data/7JTDDmRT/versions/7IBsU37o/DnT%20Desert%20Temple%20Overhaul%20v2.2.zip
 datapack  30-dnt-mineshaft-overhaul         2.0.1             f01ad0d4719a769f5db47d6b45fe2d8bef23ffa0a521b6d101dbc7a3388e255a  https://cdn.modrinth.com/data/ozLFhOy3/versions/rVEyRdCT/DnT%20Mineshaft%20Overhaul%202.0.1.zip

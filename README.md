@@ -28,7 +28,7 @@ datapacks/<name>/        the repo's own datapacks, each zipped as <name>.zip in 
 plugin-src/<Name>/       the repo's own plugins, each a plugin.yml and Java sources under src/, compiled into <Name>.jar in the image; tests under test/ run at build
 hook-dupe-agent/         a Java agent the server starts with, which puts back tripwire hook duping; its class comment says how; tests under test/ run at build
 grim-fluid-patch/        run by the Docker build: patches GrimAC so bubble columns count as water and work as elevators; its class comment says why; tests under test/ run at build
-resourcepack/            the Java resource pack every player is required to take: Technoblade's crown, painted on the pig variant in datapacks/80-oasis-technoblade/; CREDITS.txt says where it comes from
+resourcepack/            the Java resource pack every player is required to take: Technoblade's crown, painted on the pig variant in datapacks/80-oasis-technoblade/, plus Dungeons and Taverns' charts and keys, added at build; CREDITS.txt says where they come from
 resourcepack-bedrock/    the Bedrock pack Geyser sends every Bedrock player: Technoblade's crown, modelled on the head of the pig OasisTechnoblade marks; CREDITS.txt says where it comes from
 scripts/
   fetch-artifacts.sh     downloads everything in artifacts.lock and verifies each sha256
@@ -36,7 +36,7 @@ scripts/
   smoke-test.sh          starts a built image on a throwaway world; checks every plugin and datapack loads and every config setting applies
   bump-bedrock.sh        moves the Geyser, Floodgate and MCXboxBroadcast lines in artifacts.lock to their newest builds at least 48 hours old
   build-pack.sh          zips a resource pack so the same files always give the same bytes
-  java-pack.sh           builds resourcepack/ as oasis-pack-<sha1>.zip and prints the SHA-1
+  java-pack.sh           builds resourcepack/, with Dungeons and Taverns' assets added, as oasis-pack-<sha1>.zip and prints the SHA-1
 web/                     the website: a Vite site; its rules page renders plugins/OasisRules/rules.txt
 api/                     the website's API: a parent's request for their child to be let in, as a container-image Lambda
 shared/                  what the site's forms and the API both import, so they agree on every field
@@ -141,7 +141,13 @@ SHA-1. A site deploy never deletes a file under `assets/`, so once deployed, a p
 
 **Deploy the site release that carries a new pack before the server image that names it.** Until then the server
 points every Java player at a URL that isn't served, and they can't join. The zip is built the same way every time
-(`scripts/build-pack.sh`), so this only matters when something under `resourcepack/` changed.
+(`scripts/build-pack.sh`), so this only matters when something under `resourcepack/` changed, or the Dungeons and
+Taverns line in `artifacts.lock` did.
+
+The pack also carries the `assets/` folder of the pinned Dungeons and Taverns zip, which is its resource pack as well
+as its datapack: the textures and names of its charts, keys and potions. `scripts/java-pack.sh` adds it at build from
+the zip `scripts/fetch-artifacts.sh` verified, and fails if a path in it is also in `resourcepack/`. Bedrock players
+see those items with their vanilla look.
 
 Bedrock players get `resourcepack-bedrock/` from Geyser instead. Raise the `version` in its `manifest.json` (header and
 module alike) whenever anything in it changes: Bedrock clients keep a pack they already have at the same version.

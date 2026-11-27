@@ -17,3 +17,13 @@ The pig variants that use them, oasis:technoblade and
 oasis:technoblade_glaring, are in the server's datapack
 datapacks/80-oasis-technoblade/. Bedrock players see a 3D crown instead, from
 resourcepack-bedrock/, whose CREDITS.txt says where that comes from.
+
+Dungeons and Taverns' charts and keys
+
+Everything under assets/dnt/ and assets/minecraft/ is the assets/ folder of
+"Dungeons and Taverns" by Nova_Ember and its contributors, whose zip is both
+the server's datapack and this resource pack:
+https://modrinth.com/datapack/dungeons-and-taverns
+scripts/java-pack.sh adds it to the pack from the version artifacts.lock pins,
+with its credits.txt as CREDITS-dungeons-and-taverns.txt; none of it is in
+this repo.
