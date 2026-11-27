@@ -27,9 +27,10 @@ enderman-grief deny
 use allow
 chest-access allow
 # What a player is told when the region stops them, WorldGuard putting its
-# words for what they tried in place of %what%. The egg pedestal sets none of
-# its own, so this one covers it too.
-deny-message "Sorry, but you can't %what% here."
+# words for what they tried in place of %what%: "Sorry," in red, the rest in
+# gray, &c and &7 being WorldGuard's codes for those colours. The egg pedestal
+# sets none of its own, so this one covers it too.
+deny-message "&cSorry, &7but you can't %what% here!"
 
 # The one block at spawn where a player leaves the dragon egg for someone else
 # to take. Anyone can place a block there; OasisEgg turns away everything but
