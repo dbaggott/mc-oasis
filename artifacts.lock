@@ -38,7 +38,7 @@
 
 server  paper          26.3-246      d158542561e440c4026be7ccb32f551ee88313864792f38ea0ce5d1b88f1b27c  https://fill-data.papermc.io/v1/objects/d158542561e440c4026be7ccb32f551ee88313864792f38ea0ce5d1b88f1b27c/paper-26.3-246.jar
 
-plugin  Geyser-Spigot  2.12.1-1310   ff6897b08e4fb8dd5b1a23ba0f7386c0b583c0598a94de7d2bf91955be2ec44f  https://download.geysermc.org/v2/projects/geyser/versions/2.12.1/builds/1310/downloads/spigot
+plugin  Geyser-Spigot  2.12.1-1312   76d878f07b3ba46963841a2730490d8b30094260268db0964cefa7e4c1488d3a  https://download.geysermc.org/v2/projects/geyser/versions/2.12.1/builds/1312/downloads/spigot
 plugin  floodgate      2.2.5-141     21570aff9ce17d6983928e8552777760e1ede5050026b04c686b0ae112e6fd7e  https://download.geysermc.org/v2/projects/floodgate/versions/2.2.5/builds/141/downloads/spigot
 extension  mcxboxbroadcast  165  f8e55766c525221f6c412a58c085ff9842df22dc73acad8ed51486e976abb788  https://github.com/MCXboxBroadcast/Broadcaster/releases/download/165/MCXboxBroadcastExtension.jar
 plugin  Chunky         1.5.66        809aa579e201196d323fbb8cdc86e8f27c2734d53a2f10db18ac70d16199f16b  https://cdn.modrinth.com/data/fALzjamp/versions/selGpja4/Chunky-Bukkit-1.5.66.jar
